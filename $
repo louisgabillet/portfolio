@@ -1,0 +1,361 @@
+<script lang="ts">
+import { createEventDispatcher, onDestroy, onMount } from 'svelte';
+	import Safari from './safari.svelte';
+
+export let data;
+export let order: string[];
+
+const dispatch = createEventDispatcher();
+
+// HTML Elements
+let openWindow: HTMLElement;
+let parent: HTMLElement | null;
+
+// LocalStorage Elements
+$: storage = {pos:{x: pos?.percentX || 50, y: pos?.percentY || 50}, size: {width: size?.width || 50, height: size?.height || 50}};
+$: getStorageSting = localStorage.getItem(name);
+$: getStorage = getStorageSting ? JSON.parse(getStorageSting) : {pos:{x: 25, y: 25}, size: {width: 50, height: 50}};
+$: ({x: storageX, y: storageY} = getStorage.pos);
+$: ({width: storageWidth, height: storageHeight} = getStorage.size);
+
+// Props Elements
+$: ({name, reduce} = data);
+$: zIndex = order?.indexOf(name) >= 0 ? order?.indexOf(name) : 0;
+
+// Conditions
+let isMouseMove: boolean = false;
+let isFullScreen: boolean = false;
+$: isWindowMoving = isResizeSidesLength > 0 ? false : true;
+
+// Values
+// --- Static
+const margin: number = 12;
+let tutorial = {
+    finished: false,
+    steps: [
+        {id: 1, finished: false, explanation: 'Click on the App to open the window.'},
+        {id: 2, finished: false, explanation: 'You can Drag the window to place it wherever you want.'},
+        {id: 3, finished: false, explanation: 'You can resize the window at every size.'},
+        {id: 4, finished: false, explanation: "It's also possible to Reduce or Full-Screen the window."},
+        {id: 5, finished: false, explanation: "You can know what's interactive, clicking on the reveal button."},
+    ]
+}
+// --- Dynamic
+$: pos = {percentX: storageX, percentY: storageY, previousX: storageX, previousY: storageY};
+$: size = {width: storageWidth, height: storageHeight, previousW: storageWidth, previousH: storageHeight, maxWidth: 100, maxHeight: 100};
+let mousePos: {mouseXStart: number, mouseYStart: number};
+$: ({percentX, percentY} = pos);
+$: ({width, height, maxWidth, maxHeight} = size);
+let reduceX: number, 
+    reduceY: number;
+let resizeSides = {left: false, top: false, right: false, bottom: false};
+$: isResizeSides = Object.values(resizeSides)?.filter((side) => side);
+$: isResizeSidesLength = isResizeSides?.length;
+
+// Trigger based on condition
+$: if (isMouseMove) { openWindow?.classList.remove('transition') } else { openWindow?.classList.add('transition') };
+$: if (tutorial?.steps?.find((step) => step?.finished == true)) {tutorial.finished = true}
+$: if (openWindow && isResizeSidesLength === 0) { openWindow.addEventListener('mouseleave', windowLeave) } else if (openWindow) { openWindow.removeEventListener('mouseleave', windowLeave) };
+$: if (document.activeElement === openWindow && openWindow && !isFullScreen && !reduce) { openWindow.addEventListener('mousemove', changeResizeCursor) } else if (openWindow) { openWindow.removeEventListener('mousemove', changeResizeCursor) }; 
+
+onMount(() => {
+    const window = document.querySelector(`.app-window[data-app-name=${name}`) as HTMLDivElement;
+    window.focus({preventScroll: true});
+    //window.addEventListener('mousemove', changeResizeCursor)
+    
+    parent = document.getElementById('icon-container');
+
+    const reducePos = document.querySelector(`.in-dock[data-name=${name}]`)?.getBoundingClientRect();
+    const parentRect = parent?.getBoundingClientRect();
+    if (reducePos && parentRect) {
+        reduceX = reducePos?.left - parentRect?.left;
+        reduceY = reducePos?.top - parentRect?.top;
+    }
+})
+onDestroy(() => {
+    openWindow.removeEventListener('mousemove', changeResizeCursor)
+})
+
+const onMouseDown = (e: MouseEvent) => {
+    if (isFullScreen || !openWindow) return;
+    dispatch('focus', { name: name })
+    if (!isWindowMoving) e.stopPropagation();
+    const rect = openWindow?.getBoundingClientRect();
+    resizeSides = checkIfMouseResize(e, rect);
+    mousePos = { mouseXStart: e.clientX, mouseYStart: e.clientY};
+    window.addEventListener('mousemove', mouseMoveHandler)
+    window.addEventListener('mouseup', mouseUpHandler)
+}
+const onKeyDown = (e:KeyboardEvent) => {
+    const keyClose = e.ctrlKey && e.code === 'KeyA';
+    const keyReduce = e.ctrlKey && e.code === 'Semicolon';
+    const keyFullscreen = e.ctrlKey && e.code === 'KeyF';
+
+    if (keyClose) {
+        if (isFullScreen) dispatch('fullscreen');
+        dispatch('close');
+    } else if (keyReduce && !isFullScreen) {
+        dispatch('reduce');
+    } else if (keyFullscreen && !reduce) {
+        isFullScreen = !isFullScreen;
+        dispatch('fullscreen');
+    }
+}
+
+const mouseMoveHandler = (e: MouseEvent) => {
+    requestAnimationFrame(()=> {
+        if (!parent || !openWindow) return; 
+        const {mouseXStart: startX, mouseYStart: startY} = mousePos;
+        const parentRect = parent?.getBoundingClientRect();
+        const previousX = pos.previousX,
+              previousY = pos.previousY;
+        const previousW = size?.previousW,
+              previousH = size?.previousH;
+        const width = openWindow?.offsetWidth / parent?.offsetWidth * 100,
+              height = openWindow?.offsetHeight / parent?.offsetHeight * 100;
+
+        const x: number = checkIfMouseLeave(e, parentRect)?.x ?? 0,
+              y: number = checkIfMouseLeave(e, parentRect)?.y ?? 0;
+        let offsetX = (startX - x) / parent.offsetWidth * -100,
+            offsetY = (startY - y) / parent.offsetHeight * -100;
+        const pX = previousX + offsetX,
+              pY = previousY + offsetY;
+
+        isMouseMove = (startX != x) || (startY != y); 
+        const isLeftSide = resizeSides?.left,
+              isTopSide = resizeSides?.top;
+        const maxWidth = pX >= 0 ? 100 - percentX : 100 - (100 - width),
+              maxHeight = pY >= 0 ? 100 - percentY : 100 - (100 - height);
+        const pW = (isLeftSide ? offsetX * -1 : offsetX) + previousW,
+              pH = (isTopSide ? offsetY * -1 : offsetY) + previousH;
+        const minWidth = pW >= 20,
+              minHeight = pH > 25;
+        const moveWhenResizeX = pX <= 0 ? 0 : pX,
+              moveWhenResizeY = pY <= 0 ? 0 : pY;
+
+        console.log(maxWidth);
+
+        if (!minWidth || !minHeight) return;
+        
+        pos.percentX = isLeftSide && minWidth ? moveWhenResizeX : isWindowMoving ? pX : percentX;
+        pos.percentY = isTopSide && minHeight ? moveWhenResizeY : isWindowMoving ? pY <= 0 ? 0 : pY : percentY;
+
+        if (!isWindowMoving) {
+            offsetX = isLeftSide ? offsetX * -1 : offsetX;
+            offsetY = isTopSide ? offsetY * -1 : offsetY;
+
+            const isWidthTooLarge = offsetX + previousW > maxWidth,
+                  isHeightTooLong = offsetY + previousH > maxHeight;
+
+            if (resizeSides?.left || resizeSides?.right) size.width = isWidthTooLarge ? maxWidth : pW <= 20 ? 20 : pW;
+            if (resizeSides?.top || resizeSides?.bottom) size.height = isHeightTooLong ? maxHeight : pH <= 25 ? 25 : pH; 
+        }
+    })
+};
+const mouseUpHandler = (e: MouseEvent) => {
+    if (!openWindow) return;
+
+    window.removeEventListener('mousemove', mouseMoveHandler);
+    window.removeEventListener('mouseup', mouseUpHandler);
+    resizeSides = {left: false, top: false, right: false, bottom: false};
+    isResizeSidesLength = 0;
+
+    if (parent && isMouseMove) {
+        localStorage.setItem(name, JSON.stringify(storage));
+        pos.previousX = percentX;
+        pos.previousY = percentY;
+
+        if (!isWindowMoving) {
+            size.previousW = width;
+            size.previousH = height;
+        }
+
+        isMouseMove = false;
+        changeResizeCursor(e);
+    }
+}
+
+const checkIfMouseLeave = (e: MouseEvent, bounds: DOMRect | undefined) => {
+    if (!bounds) return;
+
+    const clientX = e.clientX,
+          clientY = e.clientY; 
+    const left = clientX <= bounds?.left,
+          right = clientX >= bounds?.right,
+          //top = clientY <= bounds?.top,
+          bottom = clientY >= bounds.bottom;
+
+    const x = left ? bounds?.left : right ? bounds.right : clientX,
+          y = bottom ? bounds?.bottom : clientY;
+
+    return {x, y};
+}
+const checkIfMouseResize = (e: MouseEvent, rect: any) => {
+    const x = e?.clientX,
+          y = e?.clientY;
+    const inRightMargin = x >= rect?.right - margin,
+        inLeftMargin = x <= rect?.left + margin,
+        inTopMargin = y <= rect?.top + margin,
+        inBottomMargin = y >= rect?.bottom - margin;
+    let data = {right: false, left: false, top: false, bottom: false};
+    if (data.right !== inRightMargin) data.right = inRightMargin;
+    if (data.left !== inLeftMargin) data.left = inLeftMargin;
+    if (data.top !== inTopMargin) data.top = inTopMargin; 
+    if (data.bottom !== inBottomMargin) data.bottom = inBottomMargin;
+    return data;
+}
+const windowLeave = () => {
+    parent?.style.removeProperty('cursor');
+}
+const changeResizeCursor = (e: MouseEvent) => {
+    if (document.activeElement !== openWindow) return;
+    const x = e.clientX,
+    y = e.clientY;
+    const rect = openWindow?.getBoundingClientRect();
+    const {left, right, bottom, top} = isResizeSidesLength === 0 ? checkIfMouseResize(e, rect) : resizeSides;
+    if (!left && !right && !bottom && !top && parent && isResizeSidesLength === 0) {
+        parent.style.removeProperty('cursor');
+        return;
+    };
+    const startX = mousePos?.mouseXStart,
+    startY = mousePos?.mouseYStart;
+    const isAboveX = isResizeSidesLength > 0 && startX > x,
+    isAboveY = isResizeSidesLength > 0 && startY > y,
+    isBelowX = isResizeSidesLength > 0 && startX < x,
+    isBelowY = isResizeSidesLength > 0 && startY < y; 
+
+    let sign: string|null = null;
+
+    if (left && top || right && bottom) {
+        sign =  isAboveX && isAboveY ? 'se' : isBelowX && isBelowY ? 'nw' :'nwse'
+    } else if (right && top || left && bottom) {
+        sign =  isBelowX && isAboveY ? 'sw' : isAboveX && isBelowY ? 'ne' : 'nesw'
+    } else if (right || left) {
+        sign = isAboveX ? 'e' : isBelowX ? 'w' : 'ew'
+    } else if (top || bottom) {
+        sign = isAboveY ? 's' : isBelowY ? 'n' : 'ns'
+    }
+    if (sign && parent) parent.style.cursor = `${sign}-resize`
+    console.log(isResizeSidesLength);
+}
+</script>
+
+<div bind:this={openWindow} 
+    role="button" 
+    tabindex="0" 
+    data-app-name={name}
+    class="app-window transition {isFullScreen ? 'full-screen' : ''} {reduce ? 'reduced' : ''}"
+    style="--width: {width}%; --height: {height}%; --max-width: {maxWidth}%; --max-height: {maxHeight}%; --top: {percentY}%; --left: {percentX}%; z-index: {zIndex}; 
+    {reduce ? `--reduce-top: ${reduceY}px; --reduce-left: ${reduceX}px` : ''}"
+    on:focusin|self={() => { dispatch('focus', { name: name })}}
+    on:mousedown={ (e) => { onMouseDown(e) }}
+    on:keydown={ (e) => { onKeyDown(e) }}
+> 
+    <!-- VERIFY IF FOCUSIN|SELF IS RELEVANT ----------  -->
+    <div class="content {isFullScreen ? 'full-screen' : ''}">
+        <div class="action-btn">
+            <button id='close-btn' on:click={() => { if (isFullScreen) dispatch('fullscreen'); dispatch('close') }}></button>
+            <button id={!isFullScreen ? 'reduce-btn' : 'desactivated'} on:click={() => { dispatch('reduce') }}></button>
+            <button id="full-screen-btn" on:click={() => {isFullScreen = !isFullScreen; dispatch('fullscreen')}}></button>
+        </div>
+        <Safari />
+    </div>
+</div>
+
+<style>
+.app-window {
+    --padding: 4px;
+    position: absolute;
+    overflow: hidden;
+    outline: none;
+    padding: var(--padding);
+    width: var(--width);
+    height: var(--height);
+    max-width: var(--max-width);
+    max-height: var(--max-height);
+    top: var(--top);
+    left: var(--left);
+}
+.content {
+    --nav-height: 2rem;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: .4rem;
+    overflow: hidden;
+}
+.transition {
+    --transi: 320ms ease;
+    transition: 
+        top var(--transi),
+        left var(--transi),
+        width var(--transi),
+        height var(--transi),
+        max-width var(--transi),
+        max-height var(--transi),
+        padding var(--transi),
+        transform var(--transi);
+}
+.reduced {
+    top: var(--reduce-top);
+    left: var(--reduce-left); 
+    width: 30px;
+    height: 30px;
+}
+.full-screen {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    padding: 0;
+    border-radius: 0;
+}
+.action-btn {
+    --pos: calc(var(--nav-height) / 2);
+    display: flex;
+    align-items: center;
+    position: absolute;
+    top: var(--pos);
+    transform: translateY(-50%);
+    left: 8px;
+    gap: 4px;
+    z-index: 999;
+    /*height: var(--nav-height);*/
+}
+#desactivated {
+    pointer-events: none;
+}
+.action-btn button {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    outline: none;
+    box-shadow: inset 0 0 .5px .5px rgba(0, 0, 0, .2);;
+    background-color: #50504E;
+}
+.action-btn:hover #close-btn {
+    background-color: var(--color-btn-close);
+}
+.action-btn:hover #reduce-btn {
+    background-color: var(--color-btn-reduce);
+}
+.action-btn:hover #full-screen-btn {
+    background-color: var(--color-btn-fullscreen);
+}
+.app-window:focus .action-btn #full-screen-btn,
+.app-window:focus-within .action-btn #full-screen-btn {
+    background-color: var(--color-btn-fullscreen);
+}
+.app-window:focus .action-btn #reduce-btn,
+.app-window:focus-within .action-btn #reduce-btn {
+    background-color: var(--color-btn-reduce);
+}
+.app-window:focus .action-btn #close-btn,
+.app-window:focus-within .action-btn #close-btn {
+    background-color: var(--color-btn-close);
+}
+
+</style>

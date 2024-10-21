@@ -1,0 +1,31 @@
+:root {
+    --color-text: #FFF;
+    --color-text-diff: #000;
+    --color-bg: #F6F6F65C;
+    --color-shadow: #00000026;
+    --color-border: #1A1A1A75;
+    --color-selected: #457198;
+    --color-btn-close: #EC6A5E;
+    --color-btn-reduce: #F3BF4E;
+    --color-btn-fullscreen: #61C555;
+
+    --blur: 8.5rem;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    overflow: hidden;
+    font: var(--font);
+    color: var(--color-text);
+    user-select: none;
+}
+button {
+    font: inherit;
+    color: inherit;
+}
+.grecaptcha-badge { 
+    visibility: hidden; 
+}
