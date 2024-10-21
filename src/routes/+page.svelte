@@ -3,7 +3,7 @@
     import '../style.css';
     import iMac from '$lib/assets/images/mac/Apple Imac Pro.png';
     //import iMac from '$lib/assets/images/mac/MacBook Pro 14" - 5th Gen - Silver.png';
-    import iphone from '$lib/assets/images/iphone/iPhone 16 - White - Portrait.png';
+    import iphone from '$lib/assets/images/iphone/iPhone 16 White Portrait.png';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import Window from '../components/window.svelte';
@@ -137,7 +137,7 @@
                     </div>
                 </div>
                 <div class="background">
-                    <img src='/src/lib/assets/images/background/Ink-Cloud.jpg' alt="">
+                    <img src='/src/lib/assets/images/background/Ink_Cloud.jpg' alt="">
                 </div>
                 <div id="icon-container">
                     <div id='icons-placement'>
