@@ -1,10 +1,10 @@
 import { type Actions } from '@sveltejs/kit';
-import { SECRET_KEY } from '$env/static/private';
+import { SECRET_KEY, SENDGRID_API_KEY } from '$env/static/private';
+import nodemailer from 'nodemailer';
 
 export const actions: Actions = {
     email: async ({ request }) => {
         const data = await request.json();
-        console.log('server', data?.token);
 
         const captchaVerification = await fetch(
             `https://www.google.com/recaptcha/api/siteverify`,
@@ -17,11 +17,38 @@ export const actions: Actions = {
             }
         );
         const captchaData = await captchaVerification.json();
-        console.log(captchaData);
+
         if (captchaData.success) {
-            console.log('LETS GOOOOOOOOOOOOOO')
+            const transporter = nodemailer.createTransport({
+                host: 'smtp.sendgrid.net',
+                port: 587,
+                secure: false,
+                auth: {
+                    user: 'apikey',
+                    pass: SENDGRID_API_KEY,
+                }
+            });
+            
+            const mailOptions = {
+                from: '"Portfolio" <louisgab33@gmail.com>',
+                to: 'gabillet.louis@gmail.com',
+                cc: data?.cc,
+                subject: data?.subject,
+                text: data?.text,
+                html: `<b>Email From : ${data?.from} <br> Subject: ${data?.subject}</b> <br> ${data?.text}`,
+                replyTo: data?.from,
+            }
+
+            try {
+                await transporter.sendMail(mailOptions);
+                //return { success: true };
+            } catch (err) {
+                console.log('error when sending email', err);
+                //return { success: false, error: err};
+            }
         } else {
-            console.log('NOOOOOOOOOOOOOOO');
+            console.log('ReCaptcha blocked user');
+            //return { success: false};
         }
     }
 }

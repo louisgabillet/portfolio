@@ -1,11 +1,11 @@
 <script lang="ts">
-export let name: string = 'siteurlexemple.com';
+export let link: string;
 </script>
 
 <div class="container">
     <nav>
         <label for="search">
-            <input type="text" value={name} autocomplete="off" id="search">
+            <input type="text" value='{link}.com' autocomplete="off" id="search">
         </label>
     </nav>
 </div>
@@ -13,13 +13,13 @@ export let name: string = 'siteurlexemple.com';
 <style>
 .container {
     height: 100%;
-    background-color: #4A4A4A64;
-    backdrop-filter: blur(20px);
+    background-color: var(--dark-fullscreen);
+    backdrop-filter: blur(var(--blur));
 }
 nav {
     width: 100%;
     height: var(--nav-height);
-    background-color: #2C2C2BCC;
+    background-color: var(--dark-title-bar);
     display: flex;
     align-items: center;
     justify-content: center;

@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      nodemailer:
+        specifier: ^6.9.15
+        version: 6.9.15
     devDependencies:
       '@sveltejs/adapter-auto':
         specifier: ^3.0.0
@@ -20,6 +24,9 @@ importers:
       '@types/eslint':
         specifier: ^9.6.0
         version: 9.6.1
+      '@types/nodemailer':
+        specifier: ^6.4.16
+        version: 6.4.16
       eslint:
         specifier: ^9.0.0
         version: 9.10.0
@@ -392,6 +399,9 @@ packages:
 
   '@types/node@22.7.6':
     resolution: {integrity: sha512-/d7Rnj0/ExXDMcioS78/kf1lMzYk4BZV8MZGTBKzTGZ6/406ukkbYlIsZmMPhcR5KlkunDHQLrtAVmSq7r+mSw==}
+
+  '@types/nodemailer@6.4.16':
+    resolution: {integrity: sha512-uz6hN6Pp0upXMcilM61CoKyjT7sskBoOWpptkjjJp8jIMlTdc3xG01U7proKkXzruMS4hS0zqtHNkNPFB20rKQ==}
 
   '@typescript-eslint/eslint-plugin@8.5.0':
     resolution: {integrity: sha512-lHS5hvz33iUFQKuPFGheAB84LwcJ60G8vKnEhnfcK1l8kGVLro2SFYW6K0/tj8FUhRJ0VHyg1oAfg50QGbPPHw==}
@@ -849,6 +859,10 @@ packages:
 
   natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
+
+  nodemailer@6.9.15:
+    resolution: {integrity: sha512-AHf04ySLC6CIfuRtRiEYtGEXgRfa6INgWGluDhnxTZhHSKvrBu7lc1VVchQ0d8nPc4cFaZoPq8vkyNoZr0TpGQ==}
+    engines: {node: '>=6.0.0'}
 
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
@@ -1388,7 +1402,10 @@ snapshots:
   '@types/node@22.7.6':
     dependencies:
       undici-types: 6.19.8
-    optional: true
+
+  '@types/nodemailer@6.4.16':
+    dependencies:
+      '@types/node': 22.7.6
 
   '@typescript-eslint/eslint-plugin@8.5.0(@typescript-eslint/parser@8.5.0(eslint@9.10.0)(typescript@5.6.2))(eslint@9.10.0)(typescript@5.6.2)':
     dependencies:
@@ -1875,6 +1892,8 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
+  nodemailer@6.9.15: {}
+
   normalize-path@3.0.0: {}
 
   optionator@0.9.4:
@@ -2094,8 +2113,7 @@ snapshots:
 
   typescript@5.6.2: {}
 
-  undici-types@6.19.8:
-    optional: true
+  undici-types@6.19.8: {}
 
   uri-js@4.4.1:
     dependencies:

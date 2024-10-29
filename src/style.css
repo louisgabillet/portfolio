@@ -1,4 +1,13 @@
 :root {
+    --mono1: #FFF;
+    --mono2: #2C2B29;
+    --mono3: #2C2B29;
+    --mono4: #A4A4A5;
+    --mono5: #42423F;
+    --mono6: #72716F;
+    --mono7: #888;
+    --mono8: #333;
+
     --color-text: #FFF;
     --color-text-diff: #000;
     --color-bg: #F6F6F65C;
@@ -9,7 +18,33 @@
     --color-btn-reduce: #F3BF4E;
     --color-btn-fullscreen: #61C555;
 
-    --blur: 8.5rem;
+    --dark-header-view-1: #1E1E1ECC; /* CC = 80%; */
+    --dark-header-view-2: #2852AD14; /* 14 = 8% */
+    --dark-selection-focused-1: #0A82FFBF; /* BF = 75% */
+    --dark-selection-focused-2: #0A82FF; 
+    --dark-selection-unfocused-1: #FFFFFF1A; /* 1A = 10% */
+    --dark-selection-unfocused-2: #282828A6 /* A6 = 65% */
+
+    /* linear-gradient only on background: ... */
+    --dark-header-view: linear-gradient(var(--dark-header-view-1), var(--dark-header-view-1)), linear-gradient(var(--dark-header-view-2), var(--dark-header-view-2));
+    --dark-selection-focused: linear-gradient(var(--dark-selection-focused-1), var(--dark-selection-focused-1)), linear-gradient(var(--dark-selection-focused-2), var(--dark-selection-focused-2)); 
+    --dark-selection-unfocused: linear-gradient(var(--dark-selection-unfocused-1), var(--dark-selection-unfocused-1)), linear-gradient(var(--dark-selection-unfocused-2), var(--dark-selection-unfocused-2)); 
+    --dark-menu: #28282894; /* 94 = 58% */
+    --dark-popover: #00000047; /* 47 = 28% */
+    --dark-fullscreen: #28282880; /* 80 = 50£ */
+    --dark-sidebar: #00000073; /* 73 = 45% */
+    --dark-hud: #28282880; /* 80 = 50% */
+    --dark-title-bar: #3C3C3CCC; /* CC = 80% */
+    --dark-tooltip: #00000059; /* 59 = 35% */
+    --dark-under-window-bg: #00000073; /* 73 = 45% */
+
+    --icon-ratio: 32px;
+    --font-ratio: 8px;
+
+    --icon-size: var(--icon-ratio);
+    --font-size: var(--font-ratio);
+
+    --blur: 30px;
 }
 * {
     margin: 0;
@@ -28,4 +63,40 @@ button {
 }
 .grecaptcha-badge { 
     visibility: hidden; 
+}
+.bg-fullscreen {
+    transform: translateX(-100%);
+}
+#dock.bg-fullscreen {
+    transform: translate(-50%, 110%) !important;
+}
+.reduced-page {
+    max-width: var(--icon-size);
+    aspect-ratio: 1/1;
+    overflow: hidden;
+    display: grid;
+    place-content: center;
+    margin-inline: 2px;
+    position: relative;
+}
+.reduced-page > div {
+    --ratio: 4/3;
+    aspect-ratio: var(--ratio);
+    /*pointer-events: none;*/ 
+    z-index: 1;
+}
+.reduced-page img {
+    width: calc(var(--icon-size) / 2.5);
+    aspect-ratio:  1/1;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+.reduced-page > .ratio-width {
+    width: calc(var(--icon-size) * 10);
+}
+.reduced-page > .ratio-height {
+    height: calc(var(--icon-size) * 10);
 }

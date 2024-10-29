@@ -3,7 +3,7 @@ export let name: string = 'About Me';
 
 const notes = [
     {name: 'About Me', update_date: '10/16/2024', content: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat rem, quidem harum ratione at omnis officiis architecto iste aut adipisci obcaecati perferendis tempora. Nisi, natus laudantium. Temporibus, officia assumenda voluptates animi, delectus modi quaerat fuga iste pariatur illo suscipit! Itaque rerum necessitatibus facere. Eligendi, blanditiis tempore explicabo culpa cum animi'},
-    {name: 'Notes test', update_date: '10/16/2024', content: 'a note test to see.'},
+    {name: 'Notes test', update_date: '10/16/2024', content: 'a note.'},
 ];
 
     const options: Record<string, string> = {
@@ -27,7 +27,7 @@ $: activeNote = notes.find((note) => note.name === activeName) ?? {name: '', upd
     <div class="selection">
         {#each notes as note }
             <button class="infos" id={note?.name === activeName ? 'focused' : ''} data-name={note.name} on:click={changeNote}>
-                <h3>{note.name}</h3>
+                <h3 class="truncate">{note.name}</h3>
                 <div class="flex">
                     <h4>{note.update_date}</h4>
                     <p class="truncate grey">{note.content}</p>
@@ -55,8 +55,9 @@ h3, h4, p {
     color: var(--color-text);
 }
 h3 {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--font-size);
+    font-weight: 500;
+    width: 100%;
 }
 h4 {
     font-weight: normal;
@@ -69,9 +70,9 @@ h4 {
 }
 .truncate {
     overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: start;
 }
 #focused {
     background-color: var(--yellow);
@@ -81,7 +82,9 @@ h4 {
     color: #D1C7A5;
 }
 .flex {
+    width: 100%;
     display: flex;
+    gap: 4px;
 }
 .container {
     --yellow: #998333;
@@ -101,10 +104,11 @@ h4 {
     padding: .5rem;
 }
 .text h2 {
-    font-size: 1.125rem;
+    font-size: calc(var(--font-size) + 4px);
 }
 .text p {
-    font-size: .75rem;
+    /*font-size: .75rem;*/
+    font-size: var(--font-size);
 }
 header {
     background-color: #22211F;
@@ -112,7 +116,7 @@ header {
     height: var(--nav-height);
 }
 .selection {
-    width: 35%;
+    width: 6rem;
     height: 100%;
     background-color: #22211F;
     border-right: 1px solid black;

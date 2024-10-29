@@ -1,22 +1,34 @@
-<script lang="ts" context='module'>
-import { enhance } from "$app/forms";
+<script lang="ts">
+	import { PUBLIC_SITE_KEY } from "$env/static/public";
 
-const key = '6LccwGcqAAAAADpoFBfMu1yt9NU74CkTfTLvUIdZ';
-let email: string = 'gabillet.louis@gmail.com', cc: string, subject: string, from: string = '';
-
-declare const grecaptcha: any;
+const key = PUBLIC_SITE_KEY;
+let email: string = 'gabillet.louis@gmail.com', cc: string, subject: string, from: string = '', text: string = '';
 
 const onSubmit = async () => {
-        grecaptcha.ready(function() {
-          grecaptcha.execute(key, {action: 'submit'}).then(function(token: string) {
+        console.log(grecaptcha);
+    grecaptcha.ready(function() {
+        grecaptcha.execute(key, {action: 'submit'}).then(async function(token: string) {
             console.log(typeof grecaptcha);
-            fetch('?/email', {
+            const res = await fetch('?/email', {
                 method: 'POST',
-                body: JSON.stringify({ token, email, cc, subject, from }),
+                body: JSON.stringify({ token, email, cc, subject, from, text }),
             })
+            const result = await res?.json();
+
+            if (result.type === 'success') {
+                cc = '';
+                subject = '';
+                from = '';
+                text = '';
+            } else {
+                console.log('Failed to send message. Please Try again');
+            }
         });
-        });
-      }
+    });
+}
+</script>
+<script lang='ts' context='module'>
+declare const grecaptcha: any;
 </script>
 
 <svelte:head>
@@ -28,23 +40,23 @@ const onSubmit = async () => {
         <button type="submit">Submit</button>
     </nav>
     <div class="container">
-            <div class="line">
-                <p>To :</p>
-                <input type="text" bind:value={email} id='to' name='to' disabled>
-            </div>
-            <div class="line">
-                <p>Cc :</p>
-                <input type="text" bind:value={cc} id='cc' name='cc'>
-            </div>
-            <div class="line">
-                <p>Subject :</p>
-                <input type="text" bind:value={subject} id='subject' name='subject'>
-            </div>
-            <div class="line">
-                <p>From :</p>
-                <input type="text" bind:value={from} id='from' name='from'>
-            </div>
-        <textarea name="content" id="content"></textarea>
+        <div class="line">
+            <p>To :</p>
+            <input type="text" bind:value={email} id='to' name='to' disabled>
+        </div>
+        <div class="line">
+            <p>Cc :</p>
+            <input type="text" bind:value={cc} id='cc' name='cc'>
+        </div>
+        <div class="line">
+            <p>Subject :</p>
+            <input type="text" bind:value={subject} id='subject' name='subject'>
+        </div>
+        <div class="line">
+            <p>From :</p>
+            <input type="text" bind:value={from} id='from' name='from'>
+        </div>
+        <textarea name="content" id="content" bind:value={text}></textarea>
         <span class="captcha-text">This site is protected by reCAPTCHA and the Google <a target="_blank" href="https://policies.google.com/privacy">Privacy Policy</a> and
             <a target="_blank" href="https://policies.google.com/terms">Terms of Service</a> apply.
         </span>
