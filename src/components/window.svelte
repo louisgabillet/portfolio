@@ -1,15 +1,18 @@
 <script lang="ts">
 import { createEventDispatcher, onDestroy, onMount } from 'svelte';
-	import Safari from './safari.svelte';
-	import Notes from './notes.svelte';
-	import Mail from './mail.svelte';
-	import Finder from './finder.svelte';
-	import Settings from './settings.svelte';
+import Safari from './safari.svelte';
+import Notes from './notes.svelte';
+import Mail from './mail.svelte';
+import Finder from './finder.svelte';
+import Settings from './settings.svelte';
+import Music from './music.svelte';
+import Contact from './contact.svelte';
 
 export let name;
 export let order: string[];
 export let safariLink: string = '';
-export let open: (name: string, link: string) => void = () => {};
+export let finderPath: string[] = ['louisgabillet']
+export let open: (app: any) => void = () => {};
 export let destroy: (name: string) => void;
 export let changeFocus: (name: string) => void;
 
@@ -56,6 +59,8 @@ let uniqueName: string;
 let id: number;
 let isReduceTransi: boolean = false;
 
+const actionElements = [ 'input', 'button', 'label' ];
+
 
 // Trigger based on condition
 $: if (isMouseMove) { openWindow?.classList.remove('transition') } else { openWindow?.classList.add('transition') };
@@ -89,8 +94,10 @@ const onMouseDown = (e: MouseEvent) => {
     mousePos = { mouseXStart: e.clientX, mouseYStart: e.clientY};
 
     const isMoving = Object.values(resizeSides)?.filter((side) => side)?.length <= 0; // Forced to do that cause isWindowMoving doesnt update fast enough
-    const marginForMove = 32 + 6 // 2rem + padding(4px) + border(2px) ;
-    if (isMoving && mousePos.mouseYStart > rect?.top + marginForMove) return;
+    const marginForMove = 32 + 6 // 2rem + padding(4px) + border(2px);
+    const isTargetActionEl = (e?.target as HTMLElement)?.tagName?.toLowerCase();
+
+    if (isMoving && mousePos.mouseYStart > rect?.top + marginForMove || actionElements?.includes(isTargetActionEl)) return;
 
     window.addEventListener('mousemove', mouseMoveHandler)
     window.addEventListener('mouseup', mouseUpHandler)
@@ -244,12 +251,12 @@ const changeResizeCursor = (e: MouseEvent) => {
 }
 
 const fullscreen = () => {
-    const tbContainer = document.querySelector('#top-bar .tb-container') as HTMLDivElement;
+    const topBar = document.getElementById('top-bar') as HTMLDivElement;
     const bgImg = document.querySelector('.background img') as HTMLDivElement;
     const iconPlacement = document.getElementById('icons-placement') as HTMLDivElement;
     const dock = document.getElementById('dock') as HTMLDivElement;
 
-    const all = [tbContainer, bgImg, iconPlacement, dock];
+    const all = [topBar, bgImg, iconPlacement, dock];
 
     if (isFullScreen) {
         all?.forEach((el: HTMLElement) => {
@@ -289,7 +296,7 @@ const addOrRemoveElDock = (isReduce: boolean, ratio: number, duration: number) =
         newAppImg.src = `/src/lib/assets/images/icon/${name}.png`
 
         newApp.appendChild(newAppChild);
-        dock?.appendChild(newApp);
+        dock?.insertBefore(newApp, dock?.lastElementChild);
 
         setTimeout(() => { newApp.appendChild(newAppImg) }, duration)
     }
@@ -310,7 +317,9 @@ const reduceWindow = () => {
         }, duration)
     } else {
         scale = 32 / (offX > offY ? offX : offY);
-        const lastEl = document.getElementById('dock')?.lastElementChild;
+        const allReduced = document.querySelectorAll('#dock .reduced-page');
+        //const lastEl = document.getElementById('dock')?.lastElementChild;
+        const lastEl = allReduced?.[allReduced?.length - 1] ?? null;
         const rect = lastEl?.getBoundingClientRect();
         const parentRect = parent?.getBoundingClientRect();
         if (parentRect && rect) {
@@ -360,13 +369,17 @@ const reduceWindow = () => {
         {#if name === 'Notes'}
             <Notes />   
         {:else if name === 'Finder'}
-            <Finder {open} {openWindow}/>
+            <Finder {open} {openWindow} {finderPath}/>
         {:else if name === 'Mail'}
             <Mail />
         {:else if name === 'Safari'}
-            <Safari link={safariLink} />
+            <Safari link={safariLink}/>
         {:else if name === 'System_Settings'}
             <Settings />
+        {:else if name === 'Music'}
+            <Music />
+        {:else if name === 'Contact'}
+            <Contact />
         {/if}
     </div>
 </div>
@@ -477,7 +490,8 @@ const reduceWindow = () => {
 .action-btn:hover #full-screen-btn {
     background-color: var(--color-btn-fullscreen);
 }
-.app-window:focus .content {
+.app-window:focus .content,
+.app-window:focus-within .content {
     box-shadow: 0 0 5px 5px rgba(0,0,0,.2);
 }
 .app-window:focus #full-screen-btn,

@@ -38,13 +38,14 @@
     --dark-tooltip: #00000059; /* 59 = 35% */
     --dark-under-window-bg: #00000073; /* 73 = 45% */
 
-    --icon-ratio: 32px;
+    --icon-ratio: 40px;
     --font-ratio: 8px;
 
     --icon-size: var(--icon-ratio);
-    --font-size: var(--font-ratio);
+    --font-size: 12px;
 
     --blur: 30px;
+    --width-sidebar: 7rem;
 }
 * {
     margin: 0;
@@ -68,25 +69,28 @@ button {
     transform: translateX(-100%);
 }
 #dock.bg-fullscreen {
-    transform: translate(-50%, 110%) !important;
+    transform: translate(-50%, 115%) !important;
 }
 .reduced-page {
     max-width: var(--icon-size);
     aspect-ratio: 1/1;
     overflow: hidden;
-    display: grid;
-    place-content: center;
     margin-inline: 2px;
     position: relative;
+    flex: 1 1 auto;
 }
 .reduced-page > div {
     --ratio: 4/3;
     aspect-ratio: var(--ratio);
     /*pointer-events: none;*/ 
     z-index: 1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 .reduced-page img {
-    width: calc(var(--icon-size) / 2.5);
+    width: 40%;
     aspect-ratio:  1/1;
     position: absolute;
     bottom: 0;
@@ -95,8 +99,8 @@ button {
     z-index: 2;
 }
 .reduced-page > .ratio-width {
-    width: calc(var(--icon-size) * 10);
+    width: 1000%;
 }
 .reduced-page > .ratio-height {
-    height: calc(var(--icon-size) * 10);
+    height: 1000%;
 }

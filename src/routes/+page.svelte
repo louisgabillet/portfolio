@@ -5,15 +5,20 @@ import iMac from '$lib/assets/images/mac/Apple Imac Pro.png';
 //import iMac from '$lib/assets/images/mac/MacBook Pro 14" - 5th Gen - Silver.png';
 import iphone from '$lib/assets/images/iphone/iPhone_16_White_Portrait.png';
 import { onMount } from 'svelte';
-import { fade } from 'svelte/transition';
+import { fade, scale } from 'svelte/transition';
 import Window from '../components/window.svelte';
-	import Topbar from '../components/topbar.svelte';
+import Topbar from '../components/topbar.svelte';
+import { goto } from '$app/navigation';
 
 interface Apps {
     name: string, 
     app_name?: string, 
     src: string, 
-    usable?: boolean;
+    usable?: boolean,
+    action?: () => void,
+    redirect_link?: string,
+    safari_link?: string,
+    path?: string[],
 };
 interface TopBar {
     name: string,
@@ -30,25 +35,42 @@ $: device = windowWidth > maxWidth ? iMac : iphone;
 let isHelloScreen: boolean = true;
 
 const desktopApps: Apps[] = [
-    { name: 'My Work', app_name:'Finder', src: '/src/lib/assets/images/icon/Finder.png' },
+    { name: 'Projects', app_name:'Finder', src: '/src/lib/assets/images/icon/Folder.png', path: ['louisgabillet', 'Projects'] },
     { name: 'About Me', app_name: 'Notes', src: '/src/lib/assets/images/icon/Notes.png' },
     { name: 'Mail', app_name: 'Mail', src: '/src/lib/assets/images/icon/Mail.png' },
 ];
 const dockApps: Apps[]  = [
     { name: 'Finder', src: '/src/lib/assets/images/icon/Finder.png', usable: true},
+    { name: 'Launchpad', src: '/src/lib/assets/images/icon/Launchpad.png', usable: true, action: () => { openLaunchpad() }},
     { name: 'Notes', src: '/src/lib/assets/images/icon/Notes.png', usable: true },
     { name: 'Mail', src: '/src/lib/assets/images/icon/Mail.png', usable: true },
-    { name: 'Messages', src: '/src/lib/assets/images/icon/Messages.png' },
-    { name: 'Photos', src: '/src/lib/assets/images/icon/Photos.png' },
+    //{ name: 'Messages', src: '/src/lib/assets/images/icon/Messages.png' },
+    //{ name: 'Photos', src: '/src/lib/assets/images/icon/Photos.png' },
+    { name: 'Contact', src: '/src/lib/assets/images/icon/Contact.png', usable: true },
     { name: 'Safari', src: '/src/lib/assets/images/icon/Safari.png', usable: true },
+    { name: 'Music', src: '/src/lib/assets/images/icon/Music.png', usable: true },
+    { name: 'System Settings', app_name: 'System_Settings', src: '/src/lib/assets/images/icon/System_Settings.png', usable: true },
+    { name: 'Projects', app_name: 'Finder', src: '/src/lib/assets/images/icon/Folder.png', usable: true, path: ['louisgabillet', 'Projects'] },
+    { name: 'Bin', app_name: 'Trash_Empty', src: '/src/lib/assets/images/icon/Trash_Empty.png' },
+];
+const launchpadApps: Apps[]  = [
+    { name: 'Finder', src: '/src/lib/assets/images/icon/Finder.png', usable: true},
+    { name: 'Notes', src: '/src/lib/assets/images/icon/Notes.png', usable: true },
+    { name: 'Mail', src: '/src/lib/assets/images/icon/Mail.png', usable: true, redirect_link: 'mailto:gabillet.louis@gmail.com' },
+    { name: 'Contact', src: '/src/lib/assets/images/icon/Contact.png', usable: true },
+    { name: 'Safari', src: '/src/lib/assets/images/icon/Safari.png', usable: true, redirect_link: 'https://www.google.com/' },
     { name: 'System Settings', app_name: 'System_Settings', src: '/src/lib/assets/images/icon/System_Settings.png', usable: true },
 ];
+let launchpadSearchBar: string;
+$: launchpadAppsSearched = launchpadSearchBar ? launchpadApps.filter(app => app?.name?.toLowerCase()?.includes(launchpadSearchBar)) : launchpadApps;
 const topBarText: TopBar[] = [
-    { name: 'Finder', text: ['Files', 'Edit', 'View', 'Go', 'Window', 'Help'] },
-    { name: 'Notes', text: ['Files', 'Edit', 'Format', 'View', 'Window', 'Help'] },
-    { name: 'Mail', text: ['Files', 'Edit', 'View', 'Mailbox', 'Message', 'Format', 'Window', 'Help'] },
-    { name: 'Safari', text: ['Files', 'Edit', 'View', 'History', 'Bookmarks', 'Window', 'Help'] },
+    { name: 'Finder', text: ['File', 'Edit', 'View', 'Go', 'Window', 'Help'] },
+    { name: 'Notes', text: ['File', 'Edit', 'Format', 'View', 'Window', 'Help'] },
+    { name: 'Mail', text: ['File', 'Edit', 'View', 'Mailbox', 'Message', 'Format', 'Window', 'Help'] },
+    { name: 'Safari', text: ['File', 'Edit', 'View', 'History', 'Bookmarks', 'Window', 'Help'] },
     { name: 'System Settings', app_name: 'System_Settings', text: ['Files', 'Edit', 'View', 'Window', 'Help'] },
+    { name: 'Music', text: ['File', 'Edit', 'Song', 'View', 'Controls', 'Account', 'Help'] },
+    { name: 'Contact', text: ['File', 'Edit', 'View', 'Card', 'Window', 'Help'] },
 ]
 let activeAppName: string = 'Finder';
 let windowOrder: string[] = [];
@@ -60,15 +82,21 @@ let uniqueName: string;
 
 $: if (windowOrder?.length === 0) activeAppName = 'Finder';
 
+let isLaunchpad: boolean =  false;
+const openLaunchpad = () => {
+    isLaunchpad = !isLaunchpad;
+}
 
-const powerOnDevice = (device: HTMLElement) => {
-    const helloScreen = device?.querySelector('.hello-screen');
-    if (!device || !helloScreen) return;
+const powerOnDevice = () => {
+    const device = document.getElementById('device') as HTMLElement;
+    const blackScreen = device?.querySelector('.black-screen') as HTMLDivElement;
+    if (!device || !blackScreen) return;
 
     device.style.removeProperty('transform');
-    isHelloScreen = false;
+    //isHelloScreen = false;
 
-    device?.removeEventListener('click', () => { powerOnDevice(device) });
+    blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
+    device?.removeEventListener('click', powerOnDevice );
 };
 const topBarTextChange = (e: any) => {
     const target = e?.target?.closest('.app');
@@ -101,9 +129,20 @@ const onBlur = (appName: string) => {
     const remove = windowOrder?.includes(appName);
     if (remove) windowOrder = windowOrder?.filter((name) => name !== appName);
 }
-const openOrCloseWindow = (name: string, link: string = '') => {
-    const nbrAppPageOpen = document?.querySelectorAll(`.app-window[data-app-name='${name}']`)?.length;
-    uniqueName = `${name}-${nbrAppPageOpen + 1}`;
+//const openOrCloseWindow = (name: string, link: string = '') => {
+const openOrCloseWindow = (app: Apps) => {
+    const {name, app_name, safari_link, path } = app;
+    const appOrCustom = app_name ?? name;
+    console.log(appOrCustom, app_name, name)
+    const nbrAppPageOpen = document?.querySelectorAll(`.app-window[data-app-name='${appOrCustom}']`)?.length;
+    uniqueName = `${appOrCustom}-${nbrAppPageOpen + 1}`;
+
+    if (isRedirectOn) {
+        const link = launchpadApps?.find(app => ( app?.name || app?.app_name ) === name )?.redirect_link;
+        if (link) window.open(link, '_blank');
+    }
+
+    if (isLaunchpad) isLaunchpad = false;
 
     //if (appWindow || !app) return;
     //if (!open) onBlur(name);
@@ -114,9 +153,11 @@ const openOrCloseWindow = (name: string, link: string = '') => {
     const child = new Window({
         target: parent,
         props: {
-            name: name,
-            safariLink: link,
-            open: (name: string, link: string = '') => { openOrCloseWindow(name, link) },
+            name: appOrCustom,
+            safariLink: safari_link ?? '',
+            //open: (name: string, link: string = '') => { openOrCloseWindow(name, link) },
+            finderPath: path ?? ['louisgabillet'],
+            open: (app: Apps) => { openOrCloseWindow(app) },
             destroy: (name: string) => { destroy(name) },
             changeFocus: (name: string) => { changeFocus(name) },
             order: windowOrder,
@@ -130,22 +171,32 @@ const destroy = (name: string) => {
     comp = comp?.filter((el: any) => el?.name !== name);
     onBlur(name)
 }
+let isRedirectOn: boolean = false;
+let opacity: string = '0';
 onMount(async () => {
     const device = document.getElementById('device');
-    device?.addEventListener('click', () => { powerOnDevice(device) })
+    device?.addEventListener('click', powerOnDevice )
+
+    isRedirectOn = localStorage.getItem('redirect_outside') === 'true'; 
+    opacity = localStorage.getItem('opacity') ?? '0';
 
     const allElements = [
         {name: 'desktop', is_icon: true, html: document.getElementById('desktop') },
         {name: 'dock', is_icon: true, html: document.getElementById('dock') },
         {name: 'screen', html: document.getElementById('screen') },
+        {name: 'background', is_img: true, html: document.querySelector('#screen .background img') as HTMLImageElement },
     ];
 
     allElements?.forEach(data => {
         const value = localStorage.getItem(data.name);
+        if (!value || !data?.html) return;
+        if (data?.is_img) {
+            data.html.src = JSON.parse(value)?.src;
+            return
+        }
         const path = data?.is_icon ? 'icon_size' : 'font_size';
         const prop = data?.is_icon ? '--icon-size' : '--font-size';
-        if (data.html && value) data.html.style.setProperty(prop, `${JSON.parse(value)?.[path]}px`);
-        console.log(data.html, value, path)
+        if (value) data.html.style.setProperty(prop, `${JSON.parse(value)?.[path]}px`);
     }) 
 })
 </script>
@@ -157,8 +208,31 @@ onMount(async () => {
         <img src={device} alt="">
         <div id="screen">
             <div>
-                {#if isHelloScreen}
-                    <div class="hello-screen" transition:fade={{  duration: 500 }}></div> 
+                <!--<div class="black-screen" transition:fade={{  duration: 500 }}></div> -->
+                <div class="black-screen"></div> 
+                {#if isLaunchpad}
+                   <div class="launchpad" transition:scale={{ duration: 320, start: 1.1,  }}>
+                        <input type="text" placeholder="Search" bind:value={launchpadSearchBar}>
+                        <div class="lp-container" role="button" tabindex="0" on:focus={() => isLaunchpad = false }>
+                            {#each launchpadAppsSearched as app} 
+                                <div class="app-container">
+                                    <button class="app"
+                                        data-name-app={app?.app_name || app?.name}
+                                        on:click={(e) => { topBarTextChange(e); openOrCloseWindow(app) }}
+                                    > 
+                                        <img class='icon' src={app.src} alt="">
+                                    </button>
+                                    <button class="app"
+                                        data-name-app={app?.app_name || app?.name}
+                                        on:click={(e) => { topBarTextChange(e) }}
+                                        on:dblclick={() => { openOrCloseWindow(app) }}
+                                    > 
+                                        <p><span>{app.name}</span></p>
+                                    </button>
+                                </div>
+                            {/each}
+                        </div>
+                    </div> 
                 {/if}
                 <Topbar {activeTopBar} />
                 <div class="background">
@@ -171,14 +245,14 @@ onMount(async () => {
                                     <button class="app"
                                         data-name-app={app?.app_name || app?.name}
                                         on:click={(e) => { topBarTextChange(e) }}
-                                        on:dblclick={() => { openOrCloseWindow(app?.app_name || app?.name) }}
+                                        on:dblclick={() => { openOrCloseWindow(app) }}
                                     > 
                                         <img class='icon' src={app.src} alt="">
                                     </button>
                                     <button class="app"
                                         data-name-app={app?.app_name || app?.name}
                                         on:click={(e) => { topBarTextChange(e) }}
-                                        on:dblclick={() => { openOrCloseWindow(app?.app_name || app?.name) }}
+                                        on:dblclick={() => { openOrCloseWindow(app) }}
                                     > 
                                         <p><span>{app.name}</span></p>
                                     </button>
@@ -187,15 +261,24 @@ onMount(async () => {
                     </div>
                 </div>
                 <div id="dock">
-                    {#each dockApps as app}
+                    {#each dockApps as app, i}
+                        {#if i === dockApps?.length - 2}
+                            <div class="separator"></div>
+                        {/if}
                         <button class="app {!app?.usable ? 'unusable' : ''}"
                             data-name-app={app?.app_name || app?.name}
-                            on:click={(e) => { topBarTextChange(e); openOrCloseWindow(app?.app_name || app?.name) }}
+                            on:click={(e) => { 
+                                if (app?.action) { app?.action(); return };
+                                topBarTextChange(e); openOrCloseWindow(app) }}
                         >  
                             <img class='icon' src={app.src} alt="">
-                            {#if isOpen(app?.name, windowOrder) || app.name == 'Finder'}
+                            {#if isOpen((app?.app_name || app?.name), windowOrder) || app.name == 'Finder'}
                                 <span class="dot"></span>
                             {/if}
+                            <!--<div class="float-name">
+                                <p>{app?.name}</p>
+                                <div class="triangle"></div>
+                            </div>-->
                         </button>
                     {/each}
                 </div>
@@ -228,13 +311,10 @@ main {
     z-index: 1000;
 }
 #screen {
-    --icon-ratio: var(--icon-size-desktop);
-    --font-size-ratio: 6px;
-    /*--icon-width: calc(var(--icon-ratio) * 2);*/
-    --icon-width: var(--icon-ratio);
     /* --icon-width: 32px; /* Realistic one. But font too small if also realist*/
     --nav-color: #F6F6F65C;
     --nav-blur: 8.5rem;
+    --width: calc(var(--icon-size) * 2);
     position: absolute;
     top: 0;
     left:  0;
@@ -247,7 +327,7 @@ main {
 .unusable {
 pointer-events: none;
 }
-.hello-screen {
+.black-screen {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -256,6 +336,40 @@ pointer-events: none;
     height: 102%;
     background-color: black;
     z-index: 1000;
+    transition: all .32s ease;
+}
+.launchpad {
+    --width: calc(var(--icon-ratio) * 1.5);
+    --icon-size: var(--width);
+    width: 100%;
+    height: 100%;
+    background-color: #4A4A4A63;
+    backdrop-filter: blur(50px);
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 998;
+}
+.launchpad input {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    outline: 1px solid #414141;;
+    border: none;
+    color: white;
+    background: transparent;
+    border-radius: 1px;
+}
+.lp-container {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    row-gap: 1rem;
+    padding: 50px 8rem calc(var(--width) + 30px) 8rem;
+    margin: 0 auto;
 }
 .background {
     width: 100%;
@@ -282,6 +396,7 @@ pointer-events: none;
 background-size: 100%;*/
     display: grid;
     grid-template-rows: auto 1fr;
+    overflow: hidden;
 }
 #desktop {
     transition: transform .32s ease;
@@ -292,18 +407,15 @@ background-size: 100%;*/
     overflow: hidden;
 }
 #icons-placement {
-    --column-width: calc(var(--icon-size) + calc(var(--icon-size) / 1.5));
-    --width: calc(var(--icon-size) * 1.5);
+    --width: calc(var(--icon-size) * 2);
     height: 100%;
     display: flex;
-    width: 90%;
+    flex-wrap: wrap;
+    width: 84%;
     /*display: grid;
-    max-width: 90%;
-    margin: 0 auto;
-    grid-template-columns: repeat(auto-fill, var(--column-width));
-    grid-template-rows: repeat(auto-fill, calc(var(--icon-width) + 40px));*/
-    gap: 5px;
-    padding: 8px 0 var(--max-width);
+    grid-template-columns: repeat(auto-fill, minmax(var(--width), 1fr));*/
+    gap: 4px;
+    padding: 4px 0 calc(var(--icon-ratio) * 2);
     transition: transform .32s ease;
 }
 #dock {
@@ -311,13 +423,14 @@ background-size: 100%;*/
     --borr: .6rem;
     box-shadow: 0 0 6px 0 var(--color-shadow);
     border-radius: var(--borr);
-    background-color: var(--nav-color); 
-    backdrop-filter: blur(var(--nav-blur));
+    background-color: #4A4A4A63; 
+    backdrop-filter: blur(50px);
     display: flex;
-    width: fit-content;
-    overflow: hidden;
-    margin: 0 auto 2px auto;
-    padding: 2px 2px 4px 2px;
+    width: max-content;
+    max-width: 90%;
+    /*overflow: hidden;*/
+    margin: 0 auto 4px auto;
+    padding: 2px 2px 2px 2px;
     position: absolute;
     bottom: 2px;
     left: 50%;
@@ -331,7 +444,16 @@ background-size: 100%;*/
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+.launchpad .app-container {
+    width: 100%;
+}
+.launchpad .app {
+    max-width: 100%;
+    font-weight: 400;
 }
 .app {
     --borr: 2px;
@@ -341,22 +463,58 @@ background-size: 100%;*/
     text-shadow: 0 1px 1px var(--color-shadow);
     border-radius: var(--borr);
     position: relative;
+    /*width: 100%;*/
+    max-width: var(--width);
 }
 #dock .app {
-    width: var(--icon-size);
+    /*width: var(--icon-size);*/
+    flex: 1 1 var(--icon-size);
+    max-width: var(--icon-size);
+}
+.float-name {
+    position: absolute;
+    top: -1.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    display: none;
+    padding: 2.5px 10px;
+    background-color: #4A4A4A63; 
+    backdrop-filter: blur(50px);
+    border-radius: 2px;
+}
+.app:hover .float-name {
+    display: inline;
 }
 .dot {
-    width: 2px;
-    height: 2px;
-    background-color: rgba(0, 0, 0, .5);
+    width: 3px;
+    height: 3px;
+    background-color: #7C7C7C;
     border-radius: 50%;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 25%);
+}
+.separator {
+    width: 1px;
+    background-color: #414141;
+    margin: 2.5px calc(var(--icon-size) / 5);
+    flex: 0 0 auto;
+}
+.triangle {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #4A4A4A63;
     position: absolute;
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
 }
 .app > p {
-    --font-size: calc(var(--icon-size) / 4);
+    --font-size: calc(var(--icon-size) / 5); 
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -364,26 +522,25 @@ background-size: 100%;*/
     /* line-height: 1; */
     /*max-height: var(--app-name-max-height);*/
     font-size: var(--font-size);
+    /*display: inline;
+    outline: 2px solid blue;*/
 }
-.app > p > span {
-    padding: 0 2px;
-    border-radius: var(--borr);
-}
-.app-container:focus-within button img {
-    box-shadow: 0 0 0px 2px #4D4D4D;
+#desktop .app-container:focus-within button img {
+    box-shadow: 0 0 0px 1px #4D4D4D;
     background-color: #0000002E;
 }
-.app-container:focus-within button p span {
-    background-color: #007AFF;
+#desktop .app-container:focus-within button p span {
+    background: var(--dark-selection-focused);
 }
 #icon-placement .app:focus img {
     box-shadow: 0 0 0px 1px var(--color-border);
     border-radius: var(--borr);
 }
-#desktop .icon {
+.icon {
     width: var(--icon-size);
 }
 #dock .icon {
-    width: var(--icon-size);
+    /*width: var(--icon-size);*/
+    width: 100%;
 }
 </style>
