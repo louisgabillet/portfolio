@@ -138,7 +138,7 @@ let openMenu: boolean = false;
     font-size: calc(var(--font-ratio) + 3.6px);
 }
 #top-bar p:nth-child(2) {
-    font-weight: 500;
+    font-weight: 600;
 }
 .f-icon {
     margin-left: auto;

@@ -59,6 +59,8 @@ let uniqueName: string;
 let id: number;
 let isReduceTransi: boolean = false;
 
+let windowWidth: number = 0;
+
 const actionElements = [ 'input', 'button', 'label' ];
 
 
@@ -117,6 +119,23 @@ const onKeyDown = (e:KeyboardEvent) => {
     }
 }
 
+const onPointerDown = (e: PointerEvent) => {
+    const rect = openWindow?.getBoundingClientRect()
+    const height = rect?.top;
+    const startY = e?.clientY - height;
+
+    window.addEventListener('pointermove', pointerMoveHandler);
+    window.addEventListener('pointerup', pointerUpHandler);
+}
+const pointerMoveHandler = (e: PointerEvent) => {
+    if (!parent) return;
+    const percentY = e.clientY / parent?.offsetHeight * 100;
+    size.height = percentY / 100;
+}
+const pointerUpHandler = (e: PointerEvent) => {
+    window.removeEventListener('pointermove', pointerMoveHandler);
+    window.removeEventListener('pointerup', pointerUpHandler);
+}
 const mouseMoveHandler = (e: MouseEvent) => {
     requestAnimationFrame(()=> {
         if (!parent || !openWindow) return; 
@@ -153,7 +172,7 @@ const mouseMoveHandler = (e: MouseEvent) => {
               //moveWhenResizeY = pY <= 0 ? 0 : pY;
 
         pos.percentX = isLeftSide && minWidth ? moveWhenResizeX : isWindowMoving ? pX : percentX;
-        pos.percentY = isTopSide && minHeight ? moveWhenResizeY : isWindowMoving ? pY <= 0 ? 0 : pY : percentY;
+        pos.percentY = isTopSide && minHeight ? moveWhenResizeY : isWindowMoving ? pY <= 0 - id ? 0 - id : pY : percentY;
 
         if (!isWindowMoving) {
             //const isWidthTooLarge = pW > maxWidth,
@@ -345,6 +364,8 @@ const reduceWindow = () => {
 }
 </script>
 
+
+<svelte:window bind:innerWidth={windowWidth}/>
 <div bind:this={openWindow} 
     role="button" 
     tabindex="0" 
@@ -353,7 +374,7 @@ const reduceWindow = () => {
     style="--width: {width}%; --height: {height}%; --top: {percentY + id}%; --left: {percentX + id}%; z-index: {zIndex}; 
     {isReduceTransi ? `--reduce-top: ${reduceY}px; --reduce-left: ${reduceX}px; --scale: ${scale}` : ''}"
     on:focusin={() => { changeFocus(uniqueName) }}
-    on:mousedown={ (e) => { onMouseDown(e) }}
+    on:pointerdown={ (e) => { if (windowWidth > 995) {onMouseDown(e)} else {onPointerDown(e)} }}
     on:keydown={ (e) => { onKeyDown(e) }}
 > 
     {#if reduce}

@@ -7,15 +7,27 @@ interface Wallpapers {
     src: string,
 }
 
-const wallpapers = [
-    {
-        name: 'pictures',
-        data: [
-            {name: 'Ink Cloud',src_name: 'Ink_Cloud.jpg', src: '/src/lib/assets/images/background/Ink_Cloud.jpg' },
-            {name: 'Sonoma Light',src_name: 'Mode_Light.png', src: '/src/lib/assets/images/background/Mode_Light.png' },
-            {name: 'Sonoma Dark',src_name: 'Mode_Dark.png', src: '/src/lib/assets/images/background/Mode_Dark.png' },
-        ]
-    },
+const wallpapers = {
+    pictures : [
+        {name: 'Ink Cloud',src_name: 'Ink_Cloud.jpg', src: '/src/lib/assets/images/background/Ink_Cloud.jpg' },
+        {name: 'Sonoma Light',src_name: 'Mode_Light.png', src: '/src/lib/assets/images/background/Mode_Light.png' },
+        {name: 'Sonoma Dark',src_name: 'Mode_Dark.png', src: '/src/lib/assets/images/background/Mode_Dark.png' },
+        {name: 'Ink Cloud',src_name: 'Ink_Cloud.jpg', src: '/src/lib/assets/images/background/Ink_Cloud.jpg' },
+        {name: 'Sonoma Light',src_name: 'Mode_Light.png', src: '/src/lib/assets/images/background/Mode_Light.png' },
+        {name: 'Sonoma Dark',src_name: 'Mode_Dark.png', src: '/src/lib/assets/images/background/Mode_Dark.png' },
+    ],
+    landscape: [
+        {name: 'Lake & Mountains', src_name: 'lake_mountain.jpg', src: '/src/lib/assets/images/background/lake_mountain.jpg' },
+        {name: 'Stars in Canyon', src_name: 'canyon_sky.jpg', src: '/src/lib/assets/images/background/canyon_sky.jpg' },
+    ]
+}
+const pictures: Wallpapers[] = [
+    {name: 'Ink Cloud',src_name: 'Ink_Cloud.jpg', src: '/src/lib/assets/images/background/Ink_Cloud.jpg' },
+    {name: 'Sonoma Light',src_name: 'Mode_Light.png', src: '/src/lib/assets/images/background/Mode_Light.png' },
+    {name: 'Sonoma Dark',src_name: 'Mode_Dark.png', src: '/src/lib/assets/images/background/Mode_Dark.png' },
+    {name: 'Ink Cloud',src_name: 'Ink_Cloud.jpg', src: '/src/lib/assets/images/background/Ink_Cloud.jpg' },
+    {name: 'Sonoma Light',src_name: 'Mode_Light.png', src: '/src/lib/assets/images/background/Mode_Light.png' },
+    {name: 'Sonoma Dark',src_name: 'Mode_Dark.png', src: '/src/lib/assets/images/background/Mode_Dark.png' },
 ]
 let needReloadToApply: boolean = false;
 let currWallpaper = {name: 'Ink Cloud', src: '/src/lib/assets/images/background/Ink_Cloud.jpg'}
@@ -101,9 +113,7 @@ onMount(() => {
 
     const src = localStorage?.getItem('background');
     if (src) currWallpaper.src = JSON.parse(src)?.src;
-    wallpapers?.forEach(wallpaper => {
-        if (src) currWallpaper.name = wallpaper?.data?.find(bg => bg?.src === JSON.parse(src)?.src)?.name ?? 'Ink Cloud';
-    })
+    if (src) currWallpaper.name = pictures?.find(bg => bg?.src === JSON.parse(src)?.src)?.name ?? 'Ink Cloud';
 
     allElements?.forEach(data => {
         const value = localStorage.getItem(data.name);
@@ -213,16 +223,14 @@ const wrapLine = (name: string, line: Wallpapers[]) => {
                 <img src={currWallpaper?.src} alt="preview">
                 <p>{currWallpaper?.name}</p>
             </div>
-            {#each wallpapers as {name, data}}
-                
-            <div class="line" data-line={name}>
+            <div class="line" data-line='picture'>
                 <div class="info">
-                    <h4>{name?.charAt(0)?.toUpperCase() + name?.slice(1)}</h4>
-                    <button on:click={() => wrapLine(name, data)}>Show All ({data?.length})</button>
+                    <h4>Pictures</h4>
+                    <button on:click={() => wrapLine('picture', pictures)}>Show All ({pictures?.length})</button>
                 </div>
                 <div class="slider">
                     <div class="overflow">
-                        {#each data as bg}
+                        {#each pictures as bg}
                             <button class="wallpaper" on:click={() => changeBg(bg)}>
                                 <img src={bg.src} alt="" class="{bg?.name === currWallpaper?.name ? 'selected' : ''}">
                                 <p>{bg?.name}</p>
@@ -230,8 +238,7 @@ const wrapLine = (name: string, line: Wallpapers[]) => {
                         {/each}
                     </div>
                 </div>
-                </div>
-            {/each}
+            </div>
         {/if} 
     </div>
 </div>
@@ -319,7 +326,7 @@ button {
     text-align: start;
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     border-radius: 2px;
     padding: 2px 4px;
 }

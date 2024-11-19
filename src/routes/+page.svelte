@@ -27,11 +27,11 @@ interface TopBar {
 }
 let comp: any = [];
 
-
+let isFullscreen: boolean = false;
 
 let windowWidth: number;
 const maxWidth: number = 995;
-$: device = windowWidth > maxWidth ? iMac : iphone;
+$: device = windowWidth <= maxWidth ? iphone : iMac;
 let isHelloScreen: boolean = true;
 
 const desktopApps: Apps[] = [
@@ -87,7 +87,11 @@ const openLaunchpad = () => {
     isLaunchpad = !isLaunchpad;
 }
 
+let isOpeningScreen: boolean = false;
+let isPowerOn: boolean = false;
+
 const powerOnDevice = () => {
+
     const device = document.getElementById('device') as HTMLElement;
     const blackScreen = device?.querySelector('.black-screen') as HTMLDivElement;
     if (!device || !blackScreen) return;
@@ -95,8 +99,21 @@ const powerOnDevice = () => {
     device.style.removeProperty('transform');
     //isHelloScreen = false;
 
-    blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
-    device?.removeEventListener('click', powerOnDevice );
+    setTimeout(() => {
+        blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
+        device?.removeEventListener('click', powerOnDevice );
+        isPowerOn = true;
+    }, 500)
+    //setTimeout(() => {
+    //    isOpeningScreen = true;
+    //}, 500)
+    //setTimeout(() => {
+    //    isOpeningScreen = false;
+    //}, 2000)
+    //setTimeout(() => {
+    //    blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
+    //    device?.removeEventListener('click', powerOnDevice );
+    //}, 2500)
 };
 const topBarTextChange = (e: any) => {
     const target = e?.target?.closest('.app');
@@ -204,12 +221,19 @@ onMount(async () => {
 <svelte:window bind:innerWidth={windowWidth}/>
 
 <main>
-    <div id='device' style="transform: scale(.5);">
-        <img src={device} alt="">
-        <div id="screen">
+    <div class="commands">
+        <button on:click={() => { if (isPowerOn) isFullscreen = !isFullscreen }}>{isFullscreen ? '􀅋' : '􀅊'}</button>
+    </div>
+    <div id='device' class="{isFullscreen ? 'fullscreen' : ''}" style="transform: scale(.5)">
+        <img src={device} alt="" style="{isFullscreen ? 'display: none' : ''}">
+        <div id="screen" style="{isFullscreen ? 'padding: 0' : ''}">
             <div>
                 <!--<div class="black-screen" transition:fade={{  duration: 500 }}></div> -->
-                <div class="black-screen"></div> 
+                <div class="black-screen">
+                    {#if isOpeningScreen}
+                        <p class="apple-logo"></p>
+                    {/if}
+                </div> 
                 {#if isLaunchpad}
                    <div class="launchpad" transition:scale={{ duration: 320, start: 1.1,  }}>
                         <input type="text" placeholder="Search" bind:value={launchpadSearchBar}>
@@ -298,6 +322,20 @@ main {
     display: grid;
     place-content: center;
 }
+.commands {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #4A4A4A63; 
+    backdrop-filter: blur(50px);
+    padding: 10px;
+    z-index: 1000;
+    font-size: 1rem;
+}
+.fullscreen {
+    width: 100vw;
+    height: 100vh;
+}
 #device {
     position: relative;
     transition: transform .5s ease;
@@ -337,6 +375,13 @@ pointer-events: none;
     background-color: black;
     z-index: 1000;
     transition: all .32s ease;
+}
+.apple-logo {
+    font-size: 5rem;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 .launchpad {
     --width: calc(var(--icon-ratio) * 1.5);
@@ -499,7 +544,7 @@ background-size: 100%;*/
 .separator {
     width: 1px;
     background-color: #414141;
-    margin: 2.5px calc(var(--icon-size) / 5);
+    margin: 2.5px 1.5%;
     flex: 0 0 auto;
 }
 .triangle {
@@ -542,5 +587,14 @@ background-size: 100%;*/
 #dock .icon {
     /*width: var(--icon-size);*/
     width: 100%;
+}
+
+@media (max-width: 995px) {
+    #screen {
+        padding: 6.5% 6.6% 7% 6.6%;
+    }
+    #screen > div {
+        border-radius: 20px;
+    }
 }
 </style>
