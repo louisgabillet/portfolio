@@ -87,34 +87,55 @@ const openLaunchpad = () => {
     isLaunchpad = !isLaunchpad;
 }
 
-let isOpeningScreen: boolean = false;
 let isPowerOn: boolean = false;
 
 const powerOnDevice = () => {
 
     const device = document.getElementById('device') as HTMLElement;
     const blackScreen = device?.querySelector('.black-screen') as HTMLDivElement;
-    if (!device || !blackScreen) return;
+    const blChildren = Array.from(blackScreen?.children as HTMLCollection);
+    if (!device || !blackScreen || !blChildren) return;
 
-    device.style.removeProperty('transform');
     //isHelloScreen = false;
+    //device.style.removeProperty('transform');
+    const bodyHeight = document.querySelector('body')?.offsetHeight
+    const scaleHeight = (bodyHeight / (device?.offsetHeight / 1.7)).toFixed(2);
+    const scaleWidth = (windowWidth/ (device?.offsetWidth / 1.15)).toFixed(2);
+    const scale = scaleWidth > scaleHeight ? scaleWidth : scaleHeight;
+
+    device.style.transition = `all ${+scale * .5}s ease-in-out`;
+    device.style.transform = `scale(${scale})`;
+    device.style.marginTop= '22vh'
+    device?.removeEventListener('click', powerOnDevice );
 
     setTimeout(() => {
-        blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
-        device?.removeEventListener('click', powerOnDevice );
-        isPowerOn = true;
-    }, 500)
-    //setTimeout(() => {
-    //    isOpeningScreen = true;
-    //}, 500)
-    //setTimeout(() => {
-    //    isOpeningScreen = false;
-    //}, 2000)
-    //setTimeout(() => {
-    //    blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
-    //    device?.removeEventListener('click', powerOnDevice );
-    //}, 2500)
+        isFullscreen = true;
+        device.style.transition = 'none'
+        device.style.removeProperty('transform');
+        device.style.removeProperty('margin-top');
+        blackScreen.addEventListener('click', unlock)
+            isPowerOn = true;
+        blChildren.forEach((child) => {
+            (child as HTMLDivElement).style.removeProperty('visibility');
+        })
+    }, (+scale * 750)) 
+    setTimeout(() => {
+        //blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
+    }, (+scale * 2000))
 };
+const unlock = () => {
+    const blackScreen = document?.querySelector('#screen .black-screen') as HTMLDivElement;
+    const blChildren = Array.from(blackScreen?.children as HTMLCollection);
+    if (blackScreen && blChildren) {
+        blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
+        blackScreen.removeEventListener('click', unlock);
+        setTimeout(() => { 
+            blChildren.forEach((child) => {
+                (child as HTMLElement).style.display = 'none';
+            })
+        }, 320)
+    }
+}
 const topBarTextChange = (e: any) => {
     const target = e?.target?.closest('.app');
     if (!target) return;
@@ -150,7 +171,6 @@ const onBlur = (appName: string) => {
 const openOrCloseWindow = (app: Apps) => {
     const {name, app_name, safari_link, path } = app;
     const appOrCustom = app_name ?? name;
-    console.log(appOrCustom, app_name, name)
     const nbrAppPageOpen = document?.querySelectorAll(`.app-window[data-app-name='${appOrCustom}']`)?.length;
     uniqueName = `${appOrCustom}-${nbrAppPageOpen + 1}`;
 
@@ -188,9 +208,39 @@ const destroy = (name: string) => {
     comp = comp?.filter((el: any) => el?.name !== name);
     onBlur(name)
 }
+const openCloseCommands = () => {
+    const commands = document.querySelector('.commands') as HTMLDivElement;
+    if (!commands) return;
+
+    if (commands?.classList?.contains('close')) {
+        commands?.classList.remove('close');
+    } else {
+        commands?.classList.add('close');
+    }
+}
 let isRedirectOn: boolean = false;
 let opacity: string = '0';
+
+let isCommandsOpen: boolean = false;
+
+let time: string;
+let date: string;
+let timeInterval: ReturnType<typeof setInterval>;
+const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+
+const updatedTime = () => {
+    const now = new Date();
+    const hours = now?.getHours()?.toString()?.padStart(2, '0');
+    const minutes = now?.getMinutes()?.toString()?.padStart(2, '0');
+
+    time = `${hours}:${minutes}`;
+}
 onMount(async () => {
+    updatedTime();
+    date = new Date().toLocaleDateString('en-GB', options).replace(',', '');
+
+    timeInterval = setInterval(updatedTime, 1000);
+
     const device = document.getElementById('device');
     device?.addEventListener('click', powerOnDevice )
 
@@ -202,6 +252,7 @@ onMount(async () => {
         {name: 'dock', is_icon: true, html: document.getElementById('dock') },
         {name: 'screen', html: document.getElementById('screen') },
         {name: 'background', is_img: true, html: document.querySelector('#screen .background img') as HTMLImageElement },
+        {name: 'background', is_img: true, html: document.querySelector('#screen .black-screen img') as HTMLImageElement },
     ];
 
     allElements?.forEach(data => {
@@ -221,8 +272,9 @@ onMount(async () => {
 <svelte:window bind:innerWidth={windowWidth}/>
 
 <main>
-    <div class="commands">
-        <button on:click={() => { if (isPowerOn) isFullscreen = !isFullscreen }}>{isFullscreen ? '􀅋' : '􀅊'}</button>
+    <div class="commands {isCommandsOpen ? '' : 'close'}">
+        <button on:click={() => isCommandsOpen = !isCommandsOpen}>{isCommandsOpen ? '􀆊' : '􀆉'}</button>
+        <button class="{isPowerOn ? '' : 'desactivated'}" on:click={() => isFullscreen = !isFullscreen }>{isFullscreen || !isPowerOn ? '􀅋' : '􀅊'}</button>
     </div>
     <div id='device' class="{isFullscreen ? 'fullscreen' : ''}" style="transform: scale(.5)">
         <img src={device} alt="" style="{isFullscreen ? 'display: none' : ''}">
@@ -230,9 +282,17 @@ onMount(async () => {
             <div>
                 <!--<div class="black-screen" transition:fade={{  duration: 500 }}></div> -->
                 <div class="black-screen">
-                    {#if isOpeningScreen}
-                        <p class="apple-logo"></p>
-                    {/if}
+                        <div class="date-and-time flex" style="visibility: hidden;">
+                            <h3>{date}</h3>
+                            <h1>{time}</h1>
+                        </div>
+                        <div class="account flex" style="visibility: hidden;">
+                            <div class="pp"></div>
+                            <h5>Louis Gabillet</h5>
+                            <p>Click to unlock</p>
+                        </div>
+                        <img src='/src/lib/assets/images/background/Ink_Cloud.jpg' alt="" style="visibility: hidden;">
+                        <!--<p class="apple-logo"></p>-->
                 </div> 
                 {#if isLaunchpad}
                    <div class="launchpad" transition:scale={{ duration: 320, start: 1.1,  }}>
@@ -323,14 +383,43 @@ main {
     place-content: center;
 }
 .commands {
+    --outer: 20px;
+    height: 35px;
     position: absolute;
-    bottom: 0;
+    bottom: 1%;
     right: 0;
-    background-color: #4A4A4A63; 
-    backdrop-filter: blur(50px);
-    padding: 10px;
-    z-index: 1000;
-    font-size: 1rem;
+    padding-left: var(--outer);
+    z-index: 1001;
+    font-size: .8rem;
+    background: #1B1B1B;
+    border-radius: 4px 0 0 4px;
+    transition: transform .32s ease;
+    overflow: hidden;
+}
+.commands.close {
+    transform: translateX(calc(100% - var(--outer)));
+}
+.commands .desactivated {
+    opacity: .4;
+    pointer-events: none;
+}
+.commands button:first-of-type {
+    background: #373735;
+    position: absolute;
+    padding: 0;
+    top: 0;
+    left: 0;
+    width: var(--outer);
+    height: 100%;
+    text-align: center;
+    border-radius: 0;
+    outline: 1px solid #000;
+}
+.commands button {
+    color: white;
+    border-radius: 50%;
+    height: 100%;
+    aspect-ratio: 1/1;
 }
 .fullscreen {
     width: 100vw;
@@ -338,7 +427,7 @@ main {
 }
 #device {
     position: relative;
-    transition: transform .5s ease;
+    transition: all 1.5s ease;
 }
 #device >  img {
     max-width: 100vw;
@@ -370,11 +459,61 @@ pointer-events: none;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 102%;
-    height: 102%;
+    width: 100%;
+    height: 100%;
     background-color: black;
     z-index: 1000;
     transition: all .32s ease;
+}
+.black-screen img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.black-screen .flex {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.date-and-time, .account {
+    position: absolute;
+    left: 50%;
+    color: white;
+    transform: translateX(-50%);
+    display: none;
+}
+.date-and-time h1, .date-and-time h3, .account p {
+    opacity: .7;
+}
+.date-and-time {
+    top: 10%;
+}
+.date-and-time h1 {
+    font-size: 5.625rem;
+    font-weight: 600;
+    line-height: 1;
+}
+.date-and-time h3 {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+.account {
+    bottom: 5%;
+}
+.account .pp {
+    width: 3rem;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    background: var(--dark-fullscreen);
+    backdrop-filter: blur(var(--blur));
+}
+.account h5 {
+    font-size: calc(var(--font-ratio) + 4px);
+    font-weight: 500;
+}
+.account p {
+    font-size: calc(var(--font-ratio) + 2px);
 }
 .apple-logo {
     font-size: 5rem;
