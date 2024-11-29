@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onMount } from "svelte";
+import { openAppWindow } from '$lib/index';
+import { onMount } from "svelte";
 
-export let open: (app: any) => void;
+//export let open: (app: any) => void;
 export let openWindow: HTMLElement;
 export let finderPath: string[];
 
@@ -57,6 +58,10 @@ const directories: FileSystem[] = [
                 ]
             }
         ]
+    },
+    {
+        name: 'Bin',
+        type: 'Folder'
     }
 ];
 
@@ -141,14 +146,14 @@ const openOnClick = (e: Event, data: FileSystem) => {
     if (type === 'Folder') {
         openDir(e);
     } else if (type === 'Safari') {
-        const app = { name: 'Safari', safari_link: url }
-        open(app);
+        const app = { name: 'Safari', src: '/src/lib/assets/images/icon/Safari.png', safari_link: url }
+        openAppWindow(app);
     }
 };
 </script>
 
-<div class="container">
-    <nav>
+<div class="app-grid">
+    <nav class="full">
         {#each navBtns as btn}
             {#if btn?.title}
                 <h5>{btn?.title}</h5>
@@ -161,7 +166,7 @@ const openOnClick = (e: Event, data: FileSystem) => {
         {/each}
     </nav>
     <div class="topbar">
-        <div class="controls flex">
+        <div class="app-controls">
             <button class={isPreviousActive ? 'usable' : 'desactivated'} on:click={() => goBackInTree()}
             >􀯶</button
             >
@@ -183,20 +188,20 @@ const openOnClick = (e: Event, data: FileSystem) => {
             <button class="new-tab">􀅼</button>
         </div>
     </div>
-    <div class="content">
+    <div class="app-content">
         <div class="placement">
             {#if children}
                 {#each children as repo}
-                    <div class="directory-container">
+                    <div class="shortcut-container">
                         <button
-                            class="directory"
+                            class="shortcut"
                             data-name-dir={repo.name}
                             on:dblclick={(e) => openOnClick(e, repo)}
                         >
                             <img class="icon" src="/src/lib/assets/images/icon/{repo?.type}.png" alt="" />
                         </button>
                         <button
-                            class="directory"
+                            class="shortcut"
                             data-name-dir={repo.name}
                             on:dblclick={(e) => openOnClick(e, repo)}
                         >
@@ -210,8 +215,11 @@ const openOnClick = (e: Event, data: FileSystem) => {
 </div>
 
 <style>
+.app-grid {
+    grid-template-rows: calc(var(--nav-height) * 1.5) 1fr;
+}
 h5 {
-    font-size: calc(var(--font-ratio) - 2px);
+    font-size: var(--fz-xxs);
     margin-block: 0.5rem 0.25rem;
     opacity: 0.5;
 }
@@ -219,13 +227,9 @@ h5:first-of-type {
     margin-block: 0 0.25rem;
 }
 h2 {
+    font-size: var(--fz-m);
     font-weight: 500;
     margin-right: auto;
-}
-button {
-    background: transparent;
-    border: none;
-    outline: none;
 }
 .usable {
     opacity: 1;
@@ -246,7 +250,7 @@ button {
 }
 .content {
     background-color: #1b1b1b;
-    overflow: scroll;
+    overflow: auto;
     padding: 10px 15px;
     border-left: 1px solid black;
 }
@@ -257,30 +261,6 @@ button {
     row-gap: 10px;
     /*display: flex;
     flex-wrap: wrap;*/
-}
-.directory-container {
-    width: var(--width);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    overflow-wrap: break-word;
-}
-.directory {
-    text-align: center;
-    background: transparent;
-    border: none;
-    outline: none;
-    border-radius: 2px;
-    max-width: var(--width);
-}
-.directory p {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    font-size: calc(var(--icon-size) / 5);
 }
 .line {
     width: 100%;
@@ -293,7 +273,7 @@ button {
     background: #37373559;
 }
 .minus-font i {
-    font-size: calc(var(--font-ratio) - 2px);
+    font-size: var(--fz-xxs);
 }
 .line i, .new-tab {
     color: #7c7c7c;
@@ -343,6 +323,9 @@ button {
     display: grid;
     place-content: center;
 }
+.tab p {
+    font-size: var(--fz-xs);
+}
 .new-tab {
     height: 100%;
     aspect-ratio: 1/1;
@@ -352,24 +335,8 @@ button {
     gap: 8px;
     padding: 5px 10px;
 }
-nav {
-    width: 100%;
-    height: calc(100% - var(--nav-height));
-    grid-row: 1 / -1;
-    margin-top: auto;
-    padding: 0 8px 10px 8px;
-    overflow-y: scroll;
-    position: relative;
-}
 nav i {
     width: 12px;
     text-align: center;
-}
-.directory-container:focus-within .directory img {
-    box-shadow: 0 0 0px 1px #4d4d4d;
-    background-color: #0000002e;
-}
-.directory-container:focus-within .directory p span {
-    background: var(--dark-selection-focused);
 }
 </style>

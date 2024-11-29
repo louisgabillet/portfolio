@@ -163,8 +163,8 @@ const wrapLine = (name: string, line: Wallpapers[]) => {
 }
 </script>
 
-<div class="container">
-    <nav>
+<div class="app-grid">
+    <nav class="full">
         <input type="text">
         <div class="setting-selection">
             {#each selectionBtn as {name, color, space, icon, active}}
@@ -173,12 +173,12 @@ const wrapLine = (name: string, line: Wallpapers[]) => {
             {/each}
         </div>
     </nav>
-    <div class="content">
-        <div class="controls">
-            <button>􀆉</button>
-            <button>􀆊</button>
-            <h2>{selectedSetting}</h2>
-        </div>
+    <div class="app-controls">
+        <button>􀆉</button>
+        <button>􀆊</button>
+        <h2>{selectedSetting}</h2>
+    </div>
+    <div class="app-content">
         {#if needReloadToApply}
             <p class="warning">Some changes will need the site to be reloaded for them to apply.</p>
         {/if}
@@ -199,10 +199,10 @@ const wrapLine = (name: string, line: Wallpapers[]) => {
             </label>
         {:else if isSelected('Desktop & Dock')}
             <label for="">desktop icons
-                <input type="range" data-location='desktop' step="10" data-is-icon=true value="0" on:input={changeSize} on:change={saveValues}>
+                <input type="range" data-location='desktop' step="0" data-is-icon=true value="25" on:input={changeSize} on:change={saveValues}>
             </label>
             <label for="">dock
-                <input type="range" data-location='dock' data-is-icon=true data-small=true value="43" on:input={changeSize} on:change={saveValues}>
+                <input type="range" data-location='dock' data-is-icon=true data-small=true value="57" on:input={changeSize} on:change={saveValues}>
             </label>
         {:else if isSelected('Displays')}
             <label for="">Opacity
@@ -250,16 +250,10 @@ label {
     display: block;
 }
 nav {
-    width: 7rem;
-    height: 100%;
-    background: var(--dark-fullscreen);
-    backdrop-filter: blur(var(--blur));
+    padding: var(--nav-height) 0 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    padding-top: var(--nav-height);
-    border-right: 1px solid black;
-    flex-shrink: 0;
 }
 input[type=text] {
     width: 100%;
@@ -278,8 +272,8 @@ button {
 .setting-selection {
     width: 100%;
     height: 100%;
-    overflow: scroll;
-    padding: 0 5px 5px 5px;
+    overflow: auto;
+    padding: 0 0px 10px 5px;
 }
 .mg-top {
     margin-top: 10px;
@@ -331,10 +325,9 @@ button {
     display: grid;
     place-content: center;
 }
-.content {
+.app-controls {
     background-color: #1B1B1B;
-    width: 100%;
-    overflow: scroll;
+    justify-content: flex-start;
 }
 .controls {
     width: 100%;

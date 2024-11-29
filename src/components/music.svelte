@@ -82,7 +82,7 @@ const updateVolume = (e: Event) => {
     const value = +target?.value;
 
     volume = value / 100;
-    progressBar(volumeBar, '#7C7C7C', '#21211F');
+    progressBar(volumeBar, '#7C7C7C', 'var(--dark-grey)');
     if (music) music.volume = value / 100;
 }
 const updateTimer = (e: Event) => {
@@ -135,8 +135,8 @@ const progressBar = (range: HTMLInputElement, color1: string, color2: string) =>
 }
 </script>
 
-<div class="container">
-    <nav>
+<div class="app-grid">
+    <nav class="full">
         <input type="text" placeholder="Search" />
         {#each navBtns as btn }
             {#if btn?.title}
@@ -148,96 +148,87 @@ const progressBar = (range: HTMLInputElement, color1: string, color2: string) =>
             </button> 
         {/each}
     </nav>
-    <div class="content">
-        <div class="track flex">
-            <div class="flex controls">
-                <button>􀊝</button>
-                <button class="medium-i">􀊊</button>
-                <button class="big-i" style="width: 12px;" on:click={ playPauseBtn }>{!isPlaying ? '􀊄' : '􀊆'}</button>
-                <button class="medium-i">􀊌</button>
-                <button on:click={() => music?.loop }>􀊞</button>
-            </div>
-            <div class="playing-song flex">
-                <div class="cover"></div>
-                <div class="song-info" >
-                    {#if !currTime}
-                        <i>􀣺</i>
-                    {/if}
-                    <p class="{!currTime ? 'hidden' : ''}">{activeMusicData?.name ?? ''}</p>
-                    <p class="{!currTime ? 'hidden' : ''}">{activeMusicData?.artist?? ''}</p>
-                    <input class="time-bar {!currTime ? 'hidden' : ''}" bind:this={timeBar} value='0' type="range">
-                </div>
-            </div>
-            <div class="flex volume">
-                <button on:click={() => volumeMinMax(0) }>􀊡</button>
-                <input class="volume-bar"
-                    style="background: linear-gradient(to right, #7C7C7C 0%, #7C7C7C {volume * 100}%, #21211F {volume * 100}%, #21211F 100%)
-"
-                    bind:this={volumeBar} value='{volume * 100}' type="range" >
-                <button on:click={() => volumeMinMax(1) }>􀊩</button>
-            </div>
-            <div class="flex controls">
-                <button>􀌮</button>
-                <button>􀋲</button>
+    <div class="app-controls track flex">
+        <div class="flex controls">
+            <button>􀊝</button>
+            <button class="medium-i">􀊊</button>
+            <button class="big-i" style="width: 12px;" on:click={ playPauseBtn }>{!isPlaying ? '􀊄' : '􀊆'}</button>
+            <button class="medium-i">􀊌</button>
+            <button on:click={() => music?.loop }>􀊞</button>
+        </div>
+        <div class="playing-song flex">
+            <div class="cover"></div>
+            <div class="song-info" >
+                {#if !currTime}
+                    <i>􀣺</i>
+                {/if}
+                <p class="{!currTime ? 'hidden' : ''}">{activeMusicData?.name ?? ''}</p>
+                <p class="{!currTime ? 'hidden' : ''}">{activeMusicData?.artist?? ''}</p>
+                <input class="time-bar {!currTime ? 'hidden' : ''}" bind:this={timeBar} value='0' type="range">
             </div>
         </div>
+        <div class="flex volume">
+            <button on:click={() => volumeMinMax(0) }>􀊡</button>
+            <input class="volume-bar"
+                style="background: linear-gradient(to right, #7C7C7C 0%, #7C7C7C {volume * 100}%, var(--dark-grey) {volume * 100}%, var(--dark-grey) 100%)
+                "
+                bind:this={volumeBar} value='{volume * 100}' type="range" >
+            <button on:click={() => volumeMinMax(1) }>􀊩</button>
+        </div>
+        <div class="flex controls">
+            <button>􀌮</button>
+            <button>􀋲</button>
+        </div>
+    </div>
+    <div class="app-content">
         {#if tabName === 'Songs'}
             <h2>Songs</h2>
-            <div class="songs">
-                <div class="overflow">
-                    <div class="infos grid">
-                        <p></p>
-                        <p>Title</p>
-                        <p class="align-center">􀌋</p>
-                        <p class="align-right">Time</p>
-                        <p>Artist</p>
-                        <p>Album</p>
-                        <p>Genre</p>
+            <div class="infos grid">
+                <p></p>
+                <p>Title</p>
+                <p class="align-center">􀌋</p>
+                <p class="align-right">Time</p>
+                <p>Artist</p>
+                <p>Album</p>
+                <p>Genre</p>
+                <p class="align-center">􀋂</p>
+                <p class="align-right">Plays</p>
+            </div>
+            <div class="pattern">
+                {#each songs as song}
+                    <button class="song grid" on:focusin={() => playMusic(song?.src_name) }>
+                        <p>{song?.src_name === activeMusic ? '􀊡' : ''}</p>
+                        <p>{song?.name}</p>
+                        <p class="align-center">􀁸</p>
+                        <p class="align-right">{song?.time}</p>
+                        <p>{song?.artist}</p>
+                        <p>{song?.album}</p>
+                        <p>{song?.genre}</p>
                         <p class="align-center">􀋂</p>
-                        <p class="align-right">Plays</p>
-                    </div>
-                    <div class="pattern">
-                        {#each songs as song}
-                            <button class="song grid" on:focusin={() => playMusic(song?.src_name) }>
-                                <p>{song?.src_name === activeMusic ? '􀊡' : ''}</p>
-                                <p>{song?.name}</p>
-                                <p class="align-center">􀁸</p>
-                                <p class="align-right">{song?.time}</p>
-                                <p>{song?.artist}</p>
-                                <p>{song?.album}</p>
-                                <p>{song?.genre}</p>
-                                <p class="align-center">􀋂</p>
-                                <p>{song?.plays}</p>
-                            </button> 
-                        {/each}
-                    </div>
-                </div>
+                        <p>{song?.plays}</p>
+                    </button> 
+                {/each}
             </div>
         {/if}
     </div>
 </div>
 
 <style>
-.container {
+.app-grid {
     --light-grey: #2c2c2a;
+    --dark-grey: #21211F;
     --light-grey-track: #3d3d3d;
-    width: 100%;
-    height: 100%;
+}
+.app-content {
+    --height: calc(var(--font-size) + 6px);
+    background-color: var(--dark-grey); 
+    padding: 0;
     display: flex;
-    display:grid;
-    grid-template-columns: 7rem 1fr;
+    flex-direction: column;
 }
 h5 {
-    font-size: calc(var(--font-ratio) - 2px);
+    font-size: var(--fz-xxs);
     margin-block: 0.5rem 0.25rem;
-}
-nav {
-    width: 100%;
-    height: 100%;
-    background: var(--dark-fullscreen);
-    backdrop-filter: blur(var(--blur));
-    border-right: 1px solid black;
-    padding: var(--nav-height) 5px 0 5px;
 }
 nav i {
     width: 12px;
@@ -267,7 +258,7 @@ input[type=range], input[type=range]::-webkit-slider-thumb {
 }
 .track .flex {
     color: #7C7C7C;
-    font-size: var(--font-ratio);
+    font-size: var(--fz-xs);
 }
 .volume {
     gap: 2px;
@@ -324,7 +315,7 @@ input[type=range], input[type=range]::-webkit-slider-thumb {
 .volume-bar {
     width: 40px;
     height: 2px;
-    background: #21211F;
+    background: var(--dark-grey);
     border-radius: 4px;
 }
 .volume-bar::-webkit-slider-thumb {
@@ -342,7 +333,6 @@ input[type=range], input[type=range]::-webkit-slider-thumb {
     opacity: 1;
 }
 h2 {
-    background-color: #21211f;
     padding-block: 5px;
     font-size: calc(var(--font-size) + 2px);
     font-weight: 500;
@@ -362,29 +352,17 @@ h5 {
 .line i {
     color: #e84f6a;
 }
-.content {
-    --height: calc(var(--font-size) + 6px);
-    width: 100%;
-    height: 100%;
-    background-color: #21211f;
-    display: grid;
-    grid-template-rows: var(--nav-height) min-content 1fr;
-}
 .track {
-    width: 100%;
-    justify-content: space-between;
-    height: var(--nav-height);
     border-bottom: 1px solid grey;
     background-color: #1b1b1b;
     padding: 2px 10px;
     gap: 20px;
-    position: relative;
     display: grid;
     grid-template-columns: min-content 1fr min-content min-content;
-    overflow-x: scroll;
+    overflow-x: auto;
 }
 .infos {
-    width: 100%;
+    min-width: fit-content;
     border-bottom: 1px solid grey;
 }
 .infos p {
@@ -393,30 +371,17 @@ h5 {
 .infos p:nth-child(2) {
     border-left: 1px solid grey;
 }
-.songs {
-    width: 100%;
-    height: 100%;
-    overflow: scroll hidden;
-    position: relative;
-}
 .pattern {
-    width: 100%;
+    min-width: fit-content;
     height: 100%;
     background: repeating-linear-gradient(
         to bottom,
         var(--light-grey),
         var(--light-grey) var(--height),
-        #21211f var(--height),
-        #21211f calc(var(--height) * 2)
+        transparent var(--height),
+        transparent calc(var(--height) * 2)
         );
     /*padding-right: 1rem;*/
-}
-.overflow {
-    min-width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
 }
 .song {
     width: 100%;

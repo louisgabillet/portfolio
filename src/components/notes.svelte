@@ -23,8 +23,8 @@ $: activeName = name;
 $: activeNote = notes.find((note) => note.name === activeName) ?? {name: '', update_date: '', content: ''};
 </script>
 
-<div class="container">
-    <nav>
+<div class="app-grid">
+    <div class="app-controls full">
         <div class="group">
             <button>􀏚</button>
             <button>􀋲</button>
@@ -45,8 +45,8 @@ $: activeNote = notes.find((note) => note.name === activeName) ?? {name: '', upd
             <button>􀈂</button>
             <button>􀊫</button>
         </div>
-    </nav>
-    <div class="selection">
+    </div>
+    <nav>
         <div class="ref">
             <i class="grey">􀎧</i>
             <h4 class="grey">Pinned</h4>
@@ -60,17 +60,13 @@ $: activeNote = notes.find((note) => note.name === activeName) ?? {name: '', upd
                 </div>
             </button>
         {/each}
-    </div>
-    <div class="content">
-        <div class="text-container">
-            <div class="text">
-                {#if activeNote}
-                    <p class="grey text-center">{dateText(activeNote?.update_date)}</p>
-                    <h2>{activeNote.name}</h2>
-                    <p>{activeNote.content}</p>
-                {/if}
-            </div>
-        </div>
+    </nav>
+    <div class="app-content">
+        {#if activeNote}
+            <p class="grey text-center">{dateText(activeNote?.update_date)}</p>
+            <h2>{activeNote.name}</h2>
+            <p>{activeNote.content}</p>
+        {/if}
     </div>
 </div>
 
@@ -79,7 +75,7 @@ h3, h4, p {
     color: var(--color-text);
 }
 h3 {
-    font-size: var(--font-ratio);
+    font-size: var(--fz-xs);
     font-weight: 500;
     width: 100%;
 }
@@ -110,41 +106,18 @@ h4 {
     display: flex;
     gap: 4px;
 }
-.container {
+.app-grid {
     --yellow: #998333;
-    width: 100%;
-    height: 100%;
-    background: #1B1B1B;
-    display: grid;
-    grid-template-columns: var(--width-sidebar) 1fr;
-    grid-template-rows: var(--nav-height) 1fr;
 }
-.content {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
-.text-container {
-    height: 100%;
-    overflow-y: scroll;
-    padding: .5rem;
-}
-.text h2 {
+h2 {
     font-size: calc(var(--font-size) + 4px);
 }
-.text p {
+.app-content p {
     /*font-size: .75rem;*/
     font-size: var(--font-size);
 }
-nav {
-    width: 100%;
-    height: var(--nav-height);
-    grid-column: 1 / -1;
+.app-controls {
     background-color: #292926;
-    padding: 8px 10px 8px 3.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
 }
 button {
     background: transparent;
@@ -156,26 +129,21 @@ button {
     width: 1px;
     background: #7C7C7C80;
 }
-nav button {
+.app-controls button {
     padding: 2px;
     color: #7C7C7C;
-    font-size: var(--font-ratio);
 }
 .group {
     height: 100%;
     display: flex;
     gap: 6px;
 }
-.selection {
-    width: 7rem;
-    height: 100%;
+nav {
     background-color: #21211F;
-    border-right: 1px solid black;
-    padding-bottom: 5px;
+    padding: 0 0 10px;
     display: flex;
     flex-direction: column;
     position: relative;
-    overflow-y: scroll;
 }
 .ref {
     position: sticky;
@@ -187,14 +155,13 @@ nav button {
     padding: 2px 10px;
     gap: 3px;
     border-bottom: 1px solid #7C7C7C80;
-    font-size: var(--font-ratio);
+    font-size: var(--fz-xs);
     margin-bottom: 5px;
     background: #21211FCC;
     backdrop-filter: blur(var(--blur));
 }
 .ref i {
-    font-size: calc(var(--font-ratio) - 2px);
-    width: calc(var(--font-ratio) - 1px);
+    font-size: var(--fz-xxs);
 }
 .infos {
     background: transparent;

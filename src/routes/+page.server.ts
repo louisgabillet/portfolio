@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 
 export const actions: Actions = {
     email: async ({ request }) => {
+        // TODO -> Secure the recived values from the form (zod ?).
         const data = await request.json();
 
         const captchaVerification = await fetch(
@@ -30,7 +31,7 @@ export const actions: Actions = {
             });
             
             const mailOptions = {
-                from: '"Portfolio" <louisgab33@gmail.com>',
+                from: 'Portfolio" <louisgab33@gmail.com>',
                 to: 'gabillet.louis@gmail.com',
                 cc: data?.cc,
                 subject: data?.subject,

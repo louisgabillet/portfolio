@@ -92,7 +92,7 @@ h2 {
     font-size: calc(var(--font-size) + 4px);
 }
 h5 {
-    font-size: calc(var(--font-ratio) - 2px);
+    font-size: var(--fz-xxs);
     margin-block: .5rem .25rem;
 }
 h5, i {
@@ -105,7 +105,7 @@ a {
 }
 input {
     width: 100%;
-    font-size: var(--font-ratio);
+    font-size: var(--fz-xs);
     border: none;
     outline: none;
     padding: 2px;
@@ -129,7 +129,6 @@ button {
     border-radius: 50%;
     display: grid;
     place-content: center;
-    font-size: 1.25rem;
     margin-right: 5px;
     padding: 5px;
 }

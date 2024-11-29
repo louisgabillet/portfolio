@@ -1,14 +1,27 @@
 <script lang="ts">
 	import { PUBLIC_SITE_KEY } from "$env/static/public";
 
+    const controls = [
+        { name: '􀈟', usable: true, submit: true },
+        { name: '􀹆', space: true },
+        { name: '􀰚' },
+        { name: '􀉢' },
+        { name: '􀒖' },
+        { name: '􀅒' },
+        { name: '􀙌' },
+        { name: '􀏫' },
+    ]
 const key = PUBLIC_SITE_KEY;
 let email: string = 'gabillet.louis@gmail.com', cc: string, subject: string, from: string = '', text: string = '';
+
+$: isFormComplete = [subject, from, text].every(value => value);
 
 const onSubmit = async () => {
         console.log(grecaptcha);
     grecaptcha.ready(function() {
         grecaptcha.execute(key, {action: 'submit'}).then(async function(token: string) {
             console.log(typeof grecaptcha);
+            // TODO -> Change to formData (new FormData(), formData.append(...), body: formData).
             const res = await fetch('?/email', {
                 method: 'POST',
                 body: JSON.stringify({ token, email, cc, subject, from, text }),
@@ -36,10 +49,12 @@ declare const grecaptcha: any;
 </svelte:head>
 
 <form method="POST" on:submit|preventDefault={onSubmit}>
-    <nav>
-        <button type="submit">Submit</button>
-    </nav>
-    <div class="container">
+    <div class="app-controls full">
+        {#each controls as {name, usable, submit, space} }
+           <button class="{usable && isFormComplete ? '' : 'desactivated'} {space ? 'spaced' : ''}" type={submit ? 'submit' : 'button'}>{name}</button> 
+        {/each}
+    </div>
+    <div class="app-content">
         <div class="line">
             <p>To :</p>
             <input type="text" bind:value={email} id='to' name='to' disabled>
@@ -64,18 +79,29 @@ declare const grecaptcha: any;
 </form>
 
 <style>
-.container {
-    height: 100%;
+.app-content {
     display: flex;
     flex-direction: column;
-    padding-left: 1rem;
+    padding: 0 0 0 1rem;
+    border: none;
+}
+.spaced {
+    margin-right: auto;
+}
+.desactivated {
+    pointer-events: none;
+    opacity: .5;
+}
+.app-controls button {
+    height: 100%;
+    aspect-ratio: 1/1;
 }
 .captcha-text {
-    font-size: 6px;
+    font-size: var(--fz-xxs);
     color: #525150;
     margin: 0 auto;
     padding-block: .25rem;
-    background-color: #222220;
+    background-color: #1B1B1B;
 }
 .captcha-text a {
     text-decoration: none;
@@ -88,14 +114,6 @@ form {
     display: grid;
     grid-template-rows: var(--nav-height) 1fr;
 }
-nav {
-    width: 100%;
-    height: var(--nav-height);
-    background-color: #383836;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 .line {
     width: 100%;
     border-bottom: 1px solid #525150;
@@ -105,7 +123,7 @@ nav {
 }
 input, textarea {
     width: 100%;
-    font-size: 12px;
+    font-size: var(--fz-m);
     outline: none;
     border: none;
     background: transparent;
@@ -121,7 +139,7 @@ textarea {
 }
 p {
     color: #A1A1A0;
-    font-size: 12px;
+    font-size: var(--fz-m);
     white-space: nowrap;
 }
 </style>

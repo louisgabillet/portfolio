@@ -1,4 +1,5 @@
 <script lang="ts">
+import { closeAppWindow, changeAppWindowsOrder } from '$lib/index';
 import { createEventDispatcher, onDestroy, onMount } from 'svelte';
 import Safari from './safari.svelte';
 import Notes from './notes.svelte';
@@ -12,9 +13,9 @@ export let name;
 export let order: string[];
 export let safariLink: string = '';
 export let finderPath: string[] = ['louisgabillet']
-export let open: (app: any) => void = () => {};
-export let destroy: (name: string) => void;
-export let changeFocus: (name: string) => void;
+//export let open: (app: any) => void = () => {};
+//export let destroy: (name: string) => void;
+//export let changeFocus: (name: string) => void;
 
 const dispatch = createEventDispatcher();
 
@@ -24,6 +25,7 @@ let openWindow: HTMLElement;
 let parent: HTMLElement | null;
 
 // LocalStorage Elements
+// TODO -> Need to rearange the storages variables and change default value (pos and size).
 $: storage = {pos:{x: pos?.percentX || 50, y: pos?.percentY || 50}, size: {width: size?.width || 50, height: size?.height || 50}};
 $: getStorageSting = localStorage.getItem(name);
 $: getStorage = getStorageSting ? JSON.parse(getStorageSting) : {pos:{x: 25, y: 25}, size: {width: 50, height: 50}};
@@ -58,6 +60,7 @@ let reduce: boolean = false;
 let uniqueName: string;
 let id: number;
 let isReduceTransi: boolean = false;
+let isMouseDown: boolean = false;
 
 let windowWidth: number = 0;
 
@@ -89,7 +92,9 @@ onDestroy(() => {
 
 const onMouseDown = (e: MouseEvent) => {
     if (isFullScreen || !openWindow) return;
-    dispatch('focus', { name: name })
+    //dispatch('focus', { name: name })
+
+    isMouseDown = true;
     if (!isWindowMoving) e.stopPropagation();
     const rect = openWindow?.getBoundingClientRect();
     resizeSides = checkIfMouseResize(e, rect);
@@ -111,7 +116,7 @@ const onKeyDown = (e:KeyboardEvent) => {
 
     if (keyClose) {
         if (isFullScreen) fullscreen();
-        destroy(uniqueName)
+        closeAppWindow(uniqueName)
     } else if (keyReduce && !isFullScreen) {
         reduceWindow();
     } else if (keyFullscreen && !reduce) {
@@ -138,53 +143,49 @@ const pointerUpHandler = (e: PointerEvent) => {
 }
 const mouseMoveHandler = (e: MouseEvent) => {
     requestAnimationFrame(()=> {
-        if (!parent || !openWindow) return; 
+        if (!parent || !openWindow || !isMouseDown) return; 
         const {mouseXStart: startX, mouseYStart: startY} = mousePos;
-        const parentRect = parent?.getBoundingClientRect();
         const {previousX, previousY} = pos;
         const {previousW, previousH} = size;
-        //const previousX = pos.previousX,
-        //      previousY = pos.previousY;
-        //const previousW = size?.previousW,
-        //      previousH = size?.previousH;
-        //const width = openWindow?.offsetWidth / parent?.offsetWidth * 100,
-        //      height = openWindow?.offsetHeight / parent?.offsetHeight * 100;
+        const parentRect = parent?.getBoundingClientRect();
 
-
+        // TODO -> Need to make the limit more precise (exceeds a bit).
         const x: number = checkIfMouseLeave(e, parentRect)?.x ?? 0,
               y: number = checkIfMouseLeave(e, parentRect)?.y ?? 0;
-        let offsetX = (startX - x) / parent.offsetWidth * -100,
-            offsetY = (startY - y) / parent.offsetHeight * -100;
+        const offsetX = (startX - x) * -1;
+        const offsetY = (startY - y) * -1;
         const pX = previousX + offsetX,
               pY = previousY + offsetY;
 
         isMouseMove = (startX != x) || (startY != y); 
-        const isLeftSide = resizeSides?.left,
-              isTopSide = resizeSides?.top;
-        //const maxWidth = pX >= 0 ? 100 - percentX : 100 - (100 - width),
-        //      maxHeight = pY >= 0 ? 100 - percentY : 100 - (100 - height);
-        const pW = (isLeftSide ? offsetX * -1 : offsetX) + previousW,
-              pH = (isTopSide ? offsetY * -1 : offsetY) + previousH;
-        const minWidth = pW >= 20,
-              minHeight = pH > 25;
-        const moveWhenResizeX = pX, 
-              moveWhenResizeY = pY; 
-              //moveWhenResizeY = pY <= 0 ? 0 : pY;
-
-        pos.percentX = isLeftSide && minWidth ? moveWhenResizeX : isWindowMoving ? pX : percentX;
-        pos.percentY = isTopSide && minHeight ? moveWhenResizeY : isWindowMoving ? pY <= 0 - id ? 0 - id : pY : percentY;
 
         if (!isWindowMoving) {
-            //const isWidthTooLarge = pW > maxWidth,
-            //     isHeightTooLong = pH > maxHeight;
+            const isLeftSide = resizeSides?.left,
+            isTopSide = resizeSides?.top;
+
+            const reverseOffsetX = isLeftSide ? offsetX * -1 : offsetX;
+            const reverseOffsetY = isTopSide ? offsetY * -1 : offsetY;
+
+            const pW = Math.round(previousW + reverseOffsetX);
+            const pH = Math.round(previousH + reverseOffsetY);
+
+            const minWidth = pW >= 200,
+            minHeight = pH > 250;
+
+            if (isLeftSide && minWidth) pos.percentX = pX;
+            if (isTopSide && minHeight) pos.percentY = pY;
 
             if (resizeSides?.left || resizeSides?.right) size.width =  pW <= 20 ? 20 : pW;
             if (resizeSides?.top || resizeSides?.bottom) size.height = pH <= 25 ? 25 : pH;
+        } else {
+            pos.percentX = Math.round(pX);
+            pos.percentY = Math.round(pY);
         }
     })
 };
 const mouseUpHandler = (e: MouseEvent) => {
     if (!openWindow) return;
+    isMouseDown = false;
 
     window.removeEventListener('mousemove', mouseMoveHandler);
     window.removeEventListener('mouseup', mouseUpHandler);
@@ -213,11 +214,12 @@ const checkIfMouseLeave = (e: MouseEvent, bounds: DOMRect | undefined) => {
           clientY = e.clientY; 
     const left = clientX <= bounds?.left,
           right = clientX >= bounds?.right,
-          //top = clientY <= bounds?.top,
+          top = clientY <= bounds.top,
           bottom = clientY >= bounds.bottom;
+    console.log(top)
     
     const x = left ? bounds?.left : right ? bounds.right : clientX,
-          y = bottom ? bounds?.bottom : clientY;
+          y = top ? bounds.top : bottom ? bounds?.bottom : clientY;
 
     return {x, y};
 }
@@ -371,9 +373,9 @@ const reduceWindow = () => {
     tabindex="0" 
     data-app-name={name}
         class="app-window transition {isFullScreen ? 'full-screen' : ''} {reduce ? 'reduced' : ''} {isReduceTransi ? 'reduce-transi' : ''}"
-    style="--width: {width}%; --height: {height}%; --top: {percentY + id}%; --left: {percentX + id}%; z-index: {zIndex}; 
+    style="--width: {width}px; --height: {height}px; --top: {percentY + id}px; --left: {percentX + id}px; z-index: {zIndex}; 
     {isReduceTransi ? `--reduce-top: ${reduceY}px; --reduce-left: ${reduceX}px; --scale: ${scale}` : ''}"
-    on:focusin={() => { changeFocus(uniqueName) }}
+    on:focusin={() => { changeAppWindowsOrder(uniqueName) }}
     on:pointerdown={ (e) => { if (windowWidth > 995) {onMouseDown(e)} else {onPointerDown(e)} }}
     on:keydown={ (e) => { onKeyDown(e) }}
 > 
@@ -383,14 +385,14 @@ const reduceWindow = () => {
     <div class="content {isFullScreen ? 'full-screen' : ''}">
         <div class="action-btn">
            <!-- <button id='close-btn' on:click={() => { if (isFullScreen) dispatch('fullscreen'); dispatch('close') }}></button>-->
-            <button id='close-btn' on:click={() => { destroy(uniqueName) }}></button>
+            <button id='close-btn' on:click={() => { closeAppWindow(uniqueName) }}></button>
             <button id={!isFullScreen ? 'reduce-btn' : 'desactivated'} on:click={() => { reduceWindow() }}></button>
             <button id="full-screen-btn" on:click={() => { fullscreen() }}></button>
         </div>
         {#if name === 'Notes'}
             <Notes />   
         {:else if name === 'Finder'}
-            <Finder {open} {openWindow} {finderPath}/>
+            <Finder {openWindow} {finderPath}/>
         {:else if name === 'Mail'}
             <Mail />
         {:else if name === 'Safari'}

@@ -1,9 +1,10 @@
 <script lang="ts">
+import { activeTopBar } from "$lib/index";
 import { onDestroy, onMount } from "svelte";
 
-export let activeTopBar;
+//export let activeTopBar = {name: 'test', text: 'test text'};
 
-$: ({ name, text } = activeTopBar);
+$: ({ name, text } = $activeTopBar);
 const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: '2-digit' };
 
 let time: string;
@@ -27,7 +28,7 @@ let isTimerChanging: boolean = false;
 
 onMount(() => {
     updatedTime();
-    date = new Date().toLocaleDateString('en-US', options).replace(',', '');
+    date = new Date().toLocaleDateString('en-GB', options).replace(',', '');
 
     interval = setInterval(updatedTime, 1000);
 
@@ -107,7 +108,7 @@ let openMenu: boolean = false;
             </div>
         </div>
         <div class="tb-text flex fullscreen">                    
-            <p class="tb-logo"></p>
+            <p class="tb-logo">􀣺</p>
             <p>{name}</p>
             {#each text as str}
                 <p>{str}</p>
@@ -129,13 +130,13 @@ let openMenu: boolean = false;
     background-color: #0000002E;
     z-index: 997;
     color: var(--color-text);
-    font-size: var(--font-ratio);
+    font-size: var(--fz-s);
     /*overflow: hidden;*/
-    padding-block: 3px;
+    padding-block: 4px;
     transition: transform .32s ease;
 }
 #top-bar p:nth-child(1) {
-    font-size: calc(var(--font-ratio) + 3.6px);
+    font-size: var(--fz-l);
 }
 #top-bar p:nth-child(2) {
     font-weight: 600;
@@ -161,12 +162,6 @@ p span {
 }
 .fullscreen:hover {
     opacity: 1;
-}
-.tb-container {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 100% 100%;
-    transition: transform 320ms ease;
 }
 .tb-text {
     width: 100%;

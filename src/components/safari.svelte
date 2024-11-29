@@ -4,8 +4,8 @@ export let page: string | null = 'slide';
 
 </script>
 
-<div class="container">
-    <nav>
+<div class="app-grid">
+    <div class="app-controls full">
         <button>􀏚</button>
         <button class={link ? '' : 'desactivated'} >􀆉</button>
         <button class={link ? '' : 'desactivated'} >􀆊</button>
@@ -16,19 +16,17 @@ export let page: string | null = 'slide';
         <button class={link ? '' : 'desactivated'} >􀈂</button>
         <button>􀅼</button>
         <button>􀐅</button>
-    </nav>
-    {#if page === 'pricing'}
+    </div>
+    <!--{#if page === 'pricing'}
         <iframe title="pricing" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRMJoHLWzDWViYvj54FhQRLiWFehtLOHPuIAf6mOF6csEBYrK0r6Q6A9MthFLihobE8ZY_H23mNycg7/pubhtml?widget=true&amp;headers=false&amp;chrome=false&amp;minimal;frameborder=0"></iframe>
     {:else if page === 'slide'}    
         <iframe title="slide" src="https://docs.google.com/presentation/d/e/2PACX-1vTvEo_UvScMMK2UnIORqg0ntxJlX4yfd1eE7QnEvAuH0afn3dgOwp297GThp_4zBha2ErnhDI_VHGr5/embed?start=false&loop=true&delayms=3000" frameborder="0"></iframe>
-    {/if}
+    {/if}-->
 </div>
 
 <style>
-.container {
-    height: 100%;
-    background-color: var(--dark-fullscreen);
-    backdrop-filter: blur(var(--blur));
+.app-grid {
+    grid-template-columns: 1fr;
 }
 .desactivated {
     opacity: .35;
@@ -37,15 +35,6 @@ export let page: string | null = 'slide';
 iframe {
     width: 100%;
     height: 100%;
-}
-nav {
-    width: 100%;
-    height: var(--nav-height);
-    background-color: var(--dark-title-bar);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 0 8px 0 3.5rem
 }
 button {
     background: transparent;
@@ -56,7 +45,7 @@ button {
 }
 button, i {
     color: #A1A1A0;
-    font-size: var(--font-ratio);
+    font-size: var(--fz-xs);
 }
 label {
     width: 50%;
