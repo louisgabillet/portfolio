@@ -15,7 +15,7 @@ const navBtns = [
     { name: 'Airdrop', icon: '􀌙', title: 'Favorites', color: 'blue' },
     { name: 'Recents', icon: '􀐫', color: 'blue' },
     { name: 'Desktop', icon: '􀣰', color: 'blue' },
-    { name: 'Downloads', icon: '􀁸', color: 'blue' },
+    { name: 'Downloads', icon: '􀁸', color: 'blue', active: true },
     { name: 'Applications', icon: '􀑏', color: 'blue' },
     { name: 'louisgabillet', icon: '􀎞', color: 'blue', active: true },
     { name: 'iCloud Drive', icon: '􀌋', title: 'iCloud', color: 'turquoise' },
@@ -32,7 +32,7 @@ const navBtns = [
 ];
 interface FileSystem {
     name: string;
-    type: 'Folder' | 'Safari';
+    type: 'Folder' | 'Safari' | 'Music';
     url?: string;
     children?: FileSystem[];
 }
@@ -58,6 +58,11 @@ const directories: FileSystem[] = [
                 ]
             }
         ]
+    },
+    {
+        name: 'Downloads',
+        type: 'Folder',
+        children: [{ name: 'The Most Beautiful Song Of All Time.mp3', type: 'Music' }]
     },
     {
         name: 'Bin',
@@ -110,7 +115,7 @@ const changeParentDir = (name: string) => {
 }
 const openDir = (e: Event) => {
     const target = e?.target as HTMLElement;
-    const directory = target?.closest('.directory') as HTMLElement;
+    const directory = target?.closest('.shortcut') as HTMLElement;
     const dirName = directory?.dataset.nameDir; 
     
     if (dirName) openDirName = dirName;
@@ -148,6 +153,9 @@ const openOnClick = (e: Event, data: FileSystem) => {
     } else if (type === 'Safari') {
         const app = { name: 'Safari', src: '/src/lib/assets/images/icon/Safari.png', safari_link: url }
         openAppWindow(app);
+    } else if (type === 'Music') {
+        const app = { name: 'Music', src: '/src/lib/assets/images/icon/Music.png'};
+        openAppWindow(app);
     }
 };
 </script>
@@ -158,7 +166,7 @@ const openOnClick = (e: Event, data: FileSystem) => {
             {#if btn?.title}
                 <h5>{btn?.title}</h5>
             {/if}
-            <button class="line flex {btn?.name === parentDirName ? 'focused' : ''} {btn?.minus ? 'minus-font' : ''} color-{btn?.color ?? btn?.name?.toLowerCase()}"
+            <button class="line flex{btn?.active ? ' usable' : ''}{btn?.name === parentDirName ? ' focused' : ''}{btn?.minus ? ' minus-font' : ''} color-{btn?.color ?? btn?.name?.toLowerCase()}"
             on:click={() => changeParentDir(btn?.name)}>
                 <i>{btn?.icon}</i>
                 <p>{btn?.name}</p>
@@ -199,24 +207,31 @@ const openOnClick = (e: Event, data: FileSystem) => {
                             on:dblclick={(e) => openOnClick(e, repo)}
                         >
                             <img class="icon" src="/src/lib/assets/images/icon/{repo?.type}.png" alt="" />
+                            {#if repo?.type !== 'Folder'}
+                                <i>􀉑</i>
+                            {/if}
                         </button>
                         <button
                             class="shortcut"
                             data-name-dir={repo.name}
                             on:dblclick={(e) => openOnClick(e, repo)}
                         >
-                            <p><span>{repo.name}</span></p>
+                            <p title="{repo.name}"><span>{repo.name}</span></p>
                         </button>
                     </div>
                 {/each}
             {/if}
         </div>
     </div>
+    <div class="nbr-elements">
+        <p>{children?.length ?? 0} {children?.length && children?.length > 1 ? 'elements' : 'element'}, 248,25 Go available</p>
+    </div>
 </div>
 
 <style>
 .app-grid {
-    grid-template-rows: calc(var(--nav-height) * 1.5) 1fr;
+    --height-nbr-el: calc(var(--nav-height) / 2);
+    grid-template-rows: calc(var(--nav-height) * 1.5) 1fr var(--height-nbr-el);
 }
 h5 {
     font-size: var(--fz-xxs);
@@ -238,6 +253,14 @@ h2 {
 .desactivated {
     pointer-events: none;
     opacity: 0.5;
+}
+.nbr-elements {
+    background-color: #373735;
+    font-size: var(--fz-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7C7C7C;
 }
 .container {
     width: 100%;
@@ -262,6 +285,10 @@ h2 {
     /*display: flex;
     flex-wrap: wrap;*/
 }
+nav button {
+    opacity: .5;
+    pointer-events: none;
+}
 .line {
     width: 100%;
     gap: 4px;
@@ -270,7 +297,7 @@ h2 {
     font-size: var(--font-ratio);
 }
 .focused {
-    background: #37373559;
+    background: #FFFFFF26;
 }
 .minus-font i {
     font-size: var(--fz-xxs);

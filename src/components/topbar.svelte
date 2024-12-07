@@ -17,6 +17,8 @@ const updatedTime = () => {
     const minutes = now?.getMinutes()?.toString()?.padStart(2, '0');
 
     time = `${hours}:${minutes}`;
+
+    if (time === '00:00') date = new Date().toLocaleDateString('en-GB', options).replace(',', '');
 }
 let interval: any;
 let music: HTMLAudioElement;
@@ -77,50 +79,53 @@ const changeOnReleaseTimer = (e: Event) => {
 
     if (music.paused) music.play();
 } 
-let openMenu: boolean = false;
+let openMenu: boolean = true;
 
-
+const closeMenu = (e) => {
+    if (openMenu) openMenu = false;
+}
 </script>
 
 
 <div id="top-bar">
-        <div class="tb-text flex">                    
-            <p class="tb-logo"></p>
-            <p>{name}</p>
-            {#each text as str}
-                <p>{str}</p>
-            {/each}
-            <div class="flex f-icon">
-                <div class="menu-container">
-                    <button on:click={() => openMenu = !openMenu}>􀊕</button>
-                    {#if openMenu}
-                        <div class="menu">
-                            <button on:click={() => music?.paused ? music?.play() : music?.pause() }>PLAY/PAUSE</button>
-                            <input class="time-bar" bind:this={timeBar} value='0' type="range" on:input={updateTimer} on:change={changeOnReleaseTimer}>
-                            <input class="volume-bar" value='{startVolume * 100}' type="range" on:input={updateVolume}>
-                        </div> 
-                    {/if}
-                </div>
-                <i>􀙇</i> <!-- wifi -->
-                <i>􀊫</i> <!-- spotlight -->
-                <i>􀜊</i> <!-- control center -->
-                <p>{date} <span>{time}</span></p>
-            </div>
+    <div class="tb-text flex">                    
+        <p class="tb-logo"></p>
+        <p>{name}</p>
+        {#each text as str}
+            <p>{str}</p>
+        {/each}
+        <div class="flex f-icon">
+            <!--<div class="menu-container" role="button" tabindex="0" on:focusout={(e) => closeMenu(e) }>
+                <button on:click={(e) => { e.preventDefault(); e.stopPropagation(); openMenu = !openMenu}}>􀊕</button>
+                {#if openMenu}
+                    <div class="menu">
+                        <button on:click={() => music?.paused ? music?.play() : music?.pause() }>PLAY/PAUSE</button>
+                        <input class="time-bar" bind:this={timeBar} value='0' type="range" on:input={updateTimer} on:change={changeOnReleaseTimer}>
+                        <input class="volume-bar" value='{startVolume * 100}' type="range" on:input={updateVolume}>
+                    </div> 
+                {/if}
+            </div>-->
+            <!-- <i>􀊕</i> <!-- play -->
+            <i>􀙇</i> <!-- wifi -->
+            <i>􀊫</i> <!-- spotlight -->
+            <i>􀜊</i> <!-- control center -->
+            <p style="width: 90px;">{date} <span>{time}</span></p>
         </div>
-        <div class="tb-text flex fullscreen">                    
-            <p class="tb-logo">􀣺</p>
-            <p>{name}</p>
-            {#each text as str}
-                <p>{str}</p>
-            {/each}
-            <div class="flex f-icon">
-                <i>􀊕</i> <!-- play -->
-                <i>􀙇</i> <!-- wifi -->
-                <i>􀊫</i> <!-- spotlight -->
-                <i>􀜊</i> <!-- control center -->
-                <p>{date} <span>{time}</span></p>
-            </div>
+    </div>
+    <div class="tb-text flex fullscreen">                    
+        <p class="tb-logo">􀣺</p>
+        <p>{name}</p>
+        {#each text as str}
+            <p>{str}</p>
+        {/each}
+        <div class="flex f-icon">
+            <i>􀊕</i> <!-- play -->
+            <i>􀙇</i> <!-- wifi -->
+            <i>􀊫</i> <!-- spotlight -->
+            <i>􀜊</i> <!-- control center -->
+            <p style="width: 85px">{date} <span>{time}</span></p>
         </div>
+    </div>
 </div>
 
 <style>

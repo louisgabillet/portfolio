@@ -58,9 +58,12 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    cursor: inherit;
 }
 
 /* TODO -> Need to upgrade the scrollbar (visually, moves elements, ...) */
+/* TODO -> Change all 'overflow: auto' to 'overflow; scroll' to always have the space reserved */
+/* TODO -> Move the scrollbar to not be under the resize divs */
 ::-webkit-scrollbar {
     background: transparent;
     width: 5px;
@@ -136,6 +139,9 @@ button {
     grid-template-columns: var(--width-sidebar) 1fr;
     grid-template-rows: var(--nav-height) 1fr;
     backdrop-filter: blur(var(--blur));
+    border-radius: .4rem;
+    border: 1px solid #525150;
+    overflow: hidden;
 }
 .app-content {
     background-color: #1b1b1b;
@@ -186,15 +192,30 @@ button {
     font-weight: 600;
     text-align: center;
 }
+.shortcut-container .shortcut:last-of-type {
+    width: auto;
+    max-width: 100%;
+}
 .shortcut > img {
     width: 100%;
 }
-.shortcut > p {
+.shortcut > p > span {
     --font-size: calc(var(--icon-size) / 5); 
     overflow: hidden;
     display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     font-size: var(--font-size);
+}
+.shortcut i {
+    color: black;
+    -webkit-text-stroke: 1px white;
+    font-size: var(--fz-xs);
+    position: absolute;
+    bottom: 5%;
+    left: 0;
+    transform: rotate(-35deg)
 }
 #desktop .shortcut-container:focus-within button img {
     box-shadow: 0 0 0px 1px #4D4D4D;

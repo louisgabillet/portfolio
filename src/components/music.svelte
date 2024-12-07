@@ -2,7 +2,8 @@
 import { onDestroy, onMount } from "svelte";
 
 const songs = [
-    { name: 'Rick Astley - Never Gonna Give You Up', src_name: 'Rick Roll', time: '3:32', artist: 'Rick Astley', album: '', genre: '', plays: '' },
+    //{ name: 'Rick Astley - Never Gonna Give You Up', src_name: 'Rick Roll', time: '3:32', artist: 'Rick Astley', album: '', genre: '', plays: '' },
+    { name: 'The Most Beautiful Song Of All Time', secret_name: 'Rick Astley - Never Gonna Give You Up', src_name: 'Rick Roll', time: '3:32', artist: '', secret_artist: 'Rick Astley', album: '', genre: '', plays: '' },
 ]
 const navBtns = [
     { name: 'Home', icon: '􀎞', title: 'Apple Music' },
@@ -88,7 +89,6 @@ const updateVolume = (e: Event) => {
 const updateTimer = (e: Event) => {
     const target = e?.target as HTMLInputElement;
 
-    console.log('input');
     isTimerChanging = true;
 
     const value = target?.value;
@@ -130,7 +130,6 @@ const progressBar = (range: HTMLInputElement, color1: string, color2: string) =>
     const max = 100;
     const value = +range.value;
 
-    console.log(range, min, max, value)
     range.style.background = `linear-gradient(to right, ${color1} 0%, ${color1} ${(value - min)/(max - min)*100}%, ${color2} ${(value - min)/(max - min)*100}%, ${color2} 100%)`;
 }
 </script>
@@ -142,17 +141,18 @@ const progressBar = (range: HTMLInputElement, color1: string, color2: string) =>
             {#if btn?.title}
                <h5>{btn?.title}</h5> 
             {/if}
-           <button class="line flex {btn?.name === tabName ? 'focused' : ''}" on:click={() => tabName = btn?.name}>
+           <!--<button class="line flex {btn?.name === tabName ? 'focused' : ''}" on:click={() => tabName = btn?.name}>-->
+           <button class="line flex {btn?.name === tabName ? 'focused' : ''}">
                 <i>{btn?.icon}</i>
                 <p>{btn?.name}</p>
             </button> 
         {/each}
     </nav>
-    <div class="app-controls track flex">
+    <div class="app-controls track">
         <div class="flex controls">
             <button>􀊝</button>
             <button class="medium-i">􀊊</button>
-            <button class="big-i" style="width: 12px;" on:click={ playPauseBtn }>{!isPlaying ? '􀊄' : '􀊆'}</button>
+            <button class="big-i" on:click={ playPauseBtn }>{!isPlaying ? '􀊄' : '􀊆'}</button>
             <button class="medium-i">􀊌</button>
             <button on:click={() => music?.loop }>􀊞</button>
         </div>
@@ -162,8 +162,8 @@ const progressBar = (range: HTMLInputElement, color1: string, color2: string) =>
                 {#if !currTime}
                     <i>􀣺</i>
                 {/if}
-                <p class="{!currTime ? 'hidden' : ''}">{activeMusicData?.name ?? ''}</p>
-                <p class="{!currTime ? 'hidden' : ''}">{activeMusicData?.artist?? ''}</p>
+                <p title="{activeMusicData?.secret_name ?? activeMusicData?.name ?? ''}" class="{!currTime ? 'hidden' : ''}">{activeMusicData?.secret_name ?? activeMusicData?.name ?? ''}</p>
+                <p title="{activeMusicData?.secret_artist ?? activeMusicData?.artist ?? ''}" class="{!currTime ? 'hidden' : ''}">{activeMusicData?.secret_artist ?? activeMusicData?.artist ?? ''}</p>
                 <input class="time-bar {!currTime ? 'hidden' : ''}" bind:this={timeBar} value='0' type="range">
             </div>
         </div>
@@ -196,9 +196,9 @@ const progressBar = (range: HTMLInputElement, color1: string, color2: string) =>
             </div>
             <div class="pattern">
                 {#each songs as song}
-                    <button class="song grid" on:focusin={() => playMusic(song?.src_name) }>
+                    <button class="song grid" on:focusin={() => playMusic(song?.src_name) } on:dblclick={ playPauseBtn }>
                         <p>{song?.src_name === activeMusic ? '􀊡' : ''}</p>
-                        <p>{song?.name}</p>
+                        <p title="{song?.name}">{song?.name}</p>
                         <p class="align-center">􀁸</p>
                         <p class="align-right">{song?.time}</p>
                         <p>{song?.artist}</p>
@@ -267,15 +267,16 @@ input[type=range], input[type=range]::-webkit-slider-thumb {
     gap: 4px;
 }
 .medium-i {
-    font-size: calc(var(--font-size) + 3.5px);
+    font-size: var(--fz-s);
 }
 .big-i {
-    font-size: calc(var(--font-size) + 6px);
+    font-size: var(--fz-l);
+    width: var(--fz-l);
 }
 .playing-song {
     width: 100%;
     height: 100%;
-    min-width: 150px;
+    min-width: 125px;
     background-color: var(--light-grey-track);
     border-radius: 2px;
     overflow: hidden;
@@ -330,7 +331,7 @@ input[type=range], input[type=range]::-webkit-slider-thumb {
     gap: 4px;
     padding: 2px 8px;
     border-radius: 2px;
-    opacity: 1;
+    opacity: .5;
 }
 h2 {
     padding-block: 5px;
@@ -344,7 +345,9 @@ h5 {
     color: #7c7c7c;
 }
 .focused {
-    background-color: #7c7c7c80;
+    /*background-color: #7c7c7c80;*/
+    background-color: #FFFFFF28;
+    opacity: 1;
 }
 .line p {
     color: white;
@@ -357,8 +360,6 @@ h5 {
     background-color: #1b1b1b;
     padding: 2px 10px;
     gap: 20px;
-    display: grid;
-    grid-template-columns: min-content 1fr min-content min-content;
     overflow-x: auto;
 }
 .infos {

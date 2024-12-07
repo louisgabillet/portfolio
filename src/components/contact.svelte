@@ -16,7 +16,7 @@ $: contactInfo = contactList.find(contact => contact.name === contactName) ?? co
 $: ({name, mobile, mail, note, self} = contactInfo);
 </script>
 
-<div class="container">
+<div class="app-grid">
     <nav>
         {#each navBtns as btn}
             {#if btn?.title}
@@ -31,9 +31,8 @@ $: ({name, mobile, mail, note, self} = contactInfo);
            <button class="{contact?.name === contactName ? 'active' : ''} {self ? 'flex-btw' : ''}" on:click={() => contactName = contact.name}>{contact.name}<i>􀉭</i></button> 
         {/each}
     </div>
-    <div class="contact-page">
+    <div class="app-content">
         {#if contactInfo}
-            <div class="overflow">
                 <div class="flex">
                     <div class="pp">
                         <span>{name?.split('')[0]?.toUpperCase()}</span>
@@ -77,16 +76,14 @@ $: ({name, mobile, mail, note, self} = contactInfo);
                         {/if}
                     </div>
                 </div>
-            </div>
         {/if}
     </div>
 </div>
 
 <style>
-.container {
-    height: 100%;
-    display: grid;
+.app-grid {
     grid-template-columns: 7rem 7rem 1fr;
+    grid-template-rows: 1fr;
 }
 h2 {
     font-size: calc(var(--font-size) + 4px);
@@ -137,8 +134,12 @@ button {
     aspect-ratio: 1/1;
     text-align: center;
 }
+nav button {
+    opacity: .5;
+}
 nav .active {
     background: var(--dark-selection-focused);
+    opacity: 1;
 }
 .active i {
     color: white;
@@ -199,40 +200,25 @@ nav .active {
     width: 40%;
     color: #7C7C7C
 }
-nav {
-    width: 100%;
-    height: 100%;
-    background: var(--dark-fullscreen);
-    backdrop-filter: blur(var(--blur));
-}
-nav, .contact-page, .contact-list, .container, button, .info {
+ button, .info {
     width: 100%;
 }
 nav, .contact-list {
-    border-right: 1px solid black;
     padding: var(--nav-height) 5px 5px 5px;
 }
-.contact-list, .contact-page {
-    height: 100%;
-    background: #21211F;
+.contact-list {
+    border-right: 1px solid black;
+    background: #1B1B1B;
 }
-.contact-page {
-    overflow: scroll;
-    position: relative;
-}
-.overflow {
+.app-content {
     padding: calc(var(--nav-height) / 2) 10px 10px 10px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    min-width: 100%;
-    min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: calc(var(--font-size) * 1.5);
+    overflow: auto;
 }
-.contact-page p, .contact-page, .contact-page a {
+.app-content p, .app-content, .app-content a {
     font-size: var(--font-size);
 }
 .contact-list button:focus {

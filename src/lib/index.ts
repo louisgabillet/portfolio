@@ -15,6 +15,16 @@ interface Comp {
 }
 
 export let windowOrder: string[] = [];
+// TODO -> Change windowOrder to a writable for reactivity.
+//
+// Problem: The variable change doesnt trigger the reactivity and the indicators (dot under icon) are not updating.
+// Solution: Change the windowOrder to a writable and use it wherever needed.
+//
+// Changes: - Remove prop 'order', can import the writable
+//          - Update 'isOpen()' from '+page.svelte' to make the indicators update.
+//          - Change where windowOrder is asssinged a value to 'set()'.
+//
+//export const windowOrder: Writable<string> = writable();
 export const activeTopBar: Writable<TBText> = writable(topBarText.find((el) => (el?.app_name || el?.name) == 'Finder'));
 
 let uniqueName: string = '';

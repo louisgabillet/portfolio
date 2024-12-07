@@ -15,6 +15,7 @@ const maxWidth: number = 995;
 const isOpen = (name: string, arr: string[]) => arr?.some(el => el?.startsWith(name)); 
 const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
 
+$: console.log(windowOrder);
 
 let time: string;
 let date: string;
@@ -191,6 +192,7 @@ onMount(async () => {
                                         on:dblclick={() => { openAppWindow(app) }}
                                     > 
                                         <img src={app.src} alt="">
+                                        <i>􀉑</i>
                                     </button>
                                     <button class="shortcut"
                                         data-name-app={app?.app_name || app?.name}

@@ -3,7 +3,8 @@ export let name: string = 'About Me';
 
 const notes = [
     {name: 'About Me', update_date: '10/16/2024', content: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Quaerat rem, quidem harum ratione at omnis officiis architecto iste aut adipisci obcaecati perferendis tempora. Nisi, natus laudantium. Temporibus, officia assumenda voluptates animi, delectus modi quaerat fuga iste pariatur illo suscipit! Itaque rerum necessitatibus facere. Eligendi, blanditiis tempore explicabo culpa cum animi'},
-    {name: 'Notes test', update_date: '12/16/2024', content: 'a note.'},
+    {name: 'RoadMap', update_date: '12/16/2024', content: `<b>1. Python</b><br>First heard of Python as a relatively simple language, a good one to start. So to learn the big principles of how a programming language works, i thought it was good.<br><br><b>2. HTML/CSS/JS:</b><br>I liked Python, but I found that there was not enough 'Graphism' in it. That's when i learned of 'Web Developement'. Tried it, and realised that the 'Graphism' realy was important for me.<br><br><b>3. Svelte:</b><br>After exploring the world of the Web, i had to take the next step to learn new things. Follows a search on the 'Best' framework existing. Learned pretty quickly that there are not that different one another, and Svelte/SvelteKit was interesting enough to try him<br><br><b>4. TS:</b><br>At one point, i saw TypeScript code and became intriged on what types was. After some learning, realise it was not obligated, but could simplify my life greatly.
+`},
 ];
 
     const options: Record<string, string> = {
@@ -65,7 +66,7 @@ $: activeNote = notes.find((note) => note.name === activeName) ?? {name: '', upd
         {#if activeNote}
             <p class="grey text-center">{dateText(activeNote?.update_date)}</p>
             <h2>{activeNote.name}</h2>
-            <p>{activeNote.content}</p>
+            <p>{@html activeNote.content}</p>
         {/if}
     </div>
 </div>
@@ -111,6 +112,7 @@ h4 {
 }
 h2 {
     font-size: calc(var(--font-size) + 4px);
+    margin-bottom: 10px;
 }
 .app-content p {
     /*font-size: .75rem;*/
@@ -173,9 +175,5 @@ nav {
     padding: .25rem 15px;
     border-radius: .2rem;
     margin-inline: 5px;
-}
-.infos:focus {
-    background-color: var(--yellow);
-    box-shadow: 0 0 6px 0 var(--color-shadow);
 }
 </style>

@@ -30,7 +30,7 @@ export const dockApps: Apps[]  = [
     { name: 'Safari', src: '/src/lib/assets/images/icon/Safari.png' },
     { name: 'Music', src: '/src/lib/assets/images/icon/Music.png' },
     { name: 'System Settings', app_name: 'System_Settings', src: '/src/lib/assets/images/icon/System_Settings.png' },
-    { name: 'Projects', app_name: 'Finder', src: '/src/lib/assets/images/icon/Folder.png',  path: ['louisgabillet', 'Projects'] },
+    { name: 'Projects', app_name: 'Finder', src: '/src/lib/assets/images/icon/Folder.png',  path: ['Downloads'] },
     { name: 'Bin', app_name: 'Finder', src: '/src/lib/assets/images/icon/Trash_Empty.png', path: ['Bin'] },
 ];
 export const launchpadApps: Apps[]  = [
