@@ -1,23 +1,20 @@
 <script lang="ts">
-import { closeAppWindow, changeAppWindowsOrder } from '$lib/index';
-import { createEventDispatcher, onDestroy, onMount } from 'svelte';
+import { closeAppWindow, changeAppWindowsOrder, isResponsive, globalWindowOrder } from '$lib/index';
+import { onDestroy, onMount } from 'svelte';
 import Safari from './safari.svelte';
 import Notes from './notes.svelte';
 import Mail from './mail.svelte';
 import Finder from './finder.svelte';
-import Settings from './settings.svelte';
 import Music from './music.svelte';
-import Contact from './contact.svelte';
+import Contacts from './contacts.svelte';
+import TextEdit from './textEdit.svelte';
+import Preview from './preview.svelte';
+//import Settings from './settings.svelte';
 
+export let appInfos: any;
 export let name;
-export let order: string[];
-export let safariLink: string = '';
-export let finderPath: string[] = ['louisgabillet']
-//export let open: (app: any) => void = () => {};
-//export let destroy: (name: string) => void;
-//export let changeFocus: (name: string) => void;
 
-const dispatch = createEventDispatcher();
+const { type, url, pages, preview_data, path, unique_name, img_id } = appInfos;
 
 interface AppsData {
     name: string,
@@ -32,52 +29,59 @@ const appsData: AppsData[] = [
     { 
         name: 'Finder',
         data: {
-            min_width: 200,
-            min_height: 200,
+            min_width: 40,
+            min_height: 25,
         }
     },
     {
         name: 'Notes',
         data : {
-            min_width: 260,
-            min_height: 190,
+            min_width: 37,
+            min_height: 20,
         }
     },
     {
-        name: 'Contact',
+        name: 'Contacts',
         data: {
-            min_width: 260,
-            min_height: 260,
+            min_width: 35, //260,
+            min_height: 25, //260,
         }
     },
     {
         name: 'Safari',
         data : {
-            min_width: 300,
-            min_height: 130,
+            min_width: 28,
+            min_height: 18,
         }
     },
     {
         name: 'Music',
         data : {
-            min_width: 520,
-            min_height: 380,
+            min_width: 50,
+            min_height: 50,
         }
     },
     {
-        name: 'System_Settings',
+        name: 'Preview',
         data: {
-            min_width:390,
-            min_height: 304,
-            resize_x: false,
+            min_width: 35,
+            min_height: 20,
         }
     },
+    //{
+    //    name: 'System_Settings',
+    //    data: {
+    //        min_width:390,
+    //        min_height: 304,
+    //        resize_x: false,
+    //    }
+    //},
 ]
 const defaultAppData: AppsData = {
     name: 'Default',
     data: {
-        min_width: 250,
-        min_height: 200,
+        min_width: 25,
+        min_height: 25,
     }
 }
 
@@ -110,26 +114,34 @@ $: storage = {
 $: getStorageString = localStorage.getItem(name);
 //$: getStorage = getStorageString ? JSON.parse(getStorageString) : {pos:{x: 25, y: 25}, size: {width: 50, height: 50}};
 $: defaultSize = {
-    width: appData.min_width + (isResizeX ? 200 : 0),
-    height: appData.min_height + (isResizeY ? 200 : 0),
+    width: appData.min_width, //+ (isResizeX ? 10 : 0),
+    height: appData.min_height //+ (isResizeY ? 10 : 0),
+}
+const calculateSize = (value: number, isResize: boolean, name: string) => {
+    const res = isResize ? (100 - value) / 2 + value : value;
+    //console.log(name, isResize, value, res);
+    return res;
 }
 $: getStorage = getStorageString ?
     JSON.parse(getStorageString) :
     {
         pos: {
-            x: parent ? (parent.offsetWidth / 2) - (defaultSize.width / 2) : 0,
-            y: parent ? (parent.offsetHeight / 2) - (defaultSize.height / 2) : 0,
+            //x: 25, //parent ? (parent.offsetWidth / 2) - (defaultSize.width / 2) : 0,
+            //y: 25, //parent ? (parent.offsetHeight / 2) - (defaultSize.height / 2) : 0,
+            x: (100 - calculateSize(appData?.min_width, isResizeX, 'x')) / 2, 
+            y: (100 - calculateSize(appData?.min_height, isResizeY, 'y')) / 2, 
         },
         size: {
-            width: defaultSize.width,
-            height: defaultSize.height,
+            width: calculateSize(appData?.min_width, isResizeX, 'width'), 
+            height: calculateSize(appData?.min_height, isResizeY, 'height'), 
         }
     };
 $: ({x: storageX, y: storageY} = getStorage.pos);
 $: ({width: storageWidth, height: storageHeight} = getStorage.size);
 
 // Props Elements
-$: zIndex = order?.indexOf(uniqueName) >= 0 ? order?.indexOf(uniqueName) : 0;
+//$: zIndex = order?.indexOf(uniqueName) >= 0 ? order?.indexOf(uniqueName) : 0;
+$: zIndex = $globalWindowOrder?.indexOf(uniqueName) >= 0 ? $globalWindowOrder?.indexOf(uniqueName) : 0;
 
 // Conditions
 let isMouseMove: boolean = false;
@@ -159,6 +171,7 @@ let mousePos = {
 $: ({ mouseXStart, mouseYStart } = mousePos);
 $: ({ percentX, percentY, previousX, previousY } = pos);
 $: ({ width, height, previousW, previousH } = size);
+
 let reduceX: number, 
     reduceY: number;
 let activeSides: Record<string, boolean> = {left: false, top: false, right: false, bottom: false};
@@ -182,23 +195,25 @@ let windowWidth: number = 0;
 //$: if (document.activeElement === openWindow && openWindow && !isFullScreen) { openWindow.addEventListener('mousemove', changeResizeCursor) } else if (openWindow) { openWindow.removeEventListener('mousemove', changeResizeCursor) }; 
 
 onMount(() => {
-    parent = document.getElementById('desktop');
-    id = document?.querySelectorAll(`.app-window[data-app-name=${name}]`)?.length;
+    parent = document.querySelector('.screen__desktop');
+    id = document.querySelectorAll(`.app[data-app-name=${name}]`)?.length;
     uniqueName = `${name}-${id}`;
     //const window = document.querySelector(`.app-window[data-app-name=${name}-${uniqueID}`) as HTMLDivElement;
-    openWindow?.focus({preventScroll: true});
+    openWindow?.focus({ preventScroll: true });
     //window.addEventListener('mousemove', changeResizeCursor)
-
-    //percentX = percentX + id;
-    //percentY = percentY + id;
+    pos.percentX = percentX + id;
+    pos.percentY = percentY + id;
+    pos.previousX = previousX + id;
+    pos.previousY = previousY + id;
 })
 onDestroy(() => {
+    if (!openWindow) return;
     openWindow.removeEventListener('mousemove', changeResizeCursor)
     localStorage.setItem(name, JSON.stringify(storage));
 })
 
 const onMouseDown = (e: MouseEvent) => {
-    if (isFullScreen || !openWindow) return;
+    if (isFullScreen || $isResponsive || !openWindow) return;
     //dispatch('focus', { name: name })
 
     if (!isWindowMoving) e.stopPropagation();
@@ -208,7 +223,7 @@ const onMouseDown = (e: MouseEvent) => {
 
     setTimeout(() => {
         const marginForMove = 32 + 6 // 2rem + padding(4px) + border(2px);
-        const isTargetResize = (e.target as HTMLElement)?.classList.contains('resize');
+        const isTargetResize = (e.target as HTMLElement)?.classList.contains('app__resize');
         const isAppWindowFocused = openWindow === document.activeElement; 
         const canMoveAppWindow = mouseYStart <= rect?.top + marginForMove;
 
@@ -220,6 +235,8 @@ const onMouseDown = (e: MouseEvent) => {
     })
 }
 const onKeyDown = (e:KeyboardEvent) => {
+    if ($isResponsive) return;
+
     const keyClose = e.ctrlKey && e.code === 'KeyA';
     const keyReduce = e.ctrlKey && e.code === 'Semicolon';
     const keyFullscreen = e.ctrlKey && e.code === 'KeyF';
@@ -234,33 +251,20 @@ const onKeyDown = (e:KeyboardEvent) => {
     }
 }
 
-const onPointerDown = (e: PointerEvent) => {
-    const rect = openWindow?.getBoundingClientRect()
-    const height = rect?.top;
-    const startY = e?.clientY - height;
-
-    window.addEventListener('pointermove', pointerMoveHandler);
-    window.addEventListener('pointerup', pointerUpHandler);
-}
-const pointerMoveHandler = (e: PointerEvent) => {
-    if (!parent) return;
-    const percentY = e.clientY / parent?.offsetHeight * 100;
-    size.height = percentY / 100;
-}
-const pointerUpHandler = (e: PointerEvent) => {
-    window.removeEventListener('pointermove', pointerMoveHandler);
-    window.removeEventListener('pointerup', pointerUpHandler);
-}
 const mouseMoveHandler = (e: MouseEvent) => {
     requestAnimationFrame(()=> {
         if (!parent || !openWindow || !isMouseDown) return; 
         const parentRect = parent?.getBoundingClientRect();
+        const round = (nbr: number) => +nbr.toFixed(5);
 
         // TODO -> Need to make the limit more precise (exceeds a bit).
         const x: number = checkIfMouseLeave(e, parentRect)?.x ?? 0,
               y: number = checkIfMouseLeave(e, parentRect)?.y ?? 0;
-        const offsetX = (mouseXStart - x) * -1;
-        const offsetY = (mouseYStart - y) * -1;
+        const parentWidth = parent.offsetWidth,
+              parentHeight = parent.offsetHeight;
+
+        const offsetX = ((mouseXStart - x) * -1) / parentWidth * 100,
+              offsetY = ((mouseYStart - y) * -1) / parentHeight * 100;
         const pX = previousX + offsetX,
               pY = previousY + offsetY;
 
@@ -272,24 +276,24 @@ const mouseMoveHandler = (e: MouseEvent) => {
             const reverseOffsetX = isLeftSide ? offsetX * -1 : offsetX,
                   reverseOffsetY = isTopSide ? offsetY * -1 : offsetY;
 
-            const pW = Math.round(previousW + reverseOffsetX),
-                  pH = Math.round(previousH + reverseOffsetY);
+            const pW = previousW + reverseOffsetX, //Math.round(previousW + reverseOffsetX),
+                  pH = previousH + reverseOffsetY; //Math.round(previousH + reverseOffsetY);
 
             const minWidth = pW >= appData.min_width,
                   minHeight = pH >= appData.min_height;
 
             if (minWidth && isResizeX) {
-                if (isLeftSide) pos.percentX = pX;
-                if (activeSides?.left || activeSides?.right) size.width =  pW <= 20 ? 20 : pW;
+                if (isLeftSide) pos.percentX = round(pX);
+                if (activeSides?.left || activeSides?.right) size.width = round(pW);
             }
             if (minHeight && isResizeY) {
-                if (isTopSide) pos.percentY = pY;
-                if (activeSides?.top || activeSides?.bottom) size.height = pH <= 25 ? 25 : pH;
+                if (isTopSide) pos.percentY = round(pY);
+                if (activeSides?.top || activeSides?.bottom) size.height = round(pH);
             }
 
         } else {
-            pos.percentX = Math.round(pX);
-            pos.percentY = Math.round(pY);
+            pos.percentX = round(pX); //Math.round(pX);
+            pos.percentY = pY <= 0 ? 0 : round(pY); //pY <= 0 ? 0 : Math.round(pY);
         }
     })
 };
@@ -352,7 +356,7 @@ const checkIfMouseResize = (e: MouseEvent, rect: any) => {
 let isCursorChanging: boolean = false
 const resetCursor = () => {
     if (!isMouseDown) {
-        const screen: HTMLElement|null = document.getElementById('screen');
+        const screen: HTMLElement|null = document.querySelector('.screen__desktop');
         activeSides = {left: false, top: false, right: false, bottom: false};
         isCursorChanging = false;
         window.removeEventListener('mousemove', changeResizeCursor);
@@ -366,9 +370,9 @@ const resetCursor = () => {
 }
 const changeResizeCursor = (e: MouseEvent, pos: string = '') => {
     const isFocused = openWindow?.contains(document.activeElement);
-    if (!isFocused || isFullScreen || reduce) return;
+    if (!isFocused || isFullScreen || reduce || $isResponsive) return;
 
-    const screen: HTMLElement|null = document.getElementById('screen');
+    const screen: HTMLElement|null = document.querySelector('.screen__desktop');
     const x = e.clientX,
           y = e.clientY;
     const rect = openWindow?.getBoundingClientRect();
@@ -431,26 +435,38 @@ const changeResizeCursor = (e: MouseEvent, pos: string = '') => {
 }
 
 const fullscreen = () => {
-    const topBar = document.getElementById('top-bar') as HTMLDivElement;
-    const bgImg = document.querySelector('.background img') as HTMLDivElement;
-    const iconPlacement = document.getElementById('icons-placement') as HTMLDivElement;
-    const dock = document.getElementById('dock') as HTMLDivElement;
-
-    const all = [topBar, bgImg, iconPlacement, dock];
+    //const topBar = document.getElementById('top-bar') as HTMLDivElement;
+    //const bgImg = document.querySelector('.screen__background') as HTMLDivElement;
+    //const iconPlacement = document.querySelector('.desktop__icons-placement') as HTMLDivElement;
+    const desktop = document.querySelector('.screen__desktop') as HTMLElement;
+    const bg = document.querySelector('.screen__background') as HTMLElement;
+    const dock = document.querySelector('.desktop__dock') as HTMLDivElement;
 
     if (isFullScreen) {
-        all?.forEach((el: HTMLElement) => {
-            el?.classList.remove('bg-fullscreen');
-        })
+        dock?.classList.remove('screen__dock--fullscreen');
+        desktop?.classList.remove('screen__desktop--fullscreen');
+        bg?.classList.remove('screen__background--fullscreen');
     } else {
-        all?.forEach((el: HTMLElement) => {
-            el?.classList.add('bg-fullscreen');
-        })
+        dock?.classList.add('screen__dock--fullscreen');
+        desktop?.classList.add('screen__desktop--fullscreen');
+        bg?.classList.add('screen__background--fullscreen');
     }
+    //const all = [topBar, bgImg, iconPlacement, dock];
+    //const all = [dock, screen];
+
+    //if (isFullScreen) {
+    //    all?.forEach((el: HTMLElement) => {
+    //        el?.classList.remove('bg-fullscreen');
+    //    })
+    //} else {
+    //    all?.forEach((el: HTMLElement) => {
+    //        el?.classList.add('bg-fullscreen');
+    //    })
+    //}
     isFullScreen = !isFullScreen;
 }
 const addOrRemoveElDock = (isReduce: boolean, ratio: number, duration: number) => {
-    const dock = document?.getElementById('dock');
+    const dock = document.querySelector('.desktop__dock');
     const animationOpen = [ {width: 0}, {width: 'var(--icon-size)'} ];
     const animationOpts = { duration: duration, fill: ('forwards' as any)};
     if (isReduce) {
@@ -481,6 +497,7 @@ const addOrRemoveElDock = (isReduce: boolean, ratio: number, duration: number) =
         setTimeout(() => { newApp.appendChild(newAppImg) }, duration)
     }
 }
+// TODO -> Improve reduce for fluidity and optimisation / Correct existing bugs.
 const reduceWindow = () => {
     const offX = openWindow?.offsetWidth, 
           offY = openWindow?.offsetHeight;
@@ -498,7 +515,7 @@ const reduceWindow = () => {
         }, duration)
     } else {
         scale = +(32 / (offX > offY ? offX : offY)).toFixed(2);
-        const allReduced = document.querySelectorAll('#dock .reduced-page');
+        const allReduced = document.querySelectorAll('.desktop__dock .reduced-page');
         //const lastEl = document.getElementById('dock')?.lastElementChild;
         const lastEl = allReduced?.[allReduced?.length - 1] ?? null;
         const rect = lastEl?.getBoundingClientRect();
@@ -524,64 +541,109 @@ const reduceWindow = () => {
     //    reduceY = reducePos?.top - parentRect?.top;
     //}
 }
+// TODO -> Rework on transition.
+let isTransitionActive: boolean = false;
+$: if (isFullScreen || isReduceTransi) {
+    isTransitionActive = true;
+} else if (isTransitionActive) {
+    setTimeout(() => {
+        isTransitionActive = false
+    }, 320)
+}
+interface Component {
+    name: any;
+    props: Record<string, any> | null,
+}
+const components: Record<string, Component> = {
+    Finder: {
+        name: Finder,
+        props: { finderPath: path },
+    },
+    Mail: {
+        name: Mail,
+        props: null,
+    },
+    Safari: {
+        name: Safari,
+        props: { url, pages },
+    },
+    Music: {
+        name: Music,
+        props: null,
+    },
+    Contacts: {
+        name: Contacts,
+        props: null,
+    },
+    TextEdit: {
+        name: TextEdit,
+        props: null,
+    },
+    Preview: {
+        name: Preview,
+        props: { unique_name, img_id },
+    },
+    Notes: {
+        name: Notes,
+        props: null,
+    },
+    //System_Settings: {
+    //    name: System_Settings,
+    //    props: null,
+    //},
+
+}
+const currComponent = components[name];
 </script>
 
 
 <svelte:window bind:innerWidth={windowWidth}/>
 <div bind:this={openWindow} 
+    class="app {$isResponsive ? 'app--version-mobile' : 'app--version-pc'}"
+    data-app-name={name}
+    class:app--transition={ isTransitionActive }
+    class:app--full-screen={ isFullScreen }
+    class:app--reduced={ reduce }
+    class:app--reduce-transi={ isReduceTransi }
     role="button" 
     tabindex="0" 
-    data-app-name={name}
-    class="app-window {isMouseMove ? '' : 'transition'} {isFullScreen ? 'full-screen' : ''} {reduce ? 'reduced' : ''} {isReduceTransi ? 'reduce-transi' : ''}"
-    style="
-    --width: {width}px;
-    --height: {height}px;
-    --top: {percentY + id}px;
-    --left: {percentX + id}px;
-    z-index: {zIndex}; 
-    {isReduceTransi ? `--reduce-top: ${reduceY}px; --reduce-left: ${reduceX}px; --scale: ${scale}` : ''}
-    "
+    style="z-index: {zIndex}; {$isResponsive ? '' : `--width: ${width}%; --height: ${height}%; --top: ${percentY}%; --left: ${percentX}%; ${isReduceTransi ? `--reduce-top: ${reduceY}px; --reduce-left: ${reduceX}px; --scale: ${scale}` : ''}`}"
     on:focusin={() => { changeAppWindowsOrder(uniqueName) }}
-    on:pointerdown={ (e) => { if (windowWidth > 995) {onMouseDown(e)} else {onPointerDown(e)} }}
+    on:pointerdown={ (e) => { onMouseDown(e) }}
     on:keydown={ (e) => { onKeyDown(e) }}
 > 
     {#if reduce}
-        <button class="overlay" on:click={() => { reduceWindow() }}></button> 
+        <button class="app__overlay" on:click={() => { reduceWindow() }}></button> 
     {/if}
-    <div class="action-btn">
-        <button id='close-btn' on:click={() => { closeAppWindow(uniqueName) }}></button>
-        <button id={!isFullScreen ? 'reduce-btn' : 'desactivated'} on:click={() => { reduceWindow() }}></button>
-        <button id="full-screen-btn" on:click={() => { fullscreen() }}></button>
-    </div>
-    {#if name === 'Notes'}
-        <Notes />   
-    {:else if name === 'Finder'}
-        <Finder {openWindow} {finderPath}/>
-        {:else if name === 'Mail'}
-        <Mail />
-        {:else if name === 'Safari'}
-        <Safari link={safariLink}/>
-        {:else if name === 'System_Settings'}
-        <Settings />
-        {:else if name === 'Music'}
-        <Music />
-        {:else if name === 'Contact'}
-        <Contact />
+    {#if !$isResponsive}
+        <div class="app__action action">
+            <button class='action__btn action__btn--close' on:click={() => { closeAppWindow(uniqueName) }}></button>
+            <!--<button id={!isFullScreen ? 'reduce-btn desactivated' : 'desactivated'} on:click={() => { reduceWindow() }}></button>-->
+            <button class="action__btn action__btn--reduce action__btn--desactivated" on:click={() => { reduceWindow() }}></button>
+            <button class="action__btn action__btn--fullscreen" on:click={() => { fullscreen() }}></button>
+        </div>
     {/if}
-    {#each resizeBtns as {axe, pos}}
-        <button class="resize axe-{axe} pos-{pos}"
-            on:mousemove={(e) => { if (!isCursorChanging) changeResizeCursor(e, pos) }}
-            on:mouseleave={resetCursor}
-            on:focus={() => {}}
-        ></button> 
-    {/each}
+    {#if currComponent}
+       <svelte:component this={currComponent.name} {...currComponent.props} /> 
+    {/if}
+    {#if !$isResponsive}
+        {#each resizeBtns as {axe, pos}}
+            <button class="app__resize app__resize--axe-{axe} app__resize--pos-{pos}"
+                on:mousemove={(e) => { if (!isCursorChanging) changeResizeCursor(e, pos) }}
+                on:mouseleave={resetCursor}
+                on:focus={() => {}}
+            ></button> 
+        {/each}
+    {/if}
 </div>
 
 <style>
-.app-window {
+.app {
     --padding: 0px;
     --nav-height: 2rem;
     position: absolute;
+}
+.app--version-pc {
     padding: var(--padding);
     width: var(--width);
     height: var(--height);
@@ -590,36 +652,42 @@ const reduceWindow = () => {
     outline: 1px solid black;
     border-radius: .4rem;
 }
-.resize {
+.app--version-mobile {
+    width: 100%;
+    height: 100%;
+    inset: 0;
+}
+.app__resize {
     --size: 10px;
     --placement-minus: -6px;
     position: absolute;
     z-index: 1000;
+    cursor: inherit;
 }
-.resize.axe-y {
+.app__resize--axe-y {
     width: calc(100% + var(--size));
     height: var(--size);
     left: 50%;
     transform: translateX(-50%);
 }
-.resize.axe-x {
+.app__resize--axe-x {
     width: var(--size);
     height: 100%;
     top: 0;
 }
-.resize.pos-top {
+.app__resize--pos-top {
     top: var(--placement-minus);
 }
-.resize.pos-bottom {
+.app__resize--pos-bottom {
     bottom: var(--placement-minus);
 }
-.resize.pos-left {
+.app__resize--pos-left {
     left: var(--placement-minus);
 }
-.resize.pos-right {
+.app__resize--pos-right {
     right: var(--placement-minus);
 }
-.overlay {
+.app__overlay {
     width: 100%;
     height: 100%;
     z-index: 1000;
@@ -630,24 +698,15 @@ const reduceWindow = () => {
     top: 0;
     left: 0;
 }
-.transition {
-    --transi: 320ms ease;
-    transition: 
-        top var(--transi),
-        left var(--transi),
-        width var(--transi),
-        height var(--transi),
-        max-width var(--transi),
-        max-height var(--transi),
-        padding var(--transi),
-        transform var(--transi);
+.app--transition {
+    transition: all 320ms ease; 
 }
-.reduce-transi {
+.app--reduce-transi {
     top: var(--reduce-top);
     left: var(--reduce-left); 
     transform: scale(var(--scale));
 }
-.reduced {
+.app--reduced {
     position: relative;
     top: 0;
     left: 0;
@@ -656,7 +715,7 @@ const reduceWindow = () => {
     height: 100%;
     transform-origin: center;
 }
-.full-screen {
+.app--fullscreen {
     top: 0;
     left: 0;
     width: 100%;
@@ -667,58 +726,58 @@ const reduceWindow = () => {
     border-radius: 0;
     outline: none;
     border: none;
+    margin-left: 100%;
 }
-.action-btn {
-    --pos: calc(var(--nav-height) / 2);
+.action {
     display: flex;
     align-items: center;
+}
+.app__action {
     position: absolute;
-    top: var(--pos);
+    top: calc(var(--nav-height) / 2);
     transform: translateY(-50%);
     left: 8px;
     gap: 4px;
     z-index: 999;
-    /*height: var(--nav-height);*/
 }
-#desactivated {
-    pointer-events: none;
-}
-.action-btn button {
+.action__btn {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    border: none;
-    outline: none;
-    box-shadow: inset 0 0 .5px .5px rgba(0, 0, 0, .2);;
-    background-color: #50504E;
+    background-color: #7c7c7c33;
 }
-.action-btn:hover #close-btn {
+.action__btn--close:hover {
     background-color: var(--color-btn-close);
 }
-.action-btn:hover #reduce-btn {
+.action__btn--reduce:hover {
     background-color: var(--color-btn-reduce);
 }
-.action-btn:hover #full-screen-btn {
+.action__btn--fullscreen:hover {
     background-color: var(--color-btn-fullscreen);
 }
-.app-window:focus,
-.app-window:focus-within {
+.app:focus,
+.app:focus-within {
     box-shadow: 0 0 1rem 0 var(--color-shadow);
 }
-.app-window:focus #full-screen-btn,
-.app-window:focus-within #full-screen-btn, 
-.app-window:has(.overlay) #full-screen-btn {
-    background-color: var(--color-btn-fullscreen);
+.app:focus .action__btn,
+.app:focus-within .action__btn,
+.app:has(.overlay) .action__button {
+    background-color: var(--btn-color);
 }
-.app-window:focus .action-btn #reduce-btn,
-.app-window:focus-within #reduce-btn, 
-.app-window:has(.overlay) #reduce-btn {
-    background-color: var(--color-btn-reduce);
+.action__btn--fullscreen {
+    --btn-color: var(--color-btn-fullscreen);
 }
-.app-window:focus #close-btn,
-.app-window:focus-within #close-btn,
-.app-window:has(.overlay) #close-btn {
-    background-color: var(--color-btn-close);
+.action__btn--reduce {
+    --btn-color: var(--color-btn-reduce);
+}
+.action__btn--close {
+    --btn-color: var(--color-btn-close);
+}
+.action__btn--desactivated {
+    --btn-color: #7c7c7c33;
+    pointer-events: none;
 }
 
+@media (max-width: 1280px) {
+}
 </style>

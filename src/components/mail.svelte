@@ -1,145 +1,286 @@
 <script lang="ts">
-	import { PUBLIC_SITE_KEY } from "$env/static/public";
+import { PUBLIC_SITE_KEY, PUBLIC_EMAIL } from "$env/static/public";
+import { isResponsive  } from "$lib/index";
+import { applyAction, deserialize, enhance } from '$app/forms';
+import type { ActionResult } from "@sveltejs/kit";
+import Svg from "./svg.svelte";
+	import { page } from "$app/stores";
+	import { invalidateAll } from "$app/navigation";
+	import { onMount } from "svelte";
+	import { object } from "zod";
+	import { toast } from "$lib/toast";
 
-    const controls = [
-        { name: '􀈟', usable: true, submit: true },
-        { name: '􀹆', space: true },
-        { name: '􀰚' },
-        { name: '􀉢' },
-        { name: '􀒖' },
-        { name: '􀅒' },
-        { name: '􀙌' },
-        { name: '􀏫' },
-    ]
 const key = PUBLIC_SITE_KEY;
-let email: string = 'gabillet.louis@gmail.com', cc: string, subject: string, from: string = '', text: string = '';
+//let cc: string = '';
+let subject: string = '';
+let email: string = '';
+let text: string = '';
 
-$: isFormComplete = [subject, from, text].every(value => value);
+//$: linkToMailMe = `mailto:gabillet.louis@gmail.com?cc=${cc}&subject=${subject}&body=${text}`
+$: linkToMailMe = `mailto:${PUBLIC_EMAIL}?subject=${subject}&body=${text}`
 
-const onSubmit = async () => {
-        console.log(grecaptcha);
-    grecaptcha.ready(function() {
-        grecaptcha.execute(key, {action: 'submit'}).then(async function(token: string) {
-            console.log(typeof grecaptcha);
-            // TODO -> Change to formData (new FormData(), formData.append(...), body: formData).
-            const res = await fetch('?/email', {
-                method: 'POST',
-                body: JSON.stringify({ token, email, cc, subject, from, text }),
-            })
-            const result = await res?.json();
+//$: form = $page.form;
+let form: Record<string, any>|null = null;
+$: errors = form?.errors;
 
-            if (result.type === 'success') {
-                cc = '';
-                subject = '';
-                from = '';
-                text = '';
-            } else {
-                console.log('Failed to send message. Please Try again');
+$: isFormComplete = [subject, email, text].every(value => value);
+
+const getCaptchaToken = async () => {
+    return new Promise<string | null>(resolve => {
+        grecaptcha.ready(async () => {
+            if (!key) {
+                resolve(null);
+                return;
             }
-        });
+            const token = await grecaptcha.execute(key, { action: "submit" })
+            resolve(token)
+        })
     });
 }
+
+const handleSubmit =  async (e: SubmitEvent & { currentTarget: EventTarget & HTMLFormElement }) => {
+    e.preventDefault();
+
+    const currTarget = e.currentTarget;
+    const data = new FormData(currTarget);
+
+    const token = await getCaptchaToken();
+    if (token) data.append("token", token);
+
+    const response = await fetch(currTarget.action, {
+        method: 'POST',
+        body: data
+    });
+
+    const result: ActionResult = deserialize(await response.text());
+    const type = result.type;
+    console.log(result)
+
+    if (type === "success" || type === "failure") {
+
+        const data = result.data;
+        if (!data) return;
+
+        form = data;
+
+        if (data.success) {
+            currTarget.reset();
+            resetForm();
+        }
+
+        await invalidateAll()
+    }
+    if (form?.send_notification) {
+        toast(form.content, form.opts);
+    }
+
+    applyAction(result)
+}
+
+const resetForm = () => {
+    if (subject) subject = '';
+    if (email) email = '';
+    if (text) text = '';
+}
+
+onMount(() => {
+    form = null;
+})
 </script>
 <script lang='ts' context='module'>
 declare const grecaptcha: any;
 </script>
 
 <svelte:head>
-    <script src="https://www.google.com/recaptcha/api.js?render={key}"></script>
+    <script src="https://www.recaptcha.net/recaptcha/api.js?trustedtypes=true&render={key}"></script>
 </svelte:head>
 
-<form method="POST" on:submit|preventDefault={onSubmit}>
-    <div class="app-controls full">
-        {#each controls as {name, usable, submit, space} }
-           <button class="{usable && isFormComplete ? '' : 'desactivated'} {space ? 'spaced' : ''}" type={submit ? 'submit' : 'button'}>{name}</button> 
-        {/each}
-    </div>
-    <div class="app-content">
-        <div class="line">
-            <p>To :</p>
-            <input type="text" bind:value={email} id='to' name='to' disabled>
+<!--<form class="app__grid" method="POST" on:submit|preventDefault={onSubmit}>-->
+<form class="app__grid" method="POST" action="?/email" on:submit={ handleSubmit } >
+    {#if $isResponsive}
+        <div class="controls app__controls controls-header app__controls-header">
+            <button class="controls__item controls__item--distance-right controls__item--mw-mc controls-header__item controls-header__btn controls__btn--active controls__text--accent-color controls__text--overflow" type="button" on:click={ resetForm }>Annuler</button>
+            <h2 class="controls__h2 controls__text--overflow">{!subject ? 'Nouv. message' : subject}</h2>
+            <div class="controls__items-wrapper">
+                <button class="controls__item controls-header__item controls-header__btn controls__btn--{isFormComplete ? 'active' : 'desactivated'} " type="submit">
+                    <Svg name='arrow_up_circle_fill' color={isFormComplete ? 'var(--accent-color)' : '#7c7c7c'} />
+                </button>
+            </div>
         </div>
-        <div class="line">
-            <p>Cc :</p>
-            <input type="text" bind:value={cc} id='cc' name='cc'>
+    {:else}
+        <div class="controls app__controls app__controls--full">
+            <button class="controls__item controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isFormComplete } title="Envoyer le message" type="submit">
+                <Svg name='paperplane' color={isFormComplete ? '#fff' : "#7c7c7c"} />
+            </button>
+            <span class="controls__item controls__item--distance-right">
+                <Svg name='list_dash_header_rectangle' />
+            </span>
+            <span class="controls__item"> 
+                <Svg name='arrowshape_turn_up_backward' />
+            </span>
+            <a href={ linkToMailMe } class="controls__item controls__btn controls__btn--hover" title="Joindre un document à ce message">
+                <Svg name='paperclip' color="#0a82ff" />
+            </a>
+            <span class="controls__item"> 
+                <Svg name='rectangle_and_paperclip' />
+            </span>
+            <span class="controls__item"> 
+                <Svg name='textformat' />
+            </span>
+            <span class="controls__item"> 
+                <Svg name='face_smiling_inverse' />
+            </span>
+            <span class="controls__item"> 
+                <Svg name='photo_on_rectangle' />
+            </span>
         </div>
-        <div class="line">
-            <p>Subject :</p>
-            <input type="text" bind:value={subject} id='subject' name='subject'>
+    {/if}
+    <div class="content app__content">
+        <div class="content__line">
+            <p class="content__label">À :</p>
+            <a href={ linkToMailMe } class="content__label content__text--color-blue">{PUBLIC_EMAIL}</a>
         </div>
-        <div class="line">
-            <p>From :</p>
-            <input type="text" bind:value={from} id='from' name='from'>
+        {#if $isResponsive}
+            <div class="content__line" class:content__line--state-error={ errors?.email }>
+                <p class="content__label">De* :</p>
+                <input class="content__input" type="text" bind:value={email} name='email'>
+                {#if errors?.email}
+                    <p class="content__error-message">{errors.email[0]}</p> 
+                {/if}
+            </div>
+        {/if}
+        <!--<div class="content__line" class:content__line--state-error={ $isResponsive ? errors?.email : errors?.cc }>
+            <p class="content__label">Cc{$isResponsive ? '/Cci, De*' : ''} :</p>
+            {#if $isResponsive}
+                <input class="content__input" type="email" bind:value={email} name='email'>
+                {#if errors?.email}
+                    <p class="content__error-message">{errors.email[0]}</p> 
+                {/if}
+            {:else}
+                <input class="content__input" type="text" bind:value={cc} name='cc'>
+                {#if errors?.cc}
+                    <p class="content__error-message">{errors.cc[0]}</p> 
+                {/if}
+            {/if}
+        </div>-->
+        <div class="content__line" class:content__line--state-error={ errors?.subject }>
+            <p class="content__label">Objet* :</p>
+            <input class="content__input" type="text" bind:value={subject} name='subject'>
+            {#if errors?.subject}
+                <p class="content__error-message">{errors.subject[0]}</p> 
+            {/if}
         </div>
-        <textarea name="content" id="content" bind:value={text}></textarea>
-        <span class="captcha-text">This site is protected by reCAPTCHA and the Google <a target="_blank" href="https://policies.google.com/privacy">Privacy Policy</a> and
-            <a target="_blank" href="https://policies.google.com/terms">Terms of Service</a> apply.
+        {#if !$isResponsive}
+            <div class="content__line" class:content__line--state-error={ errors?.email }>
+                <p class="content__label">De* :</p>
+                <input class="content__input" type="text" bind:value={email} name='email'>
+                {#if errors?.email}
+                    <p class="content__error-message">{errors.email[0]}</p> 
+                {/if}
+            </div>
+        {/if}
+        <label for="content" class="content__textarea-wrapper">
+            {#if errors?.content}
+                <p class="content__error-message">{errors.content[0]}</p> 
+            {/if}
+            <textarea class="content__textarea" name="content" id="content" bind:value={text} placeholder="*"></textarea>
+        </label>
+        <span class="content__captcha-text">
+            This site is protected by reCAPTCHA and the Google 
+            <a target="_blank" href="https://policies.google.com/privacy" class="content__text--color-blue">Privacy Policy</a>
+            and
+            <a target="_blank" href="https://policies.google.com/terms" class="content__text--color-blue">Terms of Service</a> apply.
         </span>
     </div>
 </form>
 
 <style>
-.app-content {
+.app__grid {
+    --accent-color: #0a82ff;
+    grid-template-columns: 1fr;
+}
+.app__content {
+    --error-color: #ff000080;
+    --gap: 5px;
+    overflow-y: hidden;
     display: flex;
     flex-direction: column;
-    padding: 0 0 0 1rem;
-    border: none;
+    padding-bottom: 0;
+    padding-right: 0;
 }
-.spaced {
-    margin-right: auto;
-}
-.desactivated {
-    pointer-events: none;
-    opacity: .5;
-}
-.app-controls button {
-    height: 100%;
-    aspect-ratio: 1/1;
-}
-.captcha-text {
-    font-size: var(--fz-xxs);
-    color: #525150;
-    margin: 0 auto;
-    padding-block: .25rem;
-    background-color: #1B1B1B;
-}
-.captcha-text a {
-    text-decoration: none;
-    color: #A1A1A0;
-}
-form {
+.content__line {
     width: 100%;
-    height: 100%;
-    background-color: #222220;
-    display: grid;
-    grid-template-rows: var(--nav-height) 1fr;
-}
-.line {
-    width: 100%;
+    position: relative;
     border-bottom: 1px solid #525150;
-    display: flex;
-    gap: .5rem;
-    padding: .5rem 1rem .5rem 0;
+    display: grid;
+    grid-template-columns: min-content 1fr;
+    gap: var(--gap);
+    padding: 8px 1rem 8px 0;
 }
-input, textarea {
+.content__line--state-error {
+    border-bottom: 1px solid var(--error-color);
+}
+.content__error-message {
+    font-size: var(--fz-s);
+    color: var(--error-color);
+    grid-column: 1/-1;
+}
+.content__input,
+.content__textarea {
     width: 100%;
     font-size: var(--fz-m);
     outline: none;
     border: none;
     background: transparent;
-    color: var(--color-text);
+    color: #fff;
+    cursor: text;
 }
-textarea {
+.content__textarea-wrapper {
     width: calc(100% + 1rem);
     height: 100%;
-    resize: none;
-    padding: .5rem 1rem 0;
     margin-left: -1rem;
+    padding: 5px 0 0 15px;
+    display: flex;
+    flex-direction: column;
+}
+.content__textarea {
+    padding-top: var(--gap);
+    height: 100%;
+    resize: none;
     font-family: inherit;
 }
-p {
+.content__label {
     color: #A1A1A0;
     font-size: var(--fz-m);
     white-space: nowrap;
+}
+.content__text--color-blue {
+    color: #0a82ff;
+}
+.content__captcha-text {
+    font-size: var(--fz-xs);
+    color: #525150;
+    text-align: center;
+    padding-block: .25rem;
+    background-color: #1B1B1B;
+}
+
+@media (max-width: 1280px) {
+    .content__line {
+        padding-block: 15px;
+    }
+    .content__input,
+    .content__textarea,
+    .content__label {
+        font-size: var(--fz-xl);
+    }
+    .content__captcha-text {
+        font-size: var(--fz-s);
+        padding: 10px 20px 15px 0;
+        background-color: transparent;
+    }
+    .content__error-message {
+        font-size: var(--fz-l);
+    }
 }
 </style>

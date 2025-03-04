@@ -1,75 +1,56 @@
-import type { Apps, TBText } from './data';
-import { topBarText } from '$lib/data';
 import Window from '../components/window.svelte';
-import { writable } from 'svelte/store';
-
-interface Writable<T> {
-    subscribe(run: (value: T) => void): void; // type: Unsubscribe
-    set(value: T): void;
-    update(updater: (value: T) => T): void;
-}
+import { writable, type Writable } from 'svelte/store';
+import type { App } from './apps/types';
 
 interface Comp {
     name: string,
     child: Record<string, any>
 }
+export interface Notification {
+    uid?: string,
+    app_name: string,
+    src: string,
+    title: string,
+    message: string,
+}
 
-export let windowOrder: string[] = [];
-// TODO -> Change windowOrder to a writable for reactivity.
-//
-// Problem: The variable change doesnt trigger the reactivity and the indicators (dot under icon) are not updating.
-// Solution: Change the windowOrder to a writable and use it wherever needed.
-//
-// Changes: - Remove prop 'order', can import the writable
-//          - Update 'isOpen()' from '+page.svelte' to make the indicators update.
-//          - Change where windowOrder is asssinged a value to 'set()'.
-//
-//export const windowOrder: Writable<string> = writable();
-export const activeTopBar: Writable<TBText> = writable(topBarText.find((el) => (el?.app_name || el?.name) == 'Finder'));
+let windowOrder: string[] = [];
+
+export const notifQueue: Writable<Record<string, Notification[]>> = writable({});
+export const globalWindowOrder: Writable<string[]> = writable([]);
+export const activeTopBar: Writable<string> = writable('Finder-1');
+export const isResponsive: Writable<boolean> = writable();
+export const isIpad: Writable<boolean> = writable();
+//export const playingAudio = writable<{ html: HTMLElement|null, name: string }>({ html: null, name: '' });
+export const playingAudio = writable<{ html: HTMLElement | null, name: string }>({ 
+    html: null, 
+    name: '',
+});
 
 let uniqueName: string = '';
-let oldTopBarName: string = 'Finder';
+//let oldTopBarName: string = 'Finder';
 let comp: Comp[] = [];
 
 /**
  * Opening a window of a specific app.
  * @param {Apps} app Data of the app we want to open
  */
-export const openAppWindow = (app: Apps) => {
-    const {name, app_name, safari_link, path } = app;
-    const appOrCustom = app_name ?? name;
-    const nbrAppPageOpen = document?.querySelectorAll(`.app-window[data-app-name='${appOrCustom}']`)?.length;
-    uniqueName = `${appOrCustom}-${nbrAppPageOpen + 1}`;
+export const openAppWindow = (app: App) => {
+    const nbrAppPageOpen = document?.querySelectorAll(`.app[data-app-name='${app.type}']`)?.length;
+    uniqueName = `${app.type}-${nbrAppPageOpen + 1}`;
 
-    const activeName: string = app_name ?? name;
-    const currData = getNewTopBarText(activeName);
-
-    if (currData && activeName !== oldTopBarName) {
-        oldTopBarName = activeName;
-        activeTopBar.set(currData);
-    }
-
-    //if (isRedirectOn) {
-    //    const link = launchpadApps?.find(app => ( app?.name || app?.app_name ) === name )?.redirect_link;
-    //    if (link) window.open(link, '_blank');
-    //}
-
-    //if (isLaunchpad) isLaunchpad = false;
-
-    const parent = document?.getElementById('desktop');
+    const parent = document.querySelector('.screen__desktop');
     if (!parent) return;
-    windowOrder = [...windowOrder, uniqueName];
 
     const child = new Window({
         target: parent,
         props: {
-            name: appOrCustom,
-            order: windowOrder,
-            safariLink: safari_link ?? '',
-            finderPath: path ?? ['louisgabillet'],
+            name: app.type,
+            appInfos: app,
         }
     })
-    comp = [...comp, {name: uniqueName,  child: child}];
+    const newApp = { name: uniqueName, child };
+    comp.push(newApp);
 }
 
 /**
@@ -80,14 +61,20 @@ export const closeAppWindow = (name: string) => {
     const component = comp?.find((el: Comp) => el.name === name)?.child;
     component?.$destroy();
     comp = comp?.filter((el: Comp) => el?.name !== name);
+
     removeFocusedAppWindow(name)
+    globalWindowOrder.set(windowOrder);
 
-    const activeName = 'Finder';
-    const currData = getNewTopBarText(activeName);
+    //const innerWidth: number = window.innerWidth;
+    //if (innerWidth <= 995) {
+    //    const dock = document.getElementById('dock'); 
+    //    if (dock) dock.style.removeProperty('z-index');
+    //}
 
-    if (windowOrder?.length === 0 && currData && activeName !== oldTopBarName) {
-        oldTopBarName = activeName;
-        activeTopBar.set(currData);
+    if (windowOrder?.length === 0) { 
+        //const activeName = 'Finder';
+        //getNewTopBarText(activeName);
+        activeTopBar.set('Finder-1');
     }
 }
 
@@ -96,39 +83,89 @@ export const closeAppWindow = (name: string) => {
  * @param {string} name The name of the app we focus (eg. Safari-1: name-index)
  */
 export const changeAppWindowsOrder = (name: string) => {
-    const activeName: string = name.split('-')[0];
-    const currData = getNewTopBarText(activeName);
+    //const activeName: string = name.split('-')[0];
+    //getNewTopBarText(activeName);
+    activeTopBar.set(name);
 
-    if (currData && activeName !== oldTopBarName) {
-        oldTopBarName = activeName;
-        activeTopBar.set(currData);
+    if (windowOrder[windowOrder.length - 1] !== name) {
+        removeFocusedAppWindow(name)
+        windowOrder.push(name);
+        globalWindowOrder.set(windowOrder);
     }
-
-    removeFocusedAppWindow(name)
-    windowOrder = [...windowOrder, name];
-
-    comp.forEach(el => {
-        el?.child?.$set({
-            order: windowOrder,
-        })
-    })
 }
 
 /**
  * Getting the content for the TopBar based on the latest opened app.
- * @param {string} activeName the name of the latest opened app (eg. Safari)
- * @returns {TBText | undefined} the new content for the TopBar
+ * @param {string} name the name of the latest opened app (eg. Safari)
  */
-const getNewTopBarText = (activeName: string): TBText | undefined => {
-    const currData: TBText | undefined = topBarText.find((el) => (el?.app_name || el?.name) == activeName );
-
-    return currData;
-}
+//const getNewTopBarText = (name: string) => {
+//    const currData: TBText | undefined = topBarText.find((el) => el.app_name == name);
+//
+//    if (currData && name !== oldTopBarName) {
+//        oldTopBarName = name;
+//        activeTopBar.set(currData);
+//    }
+//}
 /**
  * Removing the app if already open and placing it at the end of the order (placed on top of every other one).
- * @param {string} appName the name of the focused app (eg. Safari-2: name-index)
+ * @param {string} name the name of the focused app (eg. Safari-2: name-index)
  */
-const removeFocusedAppWindow = (appName: string) => {
-    const remove = windowOrder?.includes(appName);
-    if (remove) windowOrder = windowOrder?.filter((name) => name !== appName);
+const removeFocusedAppWindow = (name: string) => {
+    const index = windowOrder.indexOf(name);
+    if (index !== -1) {
+        //windowOrder.splice(index, 1);
+        windowOrder = windowOrder.filter(n => n !== name);
+    }
 }
+/**
+ * Add a notification to the queue.
+ * @param {string} app_name the name of the app concerned.
+ * @param {string} src the icon of the app.
+ * @param {string} title the title of the notification.
+ * @param {string} message the message of the notification.
+ */
+export const addNotifToQueue = (app_name: string, src: string, title: string, message: string) => {
+    notifQueue.update(curr => {
+        const currKey = curr[app_name] ?? [];
+        return {
+            ...curr,
+            [app_name]: [
+                ...currKey,
+                { 
+                    uid: crypto.randomUUID(),
+                    app_name,
+                    src,
+                    title,
+                    message,
+                },
+            ],
+        }
+    })
+}
+/**
+ * Remove a notification from the queue.
+ * @param {string} uid the uid of the notification.
+ * @param {string} key the name of the key.
+ */
+export const removeNotifFromQueue = (uid: string, key: string) => {
+    notifQueue.update(curr => {
+        const currKey = curr[key] ?? [];
+        const updatedKey = currKey.filter(obj => obj.uid !== uid);
+
+        //if (updatedKey.length === 0) {
+        //    const { [key]: _, ...rest } = curr; 
+        //    return rest; 
+        //}
+
+        return { ...curr, [key]: updatedKey }; 
+    });
+}
+//export const removeNotifFromQueue = (uid: string, key: string) => {
+//    notifQueue.update(curr => {
+//        const currKey = curr[key] ?? [];
+//        return {
+//            ...curr,
+//            [key]: currKey.filter(obj => obj.uid !== uid),
+//        }
+//    })
+//}

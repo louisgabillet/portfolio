@@ -25,7 +25,7 @@
     --dark-selection-unfocused-1: #FFFFFF1A; /* 1A = 10% */
     --dark-selection-unfocused-2: #282828A6 /* A6 = 65% */
 
-    /* linear-gradient only on background: ... */
+        /* linear-gradient only on background: ... */
     --dark-header-view: linear-gradient(var(--dark-header-view-1), var(--dark-header-view-1)), linear-gradient(var(--dark-header-view-2), var(--dark-header-view-2));
     --dark-selection-focused: linear-gradient(var(--dark-selection-focused-1), var(--dark-selection-focused-1)), linear-gradient(var(--dark-selection-focused-2), var(--dark-selection-focused-2)); 
     --dark-selection-unfocused: linear-gradient(var(--dark-selection-unfocused-1), var(--dark-selection-unfocused-1)), linear-gradient(var(--dark-selection-unfocused-2), var(--dark-selection-unfocused-2)); 
@@ -42,61 +42,96 @@
     --font-ratio: 8px;
 
     --icon-size: 50px;
+    --icon-multiplier: 1.825;
+    --icon-grid-placement: calc(var(--icon-size) * var(--icon-multiplier));
+
     --font-size: 12px;
 
-   --fz-xxs: 6px;
-   --fz-xs: 8px;
-   --fz-s: 10px;
-   --fz-m: 12px;
-   --fz-l: 14px;
-   --fz-xl: 16px;
+    /* TODO -> change font px to rem (for zoom in page) */
+    /* TODO -> change font to clamp (clamp(min, curr + 1rem, max)) (1rem for zoom in page) */
+    --fz-xxs: 6px;
+    --fz-xs: 8px;
+    --fz-s: 10px;
+    --fz-m: 12px;
+    --fz-l: 14px;
+    --fz-xl: 16px;
 
     --blur: 30px;
     --width-sidebar: 7rem;
+    --nav-height: 2rem;
+    --nav-height-responsive: 6.25rem;
+    --top-bar-height: 1.625rem;
+
+    --font-system: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Ubuntu, Arial, sans-serif;
+    --font-sans: Inter, var(--font-system);
+    --font: 8px var(--font-sans);
 }
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     cursor: inherit;
+    overscroll-behavior: contain;
+}
+html {
+    scroll-behavior: smooth;
 }
 
 /* TODO -> Need to upgrade the scrollbar (visually, moves elements, ...) */
 /* TODO -> Change all 'overflow: auto' to 'overflow; scroll' to always have the space reserved */
 /* TODO -> Move the scrollbar to not be under the resize divs */
-::-webkit-scrollbar {
+body *::-webkit-scrollbar {
     background: transparent;
     width: 5px;
     height: 5px;
 }
-::-webkit-scrollbar-thumb {
+body *::-webkit-scrollbar-thumb {
     background: transparent;
     border-radius: 10px;
 }
-*:hover::-webkit-scrollbar-thumb {
+body *:hover::-webkit-scrollbar-thumb {
     background: #7C7C7C;
 }
 body {
-    overflow: hidden;
+    overflow-x: hidden;
     font: var(--font);
     color: var(--color-text);
-    user-select: none;
+    background: black;
 }
-button {
+button, input {
     font: inherit;
     color: inherit;
     background: transparent;
     border: none;
     outline: none;
+    cursor: pointer;
+}
+a {
+    text-decoration: none;
+    cursor: pointer;
 }
 .grecaptcha-badge { 
     visibility: hidden; 
 }
-.bg-fullscreen {
-    transform: translateX(-100%);
+[data-animate] {
+    --delay: 120ms;
+    animation: enter .6s both;
+    animation-delay: calc(var(--stagger) * var(--delay));
 }
-#dock.bg-fullscreen {
-    transform: translate(-50%, 115%) !important;
+.icons-placement {
+    display: grid;
+    grid-template-columns: repeat(var(--nbr-columns), var(--column-width));
+    gap: 15px 5px;
+}
+.icon {
+    --height: 10px;
+    height: var(--height);
+    position: relative;
+    display: inline-block;
+}
+.screen__desktop--fullscreen,
+.screen__background--fullscreen {
+    transform: translateX(-100%);
 }
 .reduced-page {
     max-width: var(--icon-size);
@@ -104,7 +139,7 @@ button {
     overflow: hidden;
     margin-inline: 2px;
     position: relative;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
 }
 .reduced-page > div {
     --ratio: 4/3;
@@ -131,96 +166,313 @@ button {
 .reduced-page > .ratio-height {
     height: 1000%;
 }
-.app-grid {
+.app__grid {
     width: 100%;
     height: 100%;
     background-color: var(--dark-fullscreen);
+    backdrop-filter: blur(var(--blur));
     display: grid;
     grid-template-columns: var(--width-sidebar) 1fr;
     grid-template-rows: var(--nav-height) 1fr;
-    backdrop-filter: blur(var(--blur));
     border-radius: .4rem;
     border: 1px solid #525150;
     overflow: hidden;
 }
-.app-content {
+.content {
     background-color: #1b1b1b;
-    padding: 10px 15px;
-    overflow: auto;
+    overflow: hidden scroll;
 }
-.app-controls {
-    width: 100%;
-    height: var(--nav-height);
+.app__content {
+    padding: 10px 10px 10px 15px;
+    color: #fff;
+}
+.content__p {
+    font-size: var(--fz-m);
+}
+.content__h2 {
+    font-size: var(--fz-xl);
+    font-weight: 500;
+}
+.app__content--full {
+    grid-area: 1/1/-1/-1;
+    padding-block: 7.125rem 6rem;
+}
+.controls {
     background-color: #373735;
-    padding: 5px 10px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: var(--fz-xs);
 }
-.app-controls.full {
+.app__controls {
+    padding: 8px 10px;
+    grid-column: 2 / -1;
+    outline: 1px solid black;
+}
+.app__controls--full {
     grid-column: 1 / -1;
-    padding-left: 3.5rem;
+    padding-left: 3rem;
 }
-.app-grid nav {
-    width: 100%;
+.controls__text--accent-color {
+    color: var(--accent-color);
+}
+.controls__h2 {
+    font-size: var(--fz-m);
+    font-weight: 500;
+}
+.controls__h2--distance-right {
+    margin-right: auto;
+}
+.controls__item {
     height: 100%;
-    padding: 0 8px 10px;
-    position: relative;
-    overflow-y: auto;
-    border-right: 1px solid black;
+    padding: 3px 5px;
 }
-.app-grid nav.full {
-    grid-row: 1 / -1;
-    padding-top: var(--nav-height);
-}
-.shortcut-container {
-    width: var(--width);
+.controls__items-wrapper {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    overflow-wrap: break-word;
+    justify-content: flex-end;
 }
-.shortcut {
-    position: relative;
-    width: var(--icon-size);
-    /*max-width: var(--width);*/
-    border-radius: 2px;
-    text-shadow: 0 1px 1px var(--color-shadow);
-    font-weight: 600;
+.controls__btn {
+    border-radius: 3px;
+}
+.controls__btn--hover:hover {
+    background-color: #FFFFFF28;
+}
+.controls__item--space-right {
+    margin-right: 1rem;
+}
+.controls__item--space-left {
+    margin-left: 1rem;
+}
+.controls__item--distance-right {
+    margin-right: auto;
+}
+.controls__item--distance-left {
+    margin-left: auto;
+}
+.controls__text--overflow {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.controls-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+}
+.app__controls-header {
+    grid-area: 1 / 1 / 2 / -1;
+    padding: 4rem 5px 10px;
+}
+.controls-header__item {
+    --sum-padding: var(--controls__item--padding) * 2;
+    --controls__item--height: calc(var(--controls__item--icon-height) + var(--sum-padding));
+    height: var(--controls__item--height);
+    min-width: calc(var(--controls__item--height) + var(--sum-padding));
+    opacity: .4;
+}
+.controls-header__btn {
+    font-size: var(--fz-xl);
+}
+.controls-header__btn--grid {
+    display: grid;
+    grid-template-columns: var(--controls__item--height) 1fr;
+    align-items: center;
+    text-align: start;
+}
+.controls-footer {
+    display: grid;
+    grid-template-columns: repeat(var(--nbr-columns), 1fr);
+}
+.app__controls-footer {
+    grid-area: 3 / 1 / -1 / -1;
+    padding: 5px 10px 2rem;
+}
+.controls-footer__item {
+    --controls-footer__item--height: 48px;
+    height: var(--controls-footer__item--height);
+    font-size: 10px;
+    color: #7c7c7c;
     text-align: center;
 }
-.shortcut-container .shortcut:last-of-type {
-    width: auto;
-    max-width: 100%;
+.controls-footer__item--grid {
+    display: grid;
+    grid-template-rows: var(--controls__item--icon-height) auto;
+    gap: 6px;
 }
-.shortcut > img {
+.controls-footer__p {
+    font-size: var(--fz-m);
+    color: #fff;
+}
+.controls__btn--active {
+    opacity: 1;
+}
+.controls__btn--desactivated {
+    /*cursor: default;*/
+    pointer-events: none;
+}
+/*.app-controls.responsive-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: max-content 1fr;
+    padding-bottom: 2rem;
+}*/
+.controls__item--mw-mc {
+    min-width: min-content;
+}
+.sidebar {
+    position: relative;
     width: 100%;
+    height: 100%;
+    overflow: hidden scroll;
 }
-.shortcut > p > span {
-    --font-size: calc(var(--icon-size) / 5); 
-    overflow: hidden;
-    display: -webkit-box;
-    line-clamp: 2;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    font-size: var(--font-size);
+.app__sidebar {
+    padding: 0 5px 10px 10px;
+    border-right: 1px solid black;
+    grid-row: 2 / -1;
 }
-.shortcut i {
-    color: black;
-    -webkit-text-stroke: 1px white;
+.app__sidebar--removed {
+    display: none;
+}
+.app__sidebar--full {
+    grid-area: 1/1/-1/-1;
+    padding-block: 6.5rem 6rem;
+}
+.sidebar__title {
     font-size: var(--fz-xs);
+    font-weight: 500;
+    color: #fff;
+}
+.sidebar__category {
+    --margin-top: 1rem;
+    --margin-bottom: .25rem;
+    opacity: .2;
+    padding-left: 3px;
+    margin-block: var(--margin-top) var(--margin-bottom);
+}
+.sidebar__category:first-of-type {
+    --margin-top: 0;
+}
+.sidebar__item {
+    width: 100%;
+    position: relative;
+    padding: 3px 5px;
+    border-radius: 3px;
+}
+.sidebar__item--border-top::before,
+.sidebar__item--border-bottom::after {
+    content: '';
     position: absolute;
-    bottom: 5%;
-    left: 0;
-    transform: rotate(-35deg)
+    right: var(--right);
+    width: calc(100% - var(--padding-left) - var(--right));
+    height: 1px;
+    background: #7c7c7c33;
 }
-#desktop .shortcut-container:focus-within button img {
-    box-shadow: 0 0 0px 1px #4D4D4D;
-    background-color: #0000002E;
+.sidebar__item--border-top::before {
+    bottom: 100%;
 }
-#desktop .shortcut-container:focus-within button p span {
-    background: var(--dark-selection-focused);
+.sidebar__item--border-bottom::after {
+    top: 100%;
+}
+.sidebar__text {
+    font-size: var(--fz-xs);
+    color: white;
+    text-align: start;
+}
+.sidebar__text--overflow {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sidebar__item--grid {
+    --icon-size: 10px;
+    display: grid;
+    grid-template-columns: var(--icon-size) 1fr;
+    grid-template-rows: var(--icon-size);
+    gap: 5px;
+}
+.sidebar__item--desactivated {
+    opacity: .4;
+}
+.sidebar__item--focused {
+    --focused-color: #FFFFFF28;
+    background-color: var(--focused-color);
+}
+
+@keyframes enter {
+from {
+    opacity: 0;
+}
+to {
+    opacity: 1;
+}
+}
+@media (max-width: 1280px) {
+    :root {
+        --icon-size: 80px;
+    }
+    .app__grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: max-content 1fr max-content;
+        border-radius: 0;
+        border: none;
+        border-radius: 45px;
+    }
+    .app__grid,
+    .app__content {
+        background-color: #080808;
+    }
+    .app__content,
+    .app__sidebar {
+        padding-inline: 20px 15px;
+    }
+    .sidebar__title,
+    .sidebar__text {
+        font-size: var(--fz-l);
+    }
+    .sidebar__item {
+        --borr: 0;
+        border-radius: var(--borr);
+        padding-block: 10px; 
+    }
+    .sidebar__category {
+        --margin-top: 1.5rem;
+        --margin-bottom: .75rem;
+        font-size: var(--fz-xl);
+    }
+    .content__h2 {
+        font-size: 1.5rem;
+    }
+    .content__p {
+        font-size: var(--fz-l);
+    }
+    .controls {
+        background-color: var(--dark-fullscreen);
+        backdrop-filter: blur(var(--blur));
+    }
+    .app__controls {
+        outline: 1px solid #7c7c7c33;
+        z-index: 2;
+    }
+    .controls__h2 {
+        font-size: var(--fz-xl);
+    }
+    .controls__item {
+        --controls__item--icon-height: 20px;
+        --controls__item--padding: 5px;
+        padding: var(--controls__item--padding);
+    }
+
+    /*.app__controls {
+        height: auto;
+        max-height: var(--nav-height-responsive);
+        background: var(--dark-fullscreen);
+        backdrop-filter: blur(var(--blur));
+        grid-area: 2 / 1/ 3 / -1;
+        padding: 5px 20px;
+        outline: none;
+    }*/
+}
+@media (min-width: 1281px) {
+    .app-controls.full {
+        padding-left: 3.5rem;
+    }
 }

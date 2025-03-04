@@ -1,78 +1,121 @@
 <script lang="ts">
-import { openAppWindow } from '$lib/index';
-import { onMount } from "svelte";
+import { isResponsive, openAppWindow } from '$lib/index';
+import { fileSystem, type FileSystem } from '$lib/filesystem';
+import { onMount } from 'svelte';
+import Shortcut from './shortcut.svelte';
+import Svg from './svg.svelte';
+import Loader from './loader.svelte';
+import Img from './img.svelte';
+	import { writable } from 'svelte/store';
 
 //export let open: (app: any) => void;
-export let openWindow: HTMLElement;
-export let finderPath: string[];
+export let finderPath: string[] = ['Macintosh HD', 'Utilisateur', 'louisgabillet'];
 
-//import { data } from '$lib/index';
-
-//let directories = [
-//    { name: }
-//]
 const navBtns = [
-    { name: 'Airdrop', icon: '􀌙', title: 'Favorites', color: 'blue' },
-    { name: 'Recents', icon: '􀐫', color: 'blue' },
-    { name: 'Desktop', icon: '􀣰', color: 'blue' },
-    { name: 'Downloads', icon: '􀁸', color: 'blue', active: true },
-    { name: 'Applications', icon: '􀑏', color: 'blue' },
-    { name: 'louisgabillet', icon: '􀎞', color: 'blue', active: true },
-    { name: 'iCloud Drive', icon: '􀌋', title: 'iCloud', color: 'turquoise' },
-    { name: 'Shared', icon: '􀈝', color: 'turquoise' },
-    { name: 'Network', icon: '􀤆', title: 'Locations' },
-    { name: 'Red', icon: '􀀁', title: 'Tags', minus: true },
-    { name: 'Orange', icon: '􀀁', minus: true },
-    { name: 'Yellow', icon: '􀀁', minus: true },
-    { name: 'Green', icon: '􀀁', minus: true },
-    { name: 'Blue', icon: '􀀁', minus: true },
-    { name: 'Purple', icon: '􀀁', minus: true },
-    { name: 'Grey', icon: '􀀁', minus: true },
-    { name: 'All tags', icon: '􀀁', minus: true }
-];
-interface FileSystem {
-    name: string;
-    type: 'Folder' | 'Safari' | 'Music';
-    url?: string;
-    children?: FileSystem[];
-}
-const directories: FileSystem[] = [
+    {
+        name: 'Airdrop',
+        svg_name: 'airdrop',
+        title: 'Favoris',
+        color: 'var(--accent-color)',
+        desactivated: true
+    },
+    {
+        name: 'Récents',
+        svg_name: 'clock',
+        color: 'var(--accent-color)',
+        desactivated: true
+    },
+    {
+        name: 'Bureau',
+        svg_name: 'menubar_dock_rectangle',
+        color: 'var(--accent-color)',
+        location: ['Macintosh HD', 'Utilisateur', 'louisgabillet'],
+    },
+    {
+        name: 'Téléchargements',
+        svg_name: 'arrow_down_circle',
+        color: 'var(--accent-color)',
+        location: ['Macintosh HD', 'Utilisateur', 'louisgabillet']
+    },
+    {
+        name: 'Applications',
+        svg_name: 'app_store',
+        color: 'var(--accent-color)',
+        location: ['Macintosh HD']
+    },
     {
         name: 'louisgabillet',
-        type: 'Folder',
-        children: [
-            {
-                name: 'Projects',
-                type: 'Folder',
-                children: [
-                    {
-                        name: 'Test 1',
-                        type: 'Folder',
-                        children: [{ name: 'Test 1', url: 'https://test-1.com', type: 'Safari' }]
-                    },
-                    {
-                        name: 'Test 2',
-                        type: 'Folder',
-                        children: [{ name: 'Test 2', url: 'https://test-2.com', type: 'Safari' }]
-                    }
-                ]
-            }
-        ]
+        svg_name: 'house',
+        location: ['Macintosh HD', 'Utilisateur'],
+        color: 'var(--accent-color)'
+    },
+    { name: 'Projets', svg_name: 'folder', location: ['iCloud Drive'], color: 'var(--accent-color)' },
+    {
+        name: 'iCloud Drive',
+        svg_name: 'cloud',
+        title: 'iCloud',
+        color: '#48d9fa'
     },
     {
-        name: 'Downloads',
-        type: 'Folder',
-        children: [{ name: 'The Most Beautiful Song Of All Time.mp3', type: 'Music' }]
+        name: 'Partagé',
+        svg_name: 'folder_badge_person_crop',
+        color: '#48d9fa',
+        desactivated: true
     },
-    {
-        name: 'Bin',
-        type: 'Folder'
-    }
+    //{
+    //    name: 'Rouge',
+    //    svg_name: 'circle_fill',
+    //    title: 'Tags',
+    //    color: 'var(--color-btn-close)',
+    //    desactivated: true
+    //},
+    //{
+    //    name: 'Orange',
+    //    svg_name: 'circle_fill',
+    //    color: 'var(--color-btn-reduce)',
+    //    desactivated: true
+    //},
+    //{
+    //    name: 'Jaune',
+    //    svg_name: 'circle_fill',
+    //    color: '#ffe414',
+    //    desactivated: true
+    //},
+    //{
+    //    name: 'Vert',
+    //    svg_name: 'circle_fill',
+    //    color: 'var(--color-btn-fullscreen)',
+    //    desactivated: true
+    //},
+    //{
+    //    name: 'Bleu',
+    //    svg_name: 'circle_fill',
+    //    color: 'var(--accent-color)',
+    //    desactivated: true
+    //},
+    //{
+    //    name: 'Violet',
+    //    svg_name: 'circle_fill',
+    //    color: '#da72ff',
+    //    desactivated: true
+    //},
+    //{
+    //    name: 'Gris',
+    //    svg_name: 'circle_fill',
+    //    color: '#969597',
+    //    desactivated: true
+    //},
+    //{
+    //    name: 'All tags',
+    //    svg_name: 'circlebadge_2',
+    //    color: '#7c7c7c',
+    //    desactivated: true
+    //}
 ];
 
-let parentDirName: string = finderPath[0]; 
+let parentDirName: string = finderPath[0];
 let openDirName: string = finderPath[finderPath?.length - 1];
-let lastPath: any = [];
+let lastPath: FileSystem[] = [];
 
 $: path = [] as FileSystem[];
 $: children = path[path?.length - 1]?.children;
@@ -80,290 +123,345 @@ $: children = path[path?.length - 1]?.children;
 $: isPreviousActive = path?.length > 1;
 $: isNextActive = lastPath?.length > 0 && lastPath[lastPath?.length - 1]?.name !== openDirName;
 
-onMount(() => {
-    finderPath?.forEach((folder) => {
-        const arr = path[path?.length - 1];
-        const goIn =  (arr ? arr?.children?.find(dir => dir?.name === folder) : directories?.find((dir) => dir?.name === folder)) as FileSystem;
-        if (goIn) {
-            path = [...path, goIn];
-            //if (openDirName !== goIn?.name) openDirName = goIn?.name;
-        }
-    })
-})
-
-//async function getUserRepos(username: string): Promise<[]> {
-//    try {
-//        const response = await fetch(`https://api.github.com/users/${username}/repos`);
-//        const repos = await response.json();
-//        return repos;
-//    } catch (error) {
-//        console.error('Error fetching repos:', error);
-//        return [];
-//    }
-//}
-//getUserRepos('octocat').then((res)=> {
-//    const projects = children?.find(dir => dir?.name === 'Projects')
-//    const repos = res?.map((repo: any)  => { return { name: repo?.name, url: repo?.svn_url, children: [ {name: repo?.name, dir: false} ] }})
-//    if (projects && res) projects.children = repos;
-//})
-const changeParentDir = (name: string) => {
-    openDirName = name;
-    parentDirName = name;
-    const newParent = directories?.find((dir) => dir?.name === name);
-    path = newParent ? [newParent] : [];
-    lastPath = [];
+$: if ($isResponsive && path[0]?.name !== 'iCloud Drive') {
+    path = [];
+    changePath(fileSystem, ['iCloud Drive']);
 }
-const openDir = (e: Event) => {
-    const target = e?.target as HTMLElement;
-    const directory = target?.closest('.shortcut') as HTMLElement;
-    const dirName = directory?.dataset.nameDir; 
-    
-    if (dirName) openDirName = dirName;
 
-    const opened = children?.find((dir) => dir?.name === dirName);
+onMount(() => {
+    goInPath(finderPath);
+});
+
+const goInPath = (location: string[]) => {
+    location?.forEach((folder) => {
+        const arr = path[path?.length - 1];
+        const parent = arr ? arr?.children : fileSystem;
+        if (parent) {
+            const goIn: FileSystem | undefined = parent?.find((dir) => dir?.name === folder);
+            if (goIn) path = [...path, goIn];
+        }
+    });
+};
+let nameCurrOpen: string = '';
+
+const changePath = (arr: FileSystem[], location: string[]) => {
+    let currentLevel = arr;
+
+    for (const key of location) {
+        const nextLevel = currentLevel.find((obj) => obj.name === key);
+        if (nextLevel) path.push(nextLevel);
+
+        if (nextLevel?.children) {
+            currentLevel = nextLevel.children;
+        }
+    }
+};
+const changeParentDir = (name: string, location: string[] | null = null) => {
+    openDirName = parentDirName = name;
+    path = lastPath = [];
+
+    if (location) {
+        location.push(name);
+    } else {
+        location = [name];
+    }
+    changePath(fileSystem, location);
+};
+const openDir = () => {
+    openDirName = nameCurrOpen;
+
+    //const opened = children?.find((dir) => dir?.name === dirName);
+    const opened = children?.find((dir) => dir?.name === nameCurrOpen);
     if (opened?.type === 'Folder') {
         path = [...path, opened];
         lastPath = [];
     }
-
-    openWindow?.focus();
+    const focused = document.activeElement;
+    if (focused) {
+        const parent = focused.closest('.app') as HTMLElement;
+        parent?.focus();
+    }
 };
 const goBackInTree = () => {
-    if (path?.length <= 1) return;
+    if (path?.length <= 1 || !isPreviousActive) return;
     //const newPath = path?.slice(0, -1);
     //path = newPath;
     const last = path?.pop();
-    lastPath = [...lastPath, last];
+    if (last) lastPath = [...lastPath, last];
     path = [...path];
     openDirName = path[path?.length - 1]?.name;
     //console.log(path, newPath)
 };
 const goBackToLast = () => {
-    if (lastPath?.length === 0) return;
+    if (lastPath?.length === 0 || !isNextActive) return;
 
     const last = lastPath?.pop();
-    path = [...path, last];
+    if (last) path = [...path, last];
     openDirName = path[path?.length - 1]?.name;
 };
-const openOnClick = (e: Event, data: FileSystem) => {
-    const type = data.type;
-    const url = data?.url || data.name;
-    if (type === 'Folder') {
-        openDir(e);
-    } else if (type === 'Safari') {
-        const app = { name: 'Safari', src: '/src/lib/assets/images/icon/Safari.png', safari_link: url }
-        openAppWindow(app);
-    } else if (type === 'Music') {
-        const app = { name: 'Music', src: '/src/lib/assets/images/icon/Music.png'};
-        openAppWindow(app);
+const openOnClick = (data: FileSystem) => {
+    //const { type, name, url, pages, src, unique_name } = data;
+    const { type, name } = data;
+
+    nameCurrOpen = name;
+
+    if (data.type === 'Folder') {
+        openDir();
+        return;
+    }
+    //const app: any = { name, type, src };
+    //const test: any = {
+    //    unique_name,
+    //    name,
+    //    img_id: '2',
+    //    type: type === 'Document' || type === 'Image' ? 'Preview' : type === 'Webloc' ? 'Safari' : type,
+    //    src,
+    //}
+    if (type === 'Document' || type === 'Image') {
+        data.type = 'Preview';
+    } else if (type === 'Webloc') {
+        data.type = 'Safari';
+    }
+
+    //if (type === 'Webloc' || type === 'Safari') {
+    //    app.type = 'Safari';
+    //    app.url = url;
+    //    app.pages = pages;
+    //} else if (type === 'Document' || type === 'Image') {
+    //    const img = { name, src };
+    //    app.type = 'Preview';
+    //    //app.preview_data = { [type.toLowerCase()]: pages ?? img };
+    //    app.unique_name = unique_name;
+    //    if (img_id) app.img_id = img_id;
+    //}
+    openAppWindow(data);
+};
+$: lastParentDirName = path[path.length - 2]?.name;
+
+const jumpPath = (name: string) => {
+    const index = path.findIndex((path) => path.name === name) + 1;
+    if (index < path.length) {
+        path.length = index;
+        openDirName = name;
     }
 };
 </script>
 
-<div class="app-grid">
-    <nav class="full">
-        {#each navBtns as btn}
-            {#if btn?.title}
-                <h5>{btn?.title}</h5>
+<div class="app__grid" class:app__grid--version-pc={ !$isResponsive }>
+    <nav class="sidebar app__sidebar" class:app__sidebar--removed={ $isResponsive }>
+        {#each navBtns as { name, svg_name, title, location, color, desactivated }}
+            {#if title}
+                <h5 class="sidebar__title sidebar__category sidebar__text--overflow">{title}</h5>
             {/if}
-            <button class="line flex{btn?.active ? ' usable' : ''}{btn?.name === parentDirName ? ' focused' : ''}{btn?.minus ? ' minus-font' : ''} color-{btn?.color ?? btn?.name?.toLowerCase()}"
-            on:click={() => changeParentDir(btn?.name)}>
-                <i>{btn?.icon}</i>
-                <p>{btn?.name}</p>
-            </button>
+            {#if desactivated}
+                <div class="sidebar__item sidebar__item--grid sidebar__item--desactivated">
+                    <Svg name={svg_name} {color} />
+                    <p class="sidebar__p sidebar__text--overflow">{name}</p>
+                </div>
+            {:else}
+                <button
+                    class="sidebar__item sidebar__item--grid"
+                    class:sidebar__item--focused={!$isResponsive && name === openDirName}
+                    title={name}
+                    on:click={() => changeParentDir(name, location)}
+                >
+                    <Svg name={svg_name} {color} />
+                    <span class="sidebar__text sidebar__text--overflow">{name}</span>
+                </button>
+            {/if}
         {/each}
     </nav>
-    <div class="topbar">
-        <div class="app-controls">
-            <button class={isPreviousActive ? 'usable' : 'desactivated'} on:click={() => goBackInTree()}
-            >􀯶</button
-            >
-            <button class={isNextActive ? 'usable' : 'desactivated'} on:click={() => goBackToLast()}
-            >􀯻</button
-            >
-            <h2>{openDirName}</h2>
-            <button class="desactivated" style="margin-right: 1rem">􀇷</button>
-            <button class="desactivated">􀓙</button>
-            <button class="desactivated">􀈂</button>
-            <button class="desactivated">􀋡</button>
-            <button class="desactivated" style="margin-right: 1rem">􀍡</button>
-            <button class="desactivated">􀊫</button>
-        </div>
-        <div class="flex">
-            <div class="tab">
-                <p>{openDirName}</p>
+    {#if $isResponsive}
+        <div class="controls app__controls controls-header app__controls-header">
+            <button class="controls__item controls-header__item controls-header__btn controls-header__btn--grid controls__btn--{lastParentDirName ? 'active' : 'desactivated'} " on:click={ goBackInTree }>
+                <Svg name="chevron_left" color="var(--accent-color)" />
+                <span class="controls__text--accent-color controls__text--overflow">{lastParentDirName ?? "Explorer"}</span>
+            </button>
+            <h2 class="controls__h2 controls__text--overflow">{!openDirName ? 'Icloud Drive' : openDirName}</h2>
+            <div class="controls__items-wrapper">
+                <span class="controls__item controls-header__item">
+                    <Svg name="ellipsis_circle" color="var(--accent-color)" />
+                </span>
             </div>
-            <button class="new-tab">􀅼</button>
         </div>
-    </div>
-    <div class="app-content">
-        <div class="placement">
+        <div class="controls app__controls controls-footer app__controls-footer">
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name="clock_fill" />
+                <span class="controls__text--overflow">Récents</span>
+            </div>
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name="folder_fill_badge_person_crop" />
+                <span class="controls__text--overflow">Partagé</span>
+            </div>
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name="folder_fill" color="#0A82FF" />
+                <span class="controls__text--accent-color controls__text--overflow">Explorer</span>
+            </div>
+        </div>
+    {:else}
+        <div class="controls app__controls">
+            <button class="controls__item controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isPreviousActive } title="Voir les dossiers vus précédemment" on:click={ goBackInTree }>
+                <Svg name="chevron_left" color={isPreviousActive ? '#fff' : "#7c7c7c"} />
+            </button>
+            <button class="controls__item controls__item--space-right controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isNextActive } title="Voir les dossiers vus précédemment" on:click={ goBackToLast }>
+                <Svg name="chevron_right" color={isNextActive ? "#fff" : "#7c7c7c"}/>
+            </button>
+            <h2 class="controls__h2 controls__h2--distance-right">{openDirName}</h2>
+            <span class="controls__item controls__item--space-right">
+                <Svg name="square_grid_2x2" />
+            </span>
+            <span class="controls__item">
+                <Svg name="square_grid_3x1_below_line_grid_1x2" />
+            </span>
+            <span class="controls__item">
+                <Svg name="square_and_arrow_up" />
+            </span>
+            <span class="controls__item">
+                <Svg name="tag" />
+            </span>
+            <span class="controls__item controls__item--space-right">
+                <Svg name="ellipsis_circle" />
+            </span>
+            <span class="controls__item">
+                <Svg name="magnifyingglass" />
+            </span>
+        </div>
+        <div class="line app__line tabs app__tabs">
+            <p class="line__p" title={openDirName}>{openDirName}</p>
+            <span class="tabs__icon">
+                <Svg name="plus" />
+            </span>
+        </div>
+    {/if}
+    <div class="content app__content" class:app__content--full={ $isResponsive }>
+        <div class="icons-placement app__icons-placement">
             {#if children}
                 {#each children as repo}
-                    <div class="shortcut-container">
-                        <button
-                            class="shortcut"
-                            data-name-dir={repo.name}
-                            on:dblclick={(e) => openOnClick(e, repo)}
-                        >
-                            <img class="icon" src="/src/lib/assets/images/icon/{repo?.type}.png" alt="" />
-                            {#if repo?.type !== 'Folder'}
-                                <i>􀉑</i>
-                            {/if}
-                        </button>
-                        <button
-                            class="shortcut"
-                            data-name-dir={repo.name}
-                            on:dblclick={(e) => openOnClick(e, repo)}
-                        >
-                            <p title="{repo.name}"><span>{repo.name}</span></p>
-                        </button>
-                    </div>
+                    <Shortcut
+                        app={repo}
+                        action={() => openOnClick(repo)}
+                    />
                 {/each}
             {/if}
         </div>
+        <!--{#if $isResponsive}
+<p class="line__p nbr-el__p">{children?.length ?? 0} élément{(children?.length ?? 0) > 1 ? 's' : ''}</p>
+{/if}-->
     </div>
-    <div class="nbr-elements">
-        <p>{children?.length ?? 0} {children?.length && children?.length > 1 ? 'elements' : 'element'}, 248,25 Go available</p>
-    </div>
+    {#if !$isResponsive}
+        <div class="route app__route">
+            {#each path as path}
+                <button class="route__btn" title={path.name} on:click={() => jumpPath(path.name)}>
+                    <Img
+                        width="10"
+                        src={path.src}
+                        alt="Petite icône '{path.name}'"
+                    />
+                    <span class="route__name route__text--overflow">{path.name}</span>
+                </button>
+            {/each}
+        </div>
+        <div class="line app__line nbr-el app__nbr-el">
+            <p class="line__p nbr-el__p">{children?.length ?? 0} élément{(children?.length ?? 0) > 1 ? 's' : ''}, 248,25 Go disponibles</p>
+        </div>
+    {/if}
 </div>
 
 <style>
-.app-grid {
-    --height-nbr-el: calc(var(--nav-height) / 2);
-    grid-template-rows: calc(var(--nav-height) * 1.5) 1fr var(--height-nbr-el);
+.app__grid--version-pc {
+    grid-template-rows: var(--nav-height) min-content 1fr min-content min-content;
 }
-h5 {
-    font-size: var(--fz-xxs);
-    margin-block: 0.5rem 0.25rem;
-    opacity: 0.5;
+.app__grid {
+    --accent-color: #0a82ff;
 }
-h5:first-of-type {
-    margin-block: 0 0.25rem;
+.app__content--full {
+    padding-block: 8.125rem 7rem;
 }
-h2 {
-    font-size: var(--fz-m);
-    font-weight: 500;
-    margin-right: auto;
+.app__controls-footer {
+    --nbr-columns: 3;
 }
-.usable {
-    opacity: 1;
-    pointer-events: auto;
-}
-.desactivated {
-    pointer-events: none;
-    opacity: 0.5;
-}
-.nbr-elements {
-    background-color: #373735;
-    font-size: var(--fz-xs);
+.route {
+    background-color: #1b1b1b;
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: #7C7C7C;
 }
-.container {
-    width: 100%;
-    height: 100%;
+.app__route {
+    border-top: 1px solid #7c7c7c33;
+}
+.route__btn {
+    padding: 5px 0 5px 5px;
     display: grid;
-    grid-template-columns: var(--width-sidebar) 1fr;
-    grid-template-rows: calc(var(--nav-height) * 1.5) 1fr;
-    background-color: var(--dark-fullscreen);
-    backdrop-filter: blur(var(--blur));
+    grid-template-columns: 10px 1fr min-content;
+    gap: 5px;
 }
-.content {
-    background-color: #1b1b1b;
-    overflow: auto;
-    padding: 10px 15px;
-    border-left: 1px solid black;
+.route__btn::after {
+    content: '>';
+    opacity: .4;
 }
-.placement {
-    --width: calc(var(--icon-size) * 1.75);
-    display: grid;
-    grid-template-columns: repeat(5, var(--width));
-    row-gap: 10px;
-    /*display: flex;
-    flex-wrap: wrap;*/
+.route__btn:last-of-type:after {
+    content: '';
 }
-nav button {
-    opacity: .5;
-    pointer-events: none;
+.route__btn:hover::after,
+.route__btn:hover > .route__name {
+    opacity: 1;
+}
+.route__name {
+    font-size: var(--fz-xs);
+    opacity: 0.4;
+}
+.route__text--overflow {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .line {
-    width: 100%;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 2px;
-    font-size: var(--font-ratio);
+    height: var(--tab-height);
+    position: relative;
+    background: #373735;
 }
-.focused {
-    background: #FFFFFF26;
+.app__line {
+    --tab-height: 1rem;
 }
-.minus-font i {
-    font-size: var(--fz-xxs);
+.line__p {
+    font-size: var(--fz-xs);
+    text-align: center;
 }
-.line i, .new-tab {
-    color: #7c7c7c;
+.nbr-el {
+    display: grid;
 }
-.color-blue i {
-    color: #0a82ff;
-}
-.color-turquoise i {
-    color: #48d9fa;
-}
-.color-red i {
-    color: var(--color-btn-close);
-}
-.color-orange i {
-    color: var(--color-btn-reduce);
-}
-.color-yellow i {
-    color: #ffe414;
-}
-.color-green i {
-    color: var(--color-btn-fullscreen);
-}
-.color-purple i {
-    color: #da72ff;
-}
-.color-grey i {
-    color: #969597;
-}
-.flex {
-    display: flex;
+.app__nbr-el {
+    border-top: 1px solid #000;
     align-items: center;
 }
-.icon {
-    width: var(--icon-size);
-    aspect-ratio: 1/1;
+.nbr-el__p {
+    color: #7c7c7c;
 }
-.topbar {
-    background: #373735;
-    border-left: 1px solid black;
-    border-bottom: 1px solid black;
+.app__icons-placement {
+    --nbr-columns: auto-fill;
+    --column-width: minmax(var(--icon-grid-placement), 1fr);
+}
+.tabs {
     display: grid;
-    grid-template-rows: var(--nav-height) calc(var(--nav-height) / 2);
+    grid-template-columns: 1fr max-content;
 }
-.tab {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    place-content: center;
+.app__tabs {
+    border-bottom: 1px solid #000;
+    align-items: center;
 }
-.tab p {
-    font-size: var(--fz-xs);
-}
-.new-tab {
-    height: 100%;
+.tabs__icon {
+    height: var(--tab-height);
     aspect-ratio: 1/1;
-    background: #1B1B1B;
+    padding: 3px;
+    background-color: #1b1b1b;
+    border-block: 1px solid #000;
+    border-left: 1px solid #7c7c7c;
 }
-.controls {
-    gap: 8px;
-    padding: 5px 10px;
-}
-nav i {
-    width: 12px;
-    text-align: center;
+@media (max-width: 1280px) {
+    .app__icons-placement {
+        --nbr-columns: 3;
+        --column-width: 1fr;
+        row-gap: 3rem;
+    }
 }
 </style>

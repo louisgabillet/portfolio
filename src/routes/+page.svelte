@@ -1,481 +1,595 @@
 <script lang="ts">
-import '../fonts.css';
 import '../style.css';
-import { desktopApps, dockApps, launchpadApps } from '$lib/data';
-import { windowOrder, openAppWindow } from '$lib/index';
-import Topbar from '../components/topbar.svelte';
-import iMac from '$lib/assets/images/mac/Apple Imac Pro.png';
-//import iMac from '$lib/assets/images/mac/iMac 27 Silver.png';
-import iphone from '$lib/assets/images/iphone/iPhone_16_White_Portrait.png';
-import { onMount } from 'svelte';
-import { scale } from 'svelte/transition';
+import { onDestroy, onMount } from 'svelte';
+import { openAppWindow, isResponsive, closeAppWindow, globalWindowOrder, activeTopBar } from '$lib/index';
+import { apps } from '$lib/apps'
+import { toast } from '$lib/toast';
+import type { App } from '$lib/apps/types';
+import Shortcut from '../components/shortcut.svelte';
+import Svg from '../components/svg.svelte';
+import Loader from '../components/loader.svelte';
+import Toaster from '../components/toaster.svelte';
 
+const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
+    lock_screen: {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+    },
+    top_bar: {
+        weekday: 'short',
+        month: 'short',
+        day: '2-digit',
+    }
+}
+const formatDate = (options: Intl.DateTimeFormatOptions) => new Date().toLocaleDateString('fr', options).replace(',', '');
+const formatTime = (time: number) => time.toString().padStart(2, '0');
 
-const maxWidth: number = 995;
-const isOpen = (name: string, arr: string[]) => arr?.some(el => el?.startsWith(name)); 
-const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-
-$: console.log(windowOrder);
-
-let time: string;
-let date: string;
-let launchpadSearchBar: string;
-let opacity: string = '0';
+const maxWidthIphone: number = 1280;
 let windowWidth: number;
-let isLaunchpad: boolean =  false;
 let isPowerOn: boolean = false;
-let isRedirectOn: boolean = false;
-let isCommandsOpen: boolean = false;
 let isFullscreen: boolean = false;
-let storageFullscreen: boolean = true;
 let timeInterval: ReturnType<typeof setInterval>;
+let date: string = formatDate(dateOptions.lock_screen);
+let time: string; 
 
+let isPageLoaded: boolean = false;
 
-$: device = windowWidth <= maxWidth ? iphone : iMac;
-$: launchpadAppsSearched = launchpadSearchBar ? launchpadApps.filter(app => app?.name?.toLowerCase()?.includes(launchpadSearchBar)) : launchpadApps;
+$: topBarName = $activeTopBar?.split('-')[0] ?? 'Finder';
+$: topBarData = apps.pc.global.find(app => app.type === topBarName) ?? { name: '', top_bar: []};
 
+let language: string = 'Français';
 
-const powerOnDevice = () => {
-    const device = document.getElementById('device') as HTMLElement;
-    const bodyHeight = document.querySelector('body')?.offsetHeight
-    const blackScreen = device?.querySelector('.black-screen') as HTMLDivElement;
-    const blChildren = Array.from(blackScreen?.children as HTMLCollection);
-    
-    if (!device || !blackScreen || !blChildren || !bodyHeight) return;
-
-    const scaleHeight = (bodyHeight / (device?.offsetHeight / 1.7)).toFixed(2);
-    const scaleWidth = (windowWidth/ (device?.offsetWidth / 1.15)).toFixed(2);
-    const scale = scaleWidth > scaleHeight ? scaleWidth : scaleHeight;
-    device?.removeEventListener('click', powerOnDevice );
-
-    if (storageFullscreen) {
-        // TODO -> Adapt the transition for all screens.
-        device.style.transition = `all ${+scale * .5}s ease-in-out`;
-        // TODO -> Adapt the scale so that it barely goes out. Need to adatp to all formats (mobile, pc, ...).
-        device.style.transform = `scale(${scale})`;
-        device.style.marginTop= '22vh'
-    } else {
-        device.style.removeProperty('transform');
-    }
-    setTimeout(() => {
-        isFullscreen = storageFullscreen;
-        if (storageFullscreen) {
-            device.style.removeProperty('transition');
-            device.style.removeProperty('margin-top');
-        }
-        blackScreen.addEventListener('click', unlockDevice)
-        device.style.removeProperty('transform');
-        isPowerOn = true;
-        blChildren.forEach((child) => {
-            (child as HTMLDivElement).style.removeProperty('visibility');
-        })
-    }, (+scale * 1000)) 
-};
-const unlockDevice = () => {
-    const blackScreen = document?.querySelector('#screen .black-screen') as HTMLDivElement;
-    const blChildren = Array.from(blackScreen?.children as HTMLCollection);
-    if (blackScreen && blChildren) {
-        blackScreen.style.cssText = `opacity: ${opacity}; pointer-events: none`;
-        blackScreen.removeEventListener('click', unlockDevice);
-        setTimeout(() => { 
-            blChildren.forEach((child) => {
-                (child as HTMLElement).style.display = 'none';
-            });
-            clearInterval(timeInterval);
-        }, 320)
-    }
-}
-const openCloseCommands = () => {
-    isFullscreen = !isFullscreen;
-    localStorage.setItem('fullscreen', isFullscreen.toString());
-}
 const updatedTime = () => {
     const now = new Date();
-    const hours = now?.getHours()?.toString()?.padStart(2, '0');
-    const minutes = now?.getMinutes()?.toString()?.padStart(2, '0');
+    const hours = formatTime(now.getHours());
+    const minutes = formatTime(now.getMinutes());
 
     time = `${hours}:${minutes}`;
+
+    if (time === '00:00') {
+        const options = dateOptions[isPowerOn ? 'top_bar' : 'lock_screen'];
+        date = formatDate(options);
+    }
+}
+let desktopContent: App[] = [];
+let dockContent: App[] = [];
+updatedTime();
+
+
+const homeButtonAction = () => {
+    if ($globalWindowOrder?.length <= 0) return;
+
+    $globalWindowOrder.forEach((w: string) => {
+        closeAppWindow(w)
+    })
 }
 
-onMount(async () => {
-    const getFullscreenStorage = localStorage.getItem('fullscreen'); 
-    if (getFullscreenStorage) storageFullscreen = getFullscreenStorage === 'true';
+let screen: HTMLElement|undefined = undefined;
 
-    updatedTime();
-    date = new Date().toLocaleDateString('en-GB', options).replace(',', '');
+onMount(() => {
+    screen = document.querySelector('.device__lock-screen') as HTMLElement;
+    screen?.addEventListener('click', () => {
+        isPowerOn = true;
+        date = formatDate(dateOptions.top_bar);
+    })
+
+    let isWindowSmaller: boolean = windowWidth <= maxWidthIphone;
+    isResponsive.set(isWindowSmaller);
+
+    desktopContent = isWindowSmaller ? apps.mobile.desktop : apps.pc.desktop;
+    dockContent = isWindowSmaller ? apps.mobile.dock : apps.pc.dock;
+
     timeInterval = setInterval(updatedTime, 1000);
 
-    const device = document.getElementById('device');
-    device?.addEventListener('click', powerOnDevice )
+    window.addEventListener('resize', () => {
+        isWindowSmaller = windowWidth <= maxWidthIphone;
+        isResponsive.set(isWindowSmaller);
 
-    isRedirectOn = localStorage.getItem('redirect_outside') === 'true'; 
-    opacity = localStorage.getItem('opacity') ?? '0';
+        const desktopContentUpdated = isWindowSmaller ? apps.mobile.desktop : apps.pc.desktop;
+        if (desktopContentUpdated !== desktopContent) desktopContent = desktopContentUpdated;
 
-    const allElements = [
-        {name: 'desktop', is_icon: true, html: document.getElementById('desktop') },
-        {name: 'dock', is_icon: true, html: document.getElementById('dock') },
-        {name: 'screen', html: document.getElementById('screen') },
-        {name: 'background', is_img: true, html: document.querySelector('#screen .background img') as HTMLImageElement },
-        {name: 'background', is_img: true, html: document.querySelector('#screen .black-screen img') as HTMLImageElement },
-    ];
+        const dockContentUpdated = isWindowSmaller ? apps.mobile.dock : apps.pc.dock;
+        if (dockContentUpdated !== dockContent) dockContent = dockContentUpdated;
+    })
 
-    allElements?.forEach(data => {
-        const value = localStorage.getItem(data.name);
-        if (!value || !data?.html) return;
-        if (data?.is_img) {
-            data.html.src = JSON.parse(value)?.src;
-            return
-        }
-        const path = data?.is_icon ? 'icon_size' : 'font_size';
-        const prop = data?.is_icon ? '--icon-size' : '--font-size';
-        if (value) data.html.style.setProperty(prop, `${JSON.parse(value)?.[path]}px`);
-    }) 
+    isPageLoaded = true;
 })
+
+onDestroy(() => {
+    clearInterval(timeInterval);
+})
+function openFullscreen() {
+    const screen = document.querySelector('.device__screen');
+    if (screen) {
+        isFullscreen = !isFullscreen;
+        screen.requestFullscreen();
+    }
+}
 </script>
 
 <svelte:window bind:innerWidth={windowWidth}/>
 
-<main>
-    <div class="commands {isCommandsOpen ? '' : 'close'}">
-        <button on:click={() => isCommandsOpen = !isCommandsOpen}>{isCommandsOpen ? '􀆊' : '􀆉'}</button>
-        <button class="{isPowerOn ? '' : 'desactivated'}" on:click={openCloseCommands}>{isFullscreen || !isPowerOn ? '􀅋' : '􀅊'}</button>
+<main class="main">
+    {#if !isPageLoaded}
+        <Loader /> 
+    {/if}
+    <button on:click={() => toast({ appName: 'Music', title: 'title', message: 'message' })}>MUSIC TOAST</button>
+    <button on:click={() => toast({ appName: 'Preview', title: 'title', message: 'message' })}>Preview TOAST</button>
+    <button on:click={() => toast({ appName: 'Mail', title: 'title', message: 'message' })}>Mail TOAST</button>
+    <div class="commands main__commands">
+        <button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
+            {#if isFullscreen}
+                <Svg name='fullscreen_off' color="#fff" />
+            {:else} 
+                <Svg name='fullscreen_on' color="#fff" />
+            {/if}
+        </button>
     </div>
-    <div id='device' class="{isFullscreen ? 'fullscreen' : ''}" style="transform: scale(.5)">
-        <img src={device} alt="" style="{isFullscreen ? 'display: none' : ''}">
-        <div id="screen" style="{isFullscreen ? 'padding: 0' : ''}">
-            <div class="screen-grid">
-                <!--<div class="black-screen" transition:fade={{  duration: 500 }}></div> -->
-                <div class="black-screen">
-                        <div class="date-and-time flex" style="visibility: hidden;">
-                            <h3>{date}</h3>
-                            <h1>{time}</h1>
-                        </div>
-                        <div class="account flex" style="visibility: hidden;">
-                            <div class="pp"></div>
-
-                            <h5>Louis Gabillet</h5>
-                            <p>Click to unlock</p>
-                        </div>
-                        <img src='/src/lib/assets/images/background/Ink_Cloud.jpg' alt="" style="visibility: hidden;">
-                        <!--<p class="apple-logo"></p>-->
-                </div> 
-                {#if isLaunchpad}
-                   <div class="launchpad" transition:scale={{ duration: 320, start: 1.1,  }}>
-                        <input type="text" placeholder="Search" bind:value={launchpadSearchBar}>
-                        <div class="lp-container" role="button" tabindex="0" on:focus={() => isLaunchpad = false }>
-                            {#each launchpadAppsSearched as app} 
-                                <div class="shortcut-container">
-                                    <button class="shortcut"
-                                        data-name-app={app?.app_name || app?.name}
-                                        on:click={() => { openAppWindow(app); isLaunchpad = false }}
-                                    > 
-                                        <img src={app.src} alt="">
-                                    </button>
-                                    <button class="shortcut" data-name-app={app?.app_name || app?.name}> 
-                                        <p><span>{app.name}</span></p>
-                                    </button>
-                                </div>
-                            {/each}
-                        </div>
-                    </div> 
-                {/if}
-                <Topbar />
-                <div class="background">
-                    <img src='/src/lib/assets/images/background/Ink_Cloud.jpg' alt="">
-                </div>
-                <div id="desktop">
-                    <div id='icons-placement'>
-                        {#each desktopApps as app} 
-                                <div class="shortcut-container">
-                                    <button class="shortcut"
-                                        data-name-app={app?.app_name || app?.name}
-                                        on:dblclick={() => { openAppWindow(app) }}
-                                    > 
-                                        <img src={app.src} alt="">
-                                        <i>􀉑</i>
-                                    </button>
-                                    <button class="shortcut"
-                                        data-name-app={app?.app_name || app?.name}
-                                        on:dblclick={() => { openAppWindow(app) }}
-                                    > 
-                                        <p><span>{app.name}</span></p>
-                                    </button>
-                                </div>
-                        {/each}
+    <section class="main__sect main__sect-1 transition-320-ease" class:hidden={ !isPageLoaded }>
+        <div class='device'>
+            <picture>
+                <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/devices/iphone/iPhone_16_Black_Portrait_qquj9o.png">
+                <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/devices/macbook/MacBook_Air_Dark_lqrnpi.png">
+                <img class="device__img" src="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/devices/macbook/MacBook_Air_Dark_lqrnpi.png" alt="Appareil"> 
+            </picture>
+            <div class="device__placement">
+                <div class="lock-screen device__lock-screen transition-320-ease" class:hidden={isPowerOn}>
+                    <div class="lock-screen__date-and-time lock-screen__content"> 
+                        <h1 class="lock-screen__h1 lock-screen__text lock-screen__text--faded">{date}</h1>
+                        <h2 class="lock-screen__h2 lock-screen__text lock-screen__text--faded">{time}</h2>
                     </div>
-                </div>
-                <div id="dock">
-                    {#each dockApps as app, i}
-                        {#if i === dockApps?.length - 2}
-                            <div class="separator">
-                                <div class="line"></div>
+                    {#if $isResponsive}
+                        <span class="icon lock-screen__icon">
+                            <Svg name='flashlight_off_fill' color="#fff" />
+                        </span>
+                        <span class="icon lock-screen__icon">
+                            <Svg name='camera_fill' color="#fff" />
+                        </span>
+                    {/if}
+                    <div class="lock-screen__account lock-screen__content"> 
+                        {#if !$isResponsive}
+                            <div class="lock-screen__pp"></div>
+                            <div>
+                                <h3 class="lock-screen__h3 lock-screen__text">Louis Gabillet</h3>
+                                <h4 class="lock-screen__h3 lock-screen__text">Développeur Web</h4>
                             </div>
                         {/if}
-                        <button class="shortcut"
-                            data-name-app={app?.app_name || app?.name}
-                            on:click={() => { 
-                                if (app?.name === 'Launchpad') { isLaunchpad = !isLaunchpad; return }; 
-                                openAppWindow(app) }}
-                        >  
-                            <img  src={app.src} alt="">
-                            {#if isOpen((app?.app_name || app?.name), windowOrder) || app.name == 'Finder'}
-                                <span class="dot"></span>
+                        <p class="lock-screen__p lock-screen__text lock-screen__text--faded">Appuyer sur l'écran<br>pour l'ouvrir</p>
+                    </div>
+                </div> 
+                <div class="screen device__screen">
+                    <Toaster />
+                    <!--<div class="notif-center screen__notif-center" class:notif-center--hidden={ Object.values($notifQueue).length === 0 }>
+                        {#if $isResponsive}
+                            <div class="notif-wrapper" style="--notif-wrapper--height: 0; --notif-wrapper--margin-b: 0">
+                                {#each Object.values($notifQueue).flat() as notif, i}
+                                    <Notif {notif} index={i} /> 
+                                {/each}
+                            </div>
+                        {:else} 
+                            {#each Object.values($notifQueue) as arr}
+                                <div class="notif-wrapper" style="--notif-wrapper--height: 0; --notif-wrapper--margin-b: 0">
+                                    {#each arr as notif, i}
+                                        <Notif {notif} index={i} /> 
+                                    {/each}
+                                </div>
+                            {/each}
+                        {/if}
+                    </div>-->
+                    <div class="top-bar {$isResponsive ? 'top-bar--grid' : 'top-bar--flex'} screen__top-bar">
+                        {#if $isResponsive}
+                            <p class="top-bar__p top-bar__time">{time}</p>
+                            <div class="top-bar__icons-wrapper">
+                                <span class="top-bar__icon">
+                                    <Svg name='cellularbars' color="#fff" />
+                                </span>
+                                <span class="top-bar__icon">
+                                    <Svg name='wifi' color="#fff" />
+                                </span>
+                                <span class="top-bar__icon">
+                                    <Svg name='battery_25percent' color="#fff" />
+                                </span>
+                            </div>
+                        {:else}
+                            {#if !isPowerOn}
+                                <div class="top-bar__language">
+                                    <p class="top-bar__p">{language}</p>
+                                    <span class="top-bar__icon">
+                                        <Svg name='dock_rectangle' color="#fff" />
+                                    </span>
+                                </div>
+                                <span class="top-bar__icon">
+                                    <Svg name='battery_100percent_bolt' color="#fff" />
+                                </span>
+                                <span class="top-bar__icon">
+                                    <Svg name='wifi' color="#fff" />
+                                </span>
+                            {:else}
+                                <span class="top-bar__logo">
+                                    <Svg name='apple' color="#fff" />
+                                </span>
+                                <h5 class="top-bar__h5">{topBarData.name}</h5>
+                                {#if topBarData.top_bar}
+                                    {#each topBarData.top_bar as str}
+                                        <p class="top-bar__p">{str}</p>
+                                    {/each}
+
+                                {/if}
+                                <div class="top-bar__icons-wrapper">
+                                    <span class="top-bar__icon">
+                                        <Svg name='battery_100percent_bolt' color="#fff" />
+                                    </span>
+                                    <span class="top-bar__icon">
+                                        <Svg name='wifi' color="#fff" />
+                                    </span>
+                                    <span class="top-bar__icon">
+                                        <Svg name='magnifyingglass' color="#fff" />
+                                    </span>
+                                    <span class="top-bar__icon">
+                                        <Svg name='switch_2' color="#fff" />
+                                    </span>
+                                    <p class="top-bar__p top-bar__date">{date}
+                                        <span class="top-bar__time">{time}</span>
+                                    </p>
+                                </div>
                             {/if}
-                        </button>
-                    {/each}
+                        {/if}
+                    </div>
+                    <picture class="background screen__background transition-320-ease">
+                        <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/wallpapers/mobile/Dark_Orbs_cwpt8t.jpg">
+                        <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/wallpapers/pc/Ink_Cloud_pumoik.jpg">
+                        <img class="background__img" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/wallpapers/pc/Ink_Cloud_pumoik.jpg' alt="Fond d'écran de l'appareil">
+                    </picture>
+                    <div class="desktop screen__desktop transition-320-ease">
+                        <div class='icons-placement desktop__icons-placement transition-320-ease' class:hidden={!isPowerOn}>
+                            {#each desktopContent as app} 
+                                <Shortcut {app} action={ () => openAppWindow(app)} bold /> 
+                            {/each}
+                        </div>
+                        <div class="dock desktop__dock {$isResponsive ? 'icons-placement' : 'desktop__dock--flex'} transition-320-ease" class:hidden={!isPowerOn} style="{$isResponsive && $globalWindowOrder.length > 0 ? 'z-index: -1' : ''}"> 
+                            {#each dockContent as app, i}
+                                {#if i === dockContent?.length - 2 && !$isResponsive}
+                                    <div class="dock__separator"></div>
+                                {/if}
+                                <Shortcut {app} action={ () => openAppWindow(app)} dock /> 
+                            {/each}
+                        </div>
+                        {#if $isResponsive}
+                            <button class="home-btn desktop__home-btn transition-320-ease" class:hidden={ !isPowerOn } on:click={ homeButtonAction }></button> 
+                        {/if}
+                    </div>
                 </div>
-            </div>
-        </div>
+    </section>
 </main>
 
 <style>
-main {
-    width: 100vw;
+.hidden {
+    visibility: hidden;
+    opacity: 0;
+}
+.transition-320-ease {
+    transition-property: transform, opacity;
+    transition-duration: 320ms;
+    transition-timing-function: ease;
+}
+.main {
+    width: 100%;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.main__sect {
+    position: relative;
     display: grid;
     place-content: center;
 }
-.commands {
-    --outer: 20px;
-    height: 30px;
-    position: absolute;
-    bottom: 1%;
-    right: 0;
-    padding-left: var(--outer);
-    z-index: 1001;
-    font-size: var(--fz-m);
-    background: #1B1B1B;
-    border-radius: 4px 0 0 4px;
-    transition: transform .32s ease;
+.main__sect-1 {
+    max-height: 100vh;
+    user-select: none;
     overflow: hidden;
 }
-.commands.close {
-    transform: translateX(calc(100% - var(--outer)));
-}
-.commands .desactivated {
-    opacity: .4;
-    pointer-events: none;
-}
-.commands button:first-of-type {
-    background: #373735;
-    position: absolute;
-    padding: 0;
-    top: 0;
-    left: 0;
-    width: var(--outer);
-    height: 100%;
-    text-align: center;
-    border-radius: 0;
-    outline: 1px solid #000;
-}
-.commands button {
-    color: white;
-    border-radius: 50%;
-    height: 100%;
-    aspect-ratio: 1/1;
-}
-.fullscreen {
-    width: 100vw;
-    height: 100vh;
-}
-#device {
+.device {
     position: relative;
+    display: inherit;
 }
-#device >  img {
-    max-width: 100vw;
-    max-height: 100vh;
+.device__img {
+    height: 100vh;
     object-fit: cover;
     pointer-events: none;
     position: relative;
-    z-index: 1000;
+    z-index: 2;
 }
-#screen {
-    /* --icon-width: 32px; /* Realistic one. But font too small if also realist*/
-    --nav-color: #F6F6F65C;
-    --nav-blur: 8.5rem;
-    --width: calc(var(--icon-size) * 2);
+.device__placement {
+    z-index: 1;
     position: absolute;
-    top: 0;
-    left:  0;
+    inset: 0;
     width: 100%; 
     height: 100%;
-    /*padding: 4.42% 4.57% 25.45% 4.57%;*/
-    padding: 5.8% 5.6% 27.4% 5.6%;
-    background-size: 100%;
+    padding: 6.7% 10.1% 6.6%;
+    display: grid;
 }
-.black-screen {
+.lock-screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.device__lock-screen {
+    grid-area: 1/1;
+    z-index: 2;
+    cursor: pointer;
+}
+.lock-screen__content {
     position: absolute;
-    top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    background-color: black;
-    z-index: 1000;
-    transition: all .32s ease;
-}
-.black-screen img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.black-screen .flex {
+    transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 10px;
 }
-.date-and-time, .account {
-    position: absolute;
-    left: 50%;
+.lock-screen__text {
     color: white;
-    transform: translateX(-50%);
-    display: none;
 }
-.date-and-time h1, .date-and-time h3, .account p {
+.lock-screen__text--faded {
     opacity: .7;
 }
-.date-and-time {
+.lock-screen__date-and-time {
     top: 10%;
 }
-.date-and-time h1 {
+.lock-screen__account {
+    text-align: center;
+    bottom: 5%;
+}
+.lock-screen__h1 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+.lock-screen__h2 {
     font-size: 5.625rem;
     font-weight: 600;
     line-height: 1;
 }
-.date-and-time h3 {
-    font-size: 1.25rem;
+.lock-screen__h3 {
+    font-size: var(--fz-m);
     font-weight: 500;
 }
-.account {
-    bottom: 5%;
+.lock-screen__p {
+    font-size: var(--fz-s);
 }
-.account .pp {
+.lock-screen__icon {
+    height: 2.75rem;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    padding: 10px;
+    background: var(--dark-fullscreen);
+    backdrop-filter: blur(var(--blur));
+    position: absolute;
+    bottom: 6%;
+    right: 10%;
+}
+.lock-screen__icon:first-of-type {
+    left: 10%;
+}
+.lock-screen__pp {
     width: 3rem;
     aspect-ratio: 1/1;
     border-radius: 50%;
     background: var(--dark-fullscreen);
     backdrop-filter: blur(var(--blur));
 }
-.account h5 {
-    font-size: var(--fz-m);
-    font-weight: 500;
-}
-.account p {
-    font-size: var(--fz-s);
-}
-.launchpad {
-    --width: calc(var(--icon-ratio) * 1.5);
-    --icon-size: var(--width);
-    width: 100%;
-    height: 100%;
-    background-color: #4A4A4A63;
-    backdrop-filter: blur(50px);
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 998;
-}
-.launchpad input {
-    position: absolute;
-    top: 25px;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    outline: 1px solid #414141;;
-    border: none;
-    color: white;
-    background: transparent;
-    border-radius: 1px;
-}
-.lp-container {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    row-gap: 1rem;
-    padding: 50px 8rem calc(var(--width) + 30px) 8rem;
-    margin: 0 auto;
-}
-.background {
-    width: 100%;
-    height: calc(100% + 2rem);
-    background-color: black;
-    position: absolute;
-    top: 0;
-    left: 0;
-    overflow: hidden;
-    padding-bottom: 2rem;
-}
-.background img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform .32s ease;
-}
-.screen-grid {
+.screen {
     position: relative;
-    width: 100%;
-    height: 100%;
-    /*aspect-ratio: 16 / 9;*/
-    /*background-image: url('$lib/assets/images/background/Ink-Cloud.jpg');
-background-size: 100%;*/
     display: grid;
     grid-template-rows: auto 1fr;
     overflow: hidden;
+    background: #000;
 }
-#desktop {
-    transition: transform .32s ease;
+.device__screen {
+    grid-area: 1/1;
+}
+.background {
+    width: 100%;
+    height: 100%;
+}
+.notif-center {
+    z-index: 1000;
+    padding: 5px 15px;
+    display: flex;
+    flex-direction: column-reverse;
+}
+.screen__notif-center {
+    position: absolute;
+    top: 2rem;
+    right: 0;
+    width: 280px;
+}
+.notif-center--hidden {
+    display: none;
+}
+.notif-wrapper {
+    position: relative;
+    height: var(--notif-wrapper--height);
+    margin-bottom: var(--notif-wrapper--margin-b);
+    display: grid;
+    transition: height 320ms ease, margin 320ms ease;
+}
+.screen__background {
+    position: absolute;
+    inset: 0;
+    animation: zoom-out 25s linear;
+}
+.background__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.desktop {
     position: relative;
     display: flex;
-    justify-content: center;
-    z-index: 1;
-    overflow: hidden;
+    flex-direction: column;
+    align-items: center;
+    /*overflow: hidden;*/
 }
-#icons-placement {
-    --width: calc(var(--icon-size) * 2);
+.screen__desktop {
+    --max-width: 83%;
     height: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    width: calc(100% - 11rem);
-    /*display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--width), 1fr));*/
-    gap: 4px;
-    padding: 4px 0 calc(var(--icon-ratio) * 2);
-    transition: transform .32s ease;
+    z-index: 1;
+    justify-content: space-between;
 }
-#dock {
-    --icon-width: var(--icon-ratio);
-    --borr: .6rem;
+.desktop__icons-placement {
+    --nbr-columns: 10;
+    --column-width: 1fr;
+    width: var(--max-width);
+    padding-block: 10px 45px;
+}
+.dock {
+    position: relative;
     box-shadow: 0 0 6px 0 var(--color-shadow);
-    border-radius: var(--borr);
+    border-radius: .6rem;
     background-color: #4A4A4A63; 
     backdrop-filter: blur(50px);
+    padding: 2px 2px 4px;
+}
+.desktop__dock {
+    max-width: var(--max-width);
+    margin-bottom: 5px;
+    z-index: 4;
+}
+.desktop__dock--flex {
     display: flex;
-    width: max-content;
-    max-width: 90%;
-    /*overflow: hidden;*/
-    margin: 0 auto 4px auto;
-    padding: 2px 2px 2px 2px;
+}
+.dock__separator {
+    position: relative;
+    padding-inline: 10px;
+}
+.dock__separator::before {
+    content: ''; 
+    background-color: #414141;
+    height: 80%;
+    width: 1px;
     position: absolute;
-    bottom: 2px;
+    inset: 0;
+    margin: auto;
+}
+.home-btn {
+    width: 4rem;
+    background-color: #232323;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    margin: auto;
+}
+.home-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 2rem;
+    aspect-ratio: inherit;
+    border-radius: inherit;
+    background-color: #cacaca;
+    box-shadow: 
+        0 0 0 4px #838383,
+        0 0 0 8px #535353;
+}
+.desktop__home-btn {
+    position: absolute;
+    bottom: 8%;
     left: 50%;
     transform: translateX(-50%);
     z-index: 999;
+}
+.commands {
+    display: flex;
+    gap: 4px;
+}
+.main__commands {
+    position: absolute;
+    bottom: 1%;
+    right: 1%;
+    z-index: 1000;
+}
+.commands__btn {
+    height: 15px;
+    aspect-ratio: 1/1;
+}
+.commands__btn--desactivated {
+    opacity: .4;
+    pointer-events: none;
+}
+.top-bar {
+    width: 100%;
+    background-color: #0000002E;
+    backdrop-filter: blur(50px);
+}
+.screen__top-bar {
+    padding-inline: 15px;
+    height: var(--top-bar-height);
+    z-index: 2;
     transition: transform .32s ease;
 }
-.launchpad .shortcut-container {
-    width: 100%;
+.top-bar--grid {
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: center;
+    gap: 8rem;
 }
-.launchpad .shortcut {
-    max-width: 100%;
-    font-weight: 400;
+.top-bar--flex {
+    gap: 15px;
 }
-#dock .shortcut {
-    /*width: var(--icon-size);*/
-    flex: 1 1 var(--icon-size);
-    max-width: var(--icon-size);
+.top-bar--flex,
+.top-bar__icons-wrapper,
+.top-bar__language {
+    display: flex;
+    align-items: center;
 }
+.top-bar__icons-wrapper {
+    margin-left: auto;
+    gap: 10px;
+}
+.top-bar__icon {
+    height: 10px;
+}
+.top-bar__language {
+    margin-left: auto; 
+    gap: 6px;
+}
+.top-bar__logo {
+    height: 12px;
+}
+.top-bar__h5 {
+    font-weight: 600;
+}
+.top-bar__h5,
+.top-bar__p {
+    color: #fff;
+    font-size: var(--fz-s);
+}
+.top-bar__time {
+    display: inline-block;
+    width: 30px;
+    text-align: end;
+}
+.top-bar__date {
+    min-width: 95px;
+    white-space: nowrap;
+}
+.top-bar__date:first-letter {
+    text-transform: capitalize;
+}
+
+@keyframes zoom-out {
+from {
+    scale: 1.1;
+}
+to {
+    scale: 1;
+}
+}
+
 .float-name {
     position: absolute;
     top: -1.75rem;
@@ -491,29 +605,6 @@ background-size: 100%;*/
 .app:hover .float-name {
     display: inline;
 }
-.dot {
-    width: 3px;
-    height: 3px;
-    background-color: #7C7C7C;
-    border-radius: 50%;
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translate(-50%, 25%);
-}
-.separator {
-    position: relative;
-    padding-inline: calc(var(--icon-size) / 5);
-}
-.separator .line {
-    background-color: #414141;
-    height: 85%;
-    width: 1px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
 .triangle {
     width: 0;
     height: 0;
@@ -526,15 +617,59 @@ background-size: 100%;*/
     transform: translateX(-50%);
 }
 
-@media (max-width: 995px) {
-    #screen {
-        padding: 6.5% 6.6% 7% 6.6%;
+@media (max-width: 1280px) {
+    .device__placement {
+        padding: 6.5%; 
     }
-    .fullscreen .screen-grid {
-        border-radius: 0;
+    .lock-screen__account {
+        bottom: 4%;
     }
-    .screen-grid {
-        border-radius: 20px;
+    .lock-screen__p {
+        font-size: var(--fz-m);
+    }
+    .screen {
+        grid-template-rows: 1fr;
+        border-radius: .75rem;
+    }
+    .screen__desktop {
+        --max-width: 100%;
+    }
+    .screen__background {
+        animation: none;
+    }
+    .desktop__icons-placement {
+        --nbr-columns: 4;
+        padding: 4rem 15px 0;
+    }
+    .desktop__dock {
+        --nbr-columns: 4;
+        --column-width: 1fr;
+        width: calc(100% - 23px);
+        padding: 12px 10px;
+        border-radius: 45px;
+        bottom: 13px;
+        margin: 0;
+    }
+    .screen__top-bar {
+        position: absolute;
+        top: 2.5%;
+        background: transparent;
+        backdrop-filter: none;
+        z-index: 1000;
+    }
+    .top-bar__p {
+        font-size: var(--fz-xl);
+    }
+    .top-bar__time {
+        width: auto;
+        text-align: center;
+    }
+    .top-bar__icons-wrapper {
+        gap: 4px;
+        margin: 0 auto;
+    }
+    .top-bar__icon {
+        height: 12px;
     }
 }
 </style>
