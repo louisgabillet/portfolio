@@ -1,5 +1,5 @@
 <script lang="ts">
-import { isResponsive } from "$lib";
+import { isResponsive } from "$lib/store";
 import { toasts } from "$lib/toast/store";
 import Toast from "./toast.svelte";
 

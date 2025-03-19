@@ -1,6 +1,6 @@
 import { type App } from "../types";
 
-export const apps: App[] = [
+const mobileDock: App[] = [
     {
         name: 'Mail',
         type: 'Mail',
@@ -22,3 +22,5 @@ export const apps: App[] = [
         src: 'icons/music_s8ah6d.png',
     },
 ];
+
+export default mobileDock;

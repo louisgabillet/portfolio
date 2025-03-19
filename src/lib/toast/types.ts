@@ -5,7 +5,7 @@ export interface Toast extends ToastContent {
 	icon?: string,
 }
 export type Toasts = Record<string, Toast[]>;
-export type ToastType = 'success' | 'error' | 'missing' | 'blank';
+export type ToastType = 'success' | 'error' | 'missing' | 'blocked' | 'blank';
 
 export interface ToastOptions {
     icon?: string,

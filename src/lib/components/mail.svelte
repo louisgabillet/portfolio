@@ -1,6 +1,6 @@
 <script lang="ts">
 import { PUBLIC_SITE_KEY, PUBLIC_EMAIL } from "$env/static/public";
-import { isResponsive  } from "$lib/index";
+import { isResponsive  } from "$lib/store";
 import { applyAction, deserialize, enhance } from '$app/forms';
 import type { ActionResult } from "@sveltejs/kit";
 import Svg from "./svg.svelte";

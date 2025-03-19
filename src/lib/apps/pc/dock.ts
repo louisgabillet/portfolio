@@ -1,6 +1,6 @@
 import { type App } from "../types";
 
-export const apps: App[] = [
+const pcDock: App[] = [
     {
         name: 'Finder',
         type: 'Finder',
@@ -52,3 +52,5 @@ export const apps: App[] = [
         shortcut: true,
     },
 ]
+
+export default pcDock;

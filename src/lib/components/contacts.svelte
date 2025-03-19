@@ -1,6 +1,6 @@
 <script lang="ts">
-import { contacts, type Contact } from '$lib/data';
-import { isResponsive } from "$lib/index";
+import contacts, { type Contact } from '$lib/contacts';
+import { isResponsive } from "$lib/store";
 import Svg from './svg.svelte';
 
 const navBtns = [
@@ -11,7 +11,7 @@ const navBtns = [
 
 //let search: string = '';
 let contactName = $isResponsive ? '' : 'Louis Gabillet';
-$: contactInfo = contacts.find(contact => contact.letter === contactName) ?? { letter: '', mobile: '', mail: '', contact_method: [], note: '' };
+$: contactInfo = contacts.find(contact => contact.letter === contactName) ?? { letter: '', mobile: '', mail: '', contactMethod: [], note: '' };
 $: ({letter, mobile, mail, note, self} = contactInfo);
 
 const alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "#"];
@@ -131,7 +131,7 @@ const filterByFirstLetter = () => {
                     <h2 class="contact__name contact__name--overflow">{letter}</h2>
                 </div>
                 <div class="contact__links-wrapper">
-                    {#each contactInfo.contact_method as {name, svg_name, value, prefix, blank}}
+                    {#each contactInfo.contactMethod as {name, svg_name, value, prefix, blank}}
                     <a class="link contact__link" href="{prefix ?? ''}{value}" class:contact__link--desactivated={ !value } target={blank ? "_blank" : ""}>
                         <span class="contact__icon link__icon">
                             <Svg name={svg_name} color={$isResponsive ? "var(--accent-color)" : "#fff"} />

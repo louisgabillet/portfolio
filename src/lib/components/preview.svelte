@@ -1,77 +1,55 @@
 <script lang="ts">
 import Svg from "./svg.svelte";
-import { closeAppWindow, globalWindowOrder, isResponsive } from "$lib";
+import { isResponsive } from "$lib/store";
 import Img from "./img.svelte";
 import { onMount } from "svelte";
 import { loadProjectData } from "$lib/projects"
+import appWindows from "$lib/apps/window-management/store";
+import appWindow from "$lib/apps/window-management";
+import type { Details, Gallery, Images, Links, Design, Descriptions } from "$lib/projects/types";
 
-//export let name: string = 'Untitled';
-//export let preview_data: any;
-//export let name: string;
-//export let data: any;
 export let img_id: string;
-export let unique_name: string;
+export let dirName: string;
 
+let details: Details;
+let design: Design;
+let descriptions: Descriptions;
+let links: Links;
+let images: Images;
 
-let data: Record<string, any> = { 
-    info: {},
-    assets: {},
-    media: {}
-};
-//let details, descriptions, links, images;
+let fileName: string;
+let openedImg: Gallery | undefined;
 
-$: ({ details, descriptions } = data.info);
-$: ({ links } = data.assets);
-$: ({ images } = data.media);
-
-$: img = images?.gallery.find(img => img.img_id === img_id)
-
-onMount(async () => {
-    if (unique_name) {
-        //const res = await loadProjectData(unique_name);
-        const res = await loadProjectData();
-        if (res) data = res;
-
-        //({ details, descriptions } = data.info);
-        //({ links } = data.assets);
-        //({ images } = data.media);
-    }
-})
-
-const defaultDocument = {
-    title: null,
-    subtitle: null,
-    requests: null,
-    year: null,
-    client: null,
-    site_type: null,
-    color_code: null,
-    fonts: null,
-    tools_used: null,
-    desc: null,
-    target_audience: null,
-    img: null,
-};
-const { 
-    requests,
-    year,
-    site_type,
-    client,
-    color_code,
-    fonts,
-    tools_used,
-    desc,
-    subtitle,
-    target_audience 
-} = details ?? defaultDocument;
+$: lastAppWindow = $appWindows[$appWindows.length - 1];
 
 const isPlural = (word: string, arr: string[]) =>  {
     const length = arr.length;
     return length > 1 ? word + 's' : word;
 }
-$: lastAppOpened = $globalWindowOrder[$globalWindowOrder?.length - 1];
-const fileName: string = details?.name ?? '';
-let image = {};
+
+onMount(async () => {
+    if (dirName) {
+        try {
+            const res = await loadProjectData(dirName);
+
+            if (!res) {
+                return;
+            }
+
+            details = res.details;
+            descriptions = res.descriptions;
+            design = res.design;
+            links = res.links;
+            images = res.images;
+
+            fileName = details.name;
+            openedImg = images.gallery.find(img => img.img_id === img_id);
+
+        } catch (err) {
+            console.error(`Error fetching data of '${dirName}':`, err);
+        }
+    }
+})
 </script>
 
 <div class="app-grid">
@@ -81,7 +59,7 @@ let image = {};
                 <Svg name='list_bullet' color='#0A82FF' />
             </span>
             <h2>{fileName}</h2>
-            <button class="ok-btn" on:click={() => closeAppWindow(lastAppOpened) }>OK</button>
+            <button class="ok-btn" on:click={() => appWindow.close(lastAppWindow.id) }>OK</button>
         </div> 
     {/if}
     <div class="app-controls">
@@ -129,57 +107,57 @@ let image = {};
             </span>
         {/if}
     </div>
-    <div class="app-content{image ? ' center-content' : ''}">
-        {#if img_id && img}
+    <div class="app-content" class:center-content={ img_id && openedImg }>
+        {#if img_id && openedImg}
             <Img 
-                src={img.src} 
-                alt={img.name} 
+                src={openedImg.src} 
+                alt={openedImg.name} 
             />
-        {:else if !image}
+        {:else if details}
             <div class="page">
-                <h1>{title}</h1>
-                <h2>{subtitle}</h2>
+                <h1>{details.name}</h1>
+                <!--<h2>{subtitle}</h2>-->
             </div>
             <div class="page">
                 <h2>Informations</h2>
-                {#if client}
+                {#if details.client}
                     <div class="flex">
                         <h3>Client:</h3>
-                        <a href="{client.link}" target="_blank">{client.name}</a> 
+                        <a href="{links.live_demo}" target="_blank">{details.client}</a> 
                     </div>
                 {/if}
-                {#if year}
+                {#if details.date}
                     <div class="flex">
-                        <h3>Année:</h3>
-                        <p>{year}</p> 
+                        <h3>Date:</h3>
+                        <p>{details.date}</p> 
                     </div>
                 {/if}
-                {#if site_type}
+                <!--{#if site_type}
                     <div class="flex">
                         <h3>Type de site:</h3>
                         <p>{site_type}</p> 
                     </div>
-                {/if}
-                {#if requests}
-                    <h3>{isPlural('Demande', requests)}:</h3>
+                {/if}-->
+                {#if details.requests}
+                    <h3>{isPlural('Demande', details.requests)}:</h3>
                     <ul>
-                        {#each requests as request}
+                        {#each details.requests as request}
                             <li>{request}</li> 
                         {/each}
                     </ul>
                 {/if}
-                {#if tools_used}
-                    <h3>{isPlural('Outil', tools_used)} {isPlural('utilisé', tools_used)}:</h3>
+                {#if details.technologies}
+                    <h3>{isPlural('Outil', details.technologies)} {isPlural('utilisé', details.technologies)}:</h3>
                     <ul>
-                        {#each tools_used as tool}
-                            <li>{tool}</li> 
+                        {#each details.technologies as techno}
+                            <li>{techno}</li> 
                         {/each}
                     </ul>
                 {/if}
-                {#if target_audience}
+                {#if details.targetAudience}
                     <h3>Audience visée:</h3>
                     <ul>
-                        {#each target_audience as target}
+                        {#each details.targetAudience as target}
                             <li>{target}</li> 
                         {/each}
                     </ul>
@@ -187,29 +165,28 @@ let image = {};
             </div>
             <div class="page">
                 <h2>Visuels</h2>
-                {#if img?.logo}
+                {#if images.logo}
                     <div class="flex" style="align-items: center;">
                         <h3>Logo:</h3>
-                        <!--<img class="logo" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/portfolio/images/{img.logo}' alt="">-->
                         <Img 
                             width='50'
-                            src={img.logo} 
+                            src={images.logo} 
                             alt='logo de la marque' 
                         />
                     </div>
                 {/if}
-                {#if fonts}
-                    <h3>{isPlural('Police', fonts)} d'écriture:</h3>
+                {#if design.fonts}
+                    <h3>{isPlural('Police', design.fonts)} d'écriture:</h3>
                     <ul>
-                        {#each fonts as font}
+                        {#each design.fonts as font}
                             <li>{font}</li> 
                         {/each}
                     </ul>
                 {/if}
-                {#if color_code}
+                {#if design.colorCode}
                     <h3>Code Couleur:</h3>
                     <div class="list-placement">
-                        {#each color_code as color}
+                        {#each design.colorCode as color}
                             <button class="color" style="--color: {color};" on:click={() => navigator.clipboard.writeText(color)}>
                                 <p>{color}</p>
                             </button>
@@ -218,9 +195,27 @@ let image = {};
                 {/if}
             </div>
             <div class="page">
-                <h2>Description</h2>
-                {#if desc}
-                    <p>{desc}</p> 
+                <h2>Intro:</h2>
+                {#if descriptions.intro}
+                    <p>{descriptions.intro}</p> 
+                {/if}
+            </div>
+            <div class="page">
+                <h2>Processus:</h2>
+                {#if descriptions.process}
+                    <p>{descriptions.process}</p> 
+                {/if}
+            </div>
+            <div class="page">
+                <h2>Difficultés:</h2>
+                {#if descriptions.challenges}
+                    <p>{descriptions.challenges}</p> 
+                {/if}
+            </div>
+            <div class="page">
+                <h2>Résultat:</h2>
+                {#if descriptions.outcome}
+                    <p>{descriptions.outcome}</p> 
                 {/if}
             </div>
         {/if}

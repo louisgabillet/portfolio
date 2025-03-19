@@ -23,7 +23,7 @@ type Safari = {
 }
 type SafariVersion = {
         type: string,
-        page: Record<'src', string> | { component: typeof SvelteComponent, props: any[] },
+        page: Record<'src', string> | { component: typeof SvelteComponent, props: unknown[] },
 }
 type PDF = {
     title: string,

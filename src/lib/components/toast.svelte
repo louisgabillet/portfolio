@@ -1,40 +1,42 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-import { isResponsive, type Notification, notifQueue, removeNotifFromQueue } from '$lib/index';
+import { isResponsive } from '$lib/store';
+import { toast } from '$lib/toast';
+import { toastDefaultIcons } from '$lib/toast/utils';
+import { apps } from '$lib/apps';
+import type { Toast } from '$lib/toast/types';
 import Img from './img.svelte';
 import Svg from './svg.svelte';
 
-export let notif: Notif;
+export let _toast: Toast;
 export let index: number;
+export let length: number;
 
-interface Notif extends Notification {
-    uid: string,
-}
+$: ({ type, title, message, appName } = _toast);
 
-let leave: boolean = false;
-$: ({ uid, app_name, src, title, message } = notif);
-//$: length = $notifQueue[app_name].length;
-$: length = $isResponsive ? Object.values($notifQueue).flat().length : $notifQueue[notif.app_name].length;
+const version = $isResponsive ? 'mobile' : 'pc';
+const allApps = apps[version].global;
+$: app = allApps.find(app => app.type === appName); 
 
-$: position = 
-    index === length - 1 ? '1' :
-    index === length - 2 ? '2' :
-    index === length - 3 ? '3' :
-    index < length - 3 ? '4' :
-    'none';
+$: icon = _toast.icon ?? toastDefaultIcons[type];
 
 let self: HTMLElement;
 let parent: HTMLElement;
+let leave: boolean = false;
+
+$: position = length - index > 4 ? 4 : length - index;
+$: imgWidth = $isResponsive ? '25' : '18';
 
 const close = () => {
-    const last = parent.children[length - 2] as HTMLElement;
+    const nextLast = parent.children[length - 2] as HTMLElement;
     leave = true;
     length--;
+
     setTimeout(() => {
-        removeNotifFromQueue(uid, app_name)
-        changeParentHeight(last);
-    }, 220)
-}
+        toast.remove(_toast, 320); 
+        changeParentHeight(nextLast);
+    }, 220);
+};
 
 const changeParentHeight = (child: HTMLElement) => {
     const parentHeight: number = parent?.offsetHeight ?? 0;
@@ -43,52 +45,56 @@ const changeParentHeight = (child: HTMLElement) => {
     if (height !== parentHeight) {
         parent.style.setProperty('--notif-wrapper--height', `${height}px`);
     }
-    if (length <= 3) {
+
+    if (length < 4) {
         const margin = 8 * length;
         parent.style.setProperty('--notif-wrapper--margin-b', `${margin}px`);
     }
-    if (length === 0) {
-        setTimeout(() => {
-            notifQueue.update(curr => {
-                const { [app_name]: _, ...rest } = curr; 
-                return rest; 
-            });
-        }, 320)
-    }
-}
+};
 
 onMount(() => {
     parent = self.closest('.notif-wrapper') as HTMLElement;
     changeParentHeight(self);
-})
+
+    //setTimeout(() => {
+    //    close();
+    //}, 5000);
+});
 </script>
 
-<div 
-    bind:this={ self }
+<div
+    bind:this={self}
     class="notif notif--flex notif--position-{position} {leave ? 'notif--slide-out' : 'notif--slide-in'}"
-    class:notif--hover={ !$isResponsive && position === '1' } 
-> 
-    <button class="notif__btn notif__btn--close" class:notif__btn--hidden={ !$isResponsive || index !== length - 1 } on:click={ close }>
+    class:notif--hover={!$isResponsive && position === 1}
+>
+    <button
+        class="notif__btn notif__btn--close"
+        class:notif__btn--hidden={!$isResponsive || index !== length - 1}
+        on:click={close}
+    >
         <Svg name="xmark" color="#fff" />
     </button>
     <div class="notif-header">
-        <Img
-            {src}
-            alt="Icône '{app_name}'" 
-            width={$isResponsive ? '25' : '18'}
-        />
-        <p class="notif__text notif__text--thin notif__text--color-grey notif__text--overflow notif__text--line-1">{app_name}</p>
+        <Img src={app?.src ?? ''} alt="Icône '{app?.type}'" width={imgWidth} />
+        <p
+            class="notif__text notif__text--thin notif__text--color-grey notif__text--overflow notif__text--line-1"
+        >
+            {app?.type}
+        </p>
     </div>
-    <h5 class="notif__text notif__text--bold notif__text--overflow notif__text--line-1">{title}</h5>
+    <h5 class="notif__text notif__text--bold notif__text--overflow notif__text--line-1">{icon} {title} {icon}</h5>
     <p class="notif__text notif__text--overflow">{message}</p>
     {#if index > 0}
-        <p class="notif__text notif__text--overflow">{index} notification{index > 1 ? 's' : ''} de plus</p>
+        <p class="notif__text notif__text--overflow">
+            {index} notification{index > 1 ? 's' : ''} de plus
+        </p>
     {/if}
 </div>
 
 <style>
 .notif {
     --offset: calc(-8px * var(--pos));
+
     width: 100%;
     position: absolute;
     left: 0;
@@ -97,24 +103,25 @@ onMount(() => {
     backdrop-filter: blur(50px);
     padding: 8px;
     outline: 1px solid #7c7c7c33;
-    border-radius: .4rem;
+    border-radius: 0.4rem;
     transition: all 320ms ease;
     overflow-wrap: anywhere;
 }
 .notif--position-1 {
     --pos: 0;
+    z-index: 1;
 }
 .notif--position-2 {
     --pos: 1;
-    scale: .95;
+    scale: 0.95;
 }
 .notif--position-3 {
     --pos: 2;
-    scale: .90;
+    scale: 0.9;
 }
 .notif--position-4 {
     --pos: 3;
-    scale: .85;
+    scale: 0.85;
     opacity: 0;
 }
 .notif--slide-in {
@@ -145,10 +152,11 @@ onMount(() => {
     font-weight: 500;
 }
 .notif__text--color-grey {
-    opacity: .4;
+    opacity: 0.4;
 }
 .notif__text--overflow {
     --nbr-lines: 2;
+
     overflow: hidden;
     display: -webkit-box;
     line-clamp: var(--nbr-lines);
@@ -195,14 +203,14 @@ from {
     opacity: 1;
 }
 to {
-    transform: translateX(100%); 
+    transform: translateX(100%);
     opacity: 0;
 }
 }
 
 @media (max-width: 1280px) {
     .notif {
-        border-radius: .6rem;
+        border-radius: 0.6rem;
     }
     .notif__text {
         font-size: var(--fz-l);
@@ -215,23 +223,23 @@ to {
         padding: 8px;
     }
 
-@keyframes slide-in {
-from {
-    transform: translateY(-100%);
-}
-to {
-    transform: none;
-}
-}
-@keyframes slide-out {
-from {
-    transform: none;
-    opacity: 1;
-}
-to {
-    transform: translateY(-100%); 
-    opacity: 0;
-}
-}
+    @keyframes slide-in {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: none;
+    }
+    }
+    @keyframes slide-out {
+    from {
+        transform: none;
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    }
 }
 </style>

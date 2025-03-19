@@ -1,14 +1,43 @@
 <script lang="ts">
-import '../style.css';
 import { onDestroy, onMount } from 'svelte';
-import { openAppWindow, isResponsive, closeAppWindow, globalWindowOrder, activeTopBar } from '$lib/index';
+import { isResponsive } from '$lib/store';
 import { apps } from '$lib/apps'
-import { toast } from '$lib/toast';
 import type { App } from '$lib/apps/types';
-import Shortcut from '../components/shortcut.svelte';
-import Svg from '../components/svg.svelte';
-import Loader from '../components/loader.svelte';
-import Toaster from '../components/toaster.svelte';
+import Shortcut from '$lib/components/shortcut.svelte';
+import Svg from '$lib/components/svg.svelte';
+import Loader from '$lib/components/loader.svelte';
+import Toaster from '$lib/components/toaster.svelte';
+
+import { player } from '$lib/audio/player';
+import { players } from '$lib/audio/player/store';
+import { songs } from '$lib/audio/songs';
+
+import appWindow from '$lib/apps/window-management';
+import appWindows from '$lib/apps/window-management/store';
+import type { AppWindow } from '$lib/apps/window-management/types';
+
+const playerName = 'test';
+const audioUrls = songs.map(song => song.url); 
+
+const playerName2 = 'abcd';
+const audio2 = player({
+    name: playerName2,
+    buffer: audioUrls,
+});
+$: _player2 = $players[playerName2];
+$: ({ paused: paused2, loop: loop2, volume: volume2, duration: duration2, time: audioTime2 } = audio2);
+
+const audio = player({
+    name: 'test',
+    buffer: audioUrls,
+});
+$: _player = $players[playerName];
+
+
+const { track } = audio;
+$: ({ paused, loop, volume, duration, time: audioTime } = audio);
+
+//$: console.log($players);
 
 const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
     lock_screen: {
@@ -35,8 +64,12 @@ let time: string;
 
 let isPageLoaded: boolean = false;
 
-$: topBarName = $activeTopBar?.split('-')[0] ?? 'Finder';
-$: topBarData = apps.pc.global.find(app => app.type === topBarName) ?? { name: '', top_bar: []};
+const pcAppsMap = new Map<string, App>();
+apps.pc.global.forEach(app => pcAppsMap.set(app.type, app));
+
+$: lastAppWindow = $appWindows[$appWindows.length - 1];
+$: topBarName = lastAppWindow ? lastAppWindow.data.type : 'Finder';
+$: topBarData = pcAppsMap.get(topBarName) ?? { name: '', top_bar: []};
 
 let language: string = 'Français';
 
@@ -58,14 +91,17 @@ updatedTime();
 
 
 const homeButtonAction = () => {
-    if ($globalWindowOrder?.length <= 0) return;
+    if ($appWindows.length <= 0) {
+        return;
+    }
 
-    $globalWindowOrder.forEach((w: string) => {
-        closeAppWindow(w)
+    $appWindows.forEach((w: AppWindow) => {
+        appWindow.close(w.id)
     })
 }
 
-let screen: HTMLElement|undefined = undefined;
+let screen: HTMLElement | undefined = undefined;
+
 
 onMount(() => {
     screen = document.querySelector('.device__lock-screen') as HTMLElement;
@@ -74,24 +110,10 @@ onMount(() => {
         date = formatDate(dateOptions.top_bar);
     })
 
-    let isWindowSmaller: boolean = windowWidth <= maxWidthIphone;
-    isResponsive.set(isWindowSmaller);
-
-    desktopContent = isWindowSmaller ? apps.mobile.desktop : apps.pc.desktop;
-    dockContent = isWindowSmaller ? apps.mobile.dock : apps.pc.dock;
-
+    onWindowResize();
     timeInterval = setInterval(updatedTime, 1000);
 
-    window.addEventListener('resize', () => {
-        isWindowSmaller = windowWidth <= maxWidthIphone;
-        isResponsive.set(isWindowSmaller);
-
-        const desktopContentUpdated = isWindowSmaller ? apps.mobile.desktop : apps.pc.desktop;
-        if (desktopContentUpdated !== desktopContent) desktopContent = desktopContentUpdated;
-
-        const dockContentUpdated = isWindowSmaller ? apps.mobile.dock : apps.pc.dock;
-        if (dockContentUpdated !== dockContent) dockContent = dockContentUpdated;
-    })
+    window.addEventListener('resize', onWindowResize)
 
     isPageLoaded = true;
 })
@@ -99,6 +121,23 @@ onMount(() => {
 onDestroy(() => {
     clearInterval(timeInterval);
 })
+
+const onWindowResize = () => {
+    const isWindowSmaller = windowWidth <= maxWidthIphone;
+
+    const desktopContentUpdated = isWindowSmaller ? apps.mobile.desktop : apps.pc.desktop;
+    const dockContentUpdated = isWindowSmaller ? apps.mobile.dock : apps.pc.dock;
+
+    isResponsive.set(isWindowSmaller);
+
+    if (desktopContentUpdated !== desktopContent) {
+        desktopContent = desktopContentUpdated;
+    }
+
+    if (dockContentUpdated !== dockContent) {
+        dockContent = dockContentUpdated;
+    }
+}
 function openFullscreen() {
     const screen = document.querySelector('.device__screen');
     if (screen) {
@@ -114,9 +153,30 @@ function openFullscreen() {
     {#if !isPageLoaded}
         <Loader /> 
     {/if}
-    <button on:click={() => toast({ appName: 'Music', title: 'title', message: 'message' })}>MUSIC TOAST</button>
-    <button on:click={() => toast({ appName: 'Preview', title: 'title', message: 'message' })}>Preview TOAST</button>
-    <button on:click={() => toast({ appName: 'Mail', title: 'title', message: 'message' })}>Mail TOAST</button>
+    <!--<button on:click={() => player.start(_player, 0)}>START</button>
+    <button on:click={() => player.play(_player)}>{$paused ? 'PLAY' : 'PAUSE'}</button>
+    <button on:click={() => player.loop(_player)}>LOOP {$loop ? 'ON' : 'OFF'}</button>
+    <button on:click={() => player.volume(_player, 0)}>VOLUME 0%</button>
+    <button on:click={() => player.volume(_player, 100)}>VOLUME 100%</button>
+    <button on:click={() => player.previous(_player)}>PREVIOUS</button>
+    <button on:click={() => player.next(_player)}>NEXT</button>
+    <button on:click={() => player.remove(_player)}>REMOVE</button>
+    <label for="">Volume: { $volume } <input class="input-volume" type="range" bind:value={ $volume } aria-valuenow={ $volume } on:input={() => player.volume(_player, $volume)}></label>
+    <label for="">Current Time: { $audioTime.current } / { $audioTime.remaining } ({ $duration.formatted })</label>
+    <input type="range" step="1" min="0" max={ $duration.raw } bind:value={ $audioTime.raw } aria-valuenow={ $audioTime.raw } on:input={() => player.time(_player, $audioTime.raw)}>
+
+    <button on:click={() => player.start(_player2, 0)}>START</button>
+    <button on:click={() => player.play(_player2)}>{$paused2 ? 'PLAY' : 'PAUSE'}</button>
+    <button on:click={() => player.loop(_player2)}>LOOP {$loop2 ? 'ON' : 'OFF'}</button>
+    <button on:click={() => player.volume(_player2, 0)}>VOLUME 0%</button>
+    <button on:click={() => player.volume(_player2, 100)}>VOLUME 100%</button>
+    <button on:click={() => player.previous(_player2)}>PREVIOUS</button>
+    <button on:click={() => player.next(_player2)}>NEXT</button>
+    <button on:click={() => player.remove(_player2)}>REMOVE</button>
+    <label for="">Volume: { $volume2 } <input class="input-volume" type="range" bind:value={ $volume2 } aria-valuenow={ $volume2 } on:input={() => player.volume(_player2, $volume2)}></label>
+    <label for="">Current Time: { $audioTime2.current } / { $audioTime2.remaining } ({ $duration2.formatted })</label>
+    <input type="range" step="1" min="0" max={ $duration2.raw } bind:value={ $audioTime2.raw } aria-valuenow={ $audioTime2.raw } on:input={() => player.time(_player2, $audioTime2.raw)}>-->
+
     <div class="commands main__commands">
         <button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
             {#if isFullscreen}
@@ -160,23 +220,6 @@ function openFullscreen() {
                 </div> 
                 <div class="screen device__screen">
                     <Toaster />
-                    <!--<div class="notif-center screen__notif-center" class:notif-center--hidden={ Object.values($notifQueue).length === 0 }>
-                        {#if $isResponsive}
-                            <div class="notif-wrapper" style="--notif-wrapper--height: 0; --notif-wrapper--margin-b: 0">
-                                {#each Object.values($notifQueue).flat() as notif, i}
-                                    <Notif {notif} index={i} /> 
-                                {/each}
-                            </div>
-                        {:else} 
-                            {#each Object.values($notifQueue) as arr}
-                                <div class="notif-wrapper" style="--notif-wrapper--height: 0; --notif-wrapper--margin-b: 0">
-                                    {#each arr as notif, i}
-                                        <Notif {notif} index={i} /> 
-                                    {/each}
-                                </div>
-                            {/each}
-                        {/if}
-                    </div>-->
                     <div class="top-bar {$isResponsive ? 'top-bar--grid' : 'top-bar--flex'} screen__top-bar">
                         {#if $isResponsive}
                             <p class="top-bar__p top-bar__time">{time}</p>
@@ -244,15 +287,15 @@ function openFullscreen() {
                     <div class="desktop screen__desktop transition-320-ease">
                         <div class='icons-placement desktop__icons-placement transition-320-ease' class:hidden={!isPowerOn}>
                             {#each desktopContent as app} 
-                                <Shortcut {app} action={ () => openAppWindow(app)} bold /> 
+                                <Shortcut {app} action={() => appWindow(app)} bold /> 
                             {/each}
                         </div>
-                        <div class="dock desktop__dock {$isResponsive ? 'icons-placement' : 'desktop__dock--flex'} transition-320-ease" class:hidden={!isPowerOn} style="{$isResponsive && $globalWindowOrder.length > 0 ? 'z-index: -1' : ''}"> 
+                        <div class="dock desktop__dock {$isResponsive ? 'icons-placement' : 'desktop__dock--flex'} transition-320-ease" class:hidden={!isPowerOn} style="{$isResponsive && $appWindows.length > 0 ? 'z-index: -1' : ''}"> 
                             {#each dockContent as app, i}
                                 {#if i === dockContent?.length - 2 && !$isResponsive}
                                     <div class="dock__separator"></div>
                                 {/if}
-                                <Shortcut {app} action={ () => openAppWindow(app)} dock /> 
+                                <Shortcut {app} action={ () => appWindow(app)} dock /> 
                             {/each}
                         </div>
                         {#if $isResponsive}

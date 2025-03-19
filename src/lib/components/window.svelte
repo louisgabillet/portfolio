@@ -1,5 +1,5 @@
 <script lang="ts">
-import { closeAppWindow, changeAppWindowsOrder, isResponsive, globalWindowOrder } from '$lib/index';
+import { isResponsive } from '$lib/store';
 import { onDestroy, onMount } from 'svelte';
 import Safari from './safari.svelte';
 import Notes from './notes.svelte';
@@ -9,89 +9,60 @@ import Music from './music.svelte';
 import Contacts from './contacts.svelte';
 import TextEdit from './textEdit.svelte';
 import Preview from './preview.svelte';
+import appWindow from '$lib/apps/window-management';
+import appWindows from '$lib/apps/window-management/store';
+	import { apps } from '$lib/apps';
 //import Settings from './settings.svelte';
 
+export let name: string;
+export let appWindowId: string;
 export let appInfos: any;
-export let name;
 
-const { type, url, pages, preview_data, path, unique_name, img_id } = appInfos;
+const { type, url, pages, preview_data, path, dirName, img_id } = appInfos;
 
 interface AppsData {
-    name: string,
-    data: {
-        min_height: number,
-        min_width: number,
-        resize_x?: boolean,
-        resize_y?: boolean,
-    }
+    type: string,
+    sizes: {
+        minWidth: number,
+        minHeight: number,
+    },
+    resize: {
+        x: boolean,
+        y: boolean,
+    },
 }
-const appsData: AppsData[] = [
-    { 
-        name: 'Finder',
-        data: {
-            min_width: 40,
-            min_height: 25,
-        }
-    },
-    {
-        name: 'Notes',
-        data : {
-            min_width: 37,
-            min_height: 20,
-        }
-    },
-    {
-        name: 'Contacts',
-        data: {
-            min_width: 35, //260,
-            min_height: 25, //260,
-        }
-    },
-    {
-        name: 'Safari',
-        data : {
-            min_width: 28,
-            min_height: 18,
-        }
-    },
-    {
-        name: 'Music',
-        data : {
-            min_width: 50,
-            min_height: 50,
-        }
-    },
-    {
-        name: 'Preview',
-        data: {
-            min_width: 35,
-            min_height: 20,
-        }
-    },
-    //{
-    //    name: 'System_Settings',
-    //    data: {
-    //        min_width:390,
-    //        min_height: 304,
-    //        resize_x: false,
-    //    }
-    //},
-]
 const defaultAppData: AppsData = {
-    name: 'Default',
-    data: {
-        min_width: 25,
-        min_height: 25,
+    type: 'Default',
+    sizes: {
+        minWidth: 25,
+        minHeight: 25,
+    },
+    resize: {
+        x: true,
+        y: true,
     }
 }
 
-$: appData = appsData.find(app => app.name === name)?.data ?? defaultAppData.data;
-$: isResizeX = appData?.resize_x ?? true;
-$: isResizeY = appData?.resize_y ?? true;
+$: appData = apps.pc.global.find(app => app.type === name) ?? defaultAppData;
+$: sizes = appData.sizes;
+$: ({ x: isResizeX, y: isResizeY } = appData.resize);
 // HTML Elements
 // let openWindow: HTMLElement;
 let openWindow: HTMLElement;
 let parent: HTMLElement | null;
+
+let appWindowPositions = {
+    x: 0,
+    y: 0,
+    previousX: 0,
+    previousY: 0,
+}
+let appWindowSizes = {
+    width: 0,
+    height: 0,
+    previousWidth: 0,
+    previousHeight: 0,
+}
 
 const resizeBtns = [
     { axe: 'x', pos: 'left' },
@@ -114,26 +85,23 @@ $: storage = {
 $: getStorageString = localStorage.getItem(name);
 //$: getStorage = getStorageString ? JSON.parse(getStorageString) : {pos:{x: 25, y: 25}, size: {width: 50, height: 50}};
 $: defaultSize = {
-    width: appData.min_width, //+ (isResizeX ? 10 : 0),
-    height: appData.min_height //+ (isResizeY ? 10 : 0),
+    width: sizes.minWidth,
+    height: sizes.minHeight //+ (isResizeY ? 10 : 0),
 }
-const calculateSize = (value: number, isResize: boolean, name: string) => {
-    const res = isResize ? (100 - value) / 2 + value : value;
-    //console.log(name, isResize, value, res);
-    return res;
-}
+const calculateSize = (value: number, isResize: boolean) => isResize ? (100 - value) / 2 + value : value;
+
 $: getStorage = getStorageString ?
     JSON.parse(getStorageString) :
     {
         pos: {
             //x: 25, //parent ? (parent.offsetWidth / 2) - (defaultSize.width / 2) : 0,
             //y: 25, //parent ? (parent.offsetHeight / 2) - (defaultSize.height / 2) : 0,
-            x: (100 - calculateSize(appData?.min_width, isResizeX, 'x')) / 2, 
-            y: (100 - calculateSize(appData?.min_height, isResizeY, 'y')) / 2, 
+            x: (100 - calculateSize(sizes.minWidth, isResizeX)) / 2, 
+            y: (100 - calculateSize(sizes.minHeight, isResizeY)) / 2, 
         },
         size: {
-            width: calculateSize(appData?.min_width, isResizeX, 'width'), 
-            height: calculateSize(appData?.min_height, isResizeY, 'height'), 
+            width: calculateSize(sizes.minWidth, isResizeX), 
+            height: calculateSize(sizes.minHeight, isResizeY), 
         }
     };
 $: ({x: storageX, y: storageY} = getStorage.pos);
@@ -141,7 +109,8 @@ $: ({width: storageWidth, height: storageHeight} = getStorage.size);
 
 // Props Elements
 //$: zIndex = order?.indexOf(uniqueName) >= 0 ? order?.indexOf(uniqueName) : 0;
-$: zIndex = $globalWindowOrder?.indexOf(uniqueName) >= 0 ? $globalWindowOrder?.indexOf(uniqueName) : 0;
+$: indexOfWindow = $appWindows.findIndex(w => w.id === appWindowId);
+$: zIndex = indexOfWindow >= 0 ? indexOfWindow : 0;
 
 // Conditions
 let isMouseMove: boolean = false;
@@ -180,7 +149,7 @@ $: isResizeSidesLength = isResizeSides?.length;
 
 let scale: number = 0;
 let reduce: boolean = false;
-let uniqueName: string;
+//let uniqueName: string;
 let id: number;
 let isReduceTransi: boolean = false;
 let isMouseDown: boolean = false;
@@ -195,11 +164,44 @@ let windowWidth: number = 0;
 //$: if (document.activeElement === openWindow && openWindow && !isFullScreen) { openWindow.addEventListener('mousemove', changeResizeCursor) } else if (openWindow) { openWindow.removeEventListener('mousemove', changeResizeCursor) }; 
 
 onMount(() => {
+    const appStorage = localStorage.getItem(`${name}-app-window`);
+    const { pos, size } = appStorage ? 
+        JSON.parse(appStorage)
+        : {
+            pos: {
+                x: (100 - calculateSize(sizes.minWidth, isResizeX)) / 2, 
+                y: (100 - calculateSize(sizes.minHeight, isResizeY)) / 2, 
+            },
+            size: {
+                width: calculateSize(sizes.minWidth, isResizeX), 
+                height: calculateSize(sizes.minHeight, isResizeY), 
+            }
+        };
+
+    const { width, height } = size;
+    const x = pos.x + id;
+    const y = pos.y + id;
+
+    appWindowPositions = {
+        x,
+        y,
+        previousX: x,
+        previousY: y,
+    }
+    appWindowSizes  = {
+        width,
+        height,
+        previousWidth: width,
+        previousHeight: height,
+    }
+
     parent = document.querySelector('.screen__desktop');
-    id = document.querySelectorAll(`.app[data-app-name=${name}]`)?.length;
-    uniqueName = `${name}-${id}`;
+
+    const sameTypeAppWindows = document.querySelectorAll(`[data-app-name=${name}]`);
+    id = sameTypeAppWindows ? sameTypeAppWindows.length : 0;
+    //uniqueName = `${name}-${id}`;
     //const window = document.querySelector(`.app-window[data-app-name=${name}-${uniqueID}`) as HTMLDivElement;
-    openWindow?.focus({ preventScroll: true });
+    //openWindow?.focus({ preventScroll: true });
     //window.addEventListener('mousemove', changeResizeCursor)
     pos.percentX = percentX + id;
     pos.percentY = percentY + id;
@@ -209,16 +211,19 @@ onMount(() => {
 onDestroy(() => {
     if (!openWindow) return;
     openWindow.removeEventListener('mousemove', changeResizeCursor)
-    localStorage.setItem(name, JSON.stringify(storage));
+    localStorage.setItem(`${name}-app-window`, JSON.stringify(storage));
 })
 
 const onMouseDown = (e: MouseEvent) => {
-    if (isFullScreen || $isResponsive || !openWindow) return;
-    //dispatch('focus', { name: name })
+    if (isFullScreen || $isResponsive || !openWindow) {
+        return;
+    };
 
-    if (!isWindowMoving) e.stopPropagation();
-    const rect = openWindow?.getBoundingClientRect();
-    //activeSides = checkIfMouseResize(e, rect);
+    if (!isWindowMoving) {
+        e.stopPropagation();
+    }
+
+    const rect = openWindow.getBoundingClientRect();
     mousePos = { mouseXStart: e.clientX, mouseYStart: e.clientY};
 
     setTimeout(() => {
@@ -234,30 +239,41 @@ const onMouseDown = (e: MouseEvent) => {
         window.addEventListener('mouseup', mouseUpHandler)
     })
 }
-const onKeyDown = (e:KeyboardEvent) => {
-    if ($isResponsive) return;
+const onKeyDown = (e: KeyboardEvent) => {
+    const { ctrlKey, code } = e;
 
-    const keyClose = e.ctrlKey && e.code === 'KeyA';
-    const keyReduce = e.ctrlKey && e.code === 'Semicolon';
-    const keyFullscreen = e.ctrlKey && e.code === 'KeyF';
+    if ($isResponsive || !ctrlKey) {
+        return;
+    }
 
-    if (keyClose) {
-        if (isFullScreen) fullscreen();
-        closeAppWindow(uniqueName)
-    } else if (keyReduce && !isFullScreen) {
-        reduceWindow();
-    } else if (keyFullscreen && !reduce) {
-        fullscreen();
+    switch (code) {
+        case 'KeyA':
+            if (isFullScreen) {
+                fullscreen()
+            };
+            appWindow.close(appWindowId);
+            break;
+        case 'Semicolon':
+            reduceWindow();
+            break;
+        case 'KeyF':
+            fullscreen();
+            break;
+        default:
+            break;
     }
 }
 
 const mouseMoveHandler = (e: MouseEvent) => {
     requestAnimationFrame(()=> {
-        if (!parent || !openWindow || !isMouseDown) return; 
-        const parentRect = parent?.getBoundingClientRect();
+        if (!parent || !openWindow || !isMouseDown) {
+            return; 
+        };
+
         const round = (nbr: number) => +nbr.toFixed(5);
 
         // TODO -> Need to make the limit more precise (exceeds a bit).
+        const parentRect = parent.getBoundingClientRect();
         const x: number = checkIfMouseLeave(e, parentRect)?.x ?? 0,
               y: number = checkIfMouseLeave(e, parentRect)?.y ?? 0;
         const parentWidth = parent.offsetWidth,
@@ -279,8 +295,8 @@ const mouseMoveHandler = (e: MouseEvent) => {
             const pW = previousW + reverseOffsetX, //Math.round(previousW + reverseOffsetX),
                   pH = previousH + reverseOffsetY; //Math.round(previousH + reverseOffsetY);
 
-            const minWidth = pW >= appData.min_width,
-                  minHeight = pH >= appData.min_height;
+            const minWidth = pW >= sizes.minWidth,
+                  minHeight = pH >= sizes.minHeight;
 
             if (minWidth && isResizeX) {
                 if (isLeftSide) pos.percentX = round(pX);
@@ -298,16 +314,19 @@ const mouseMoveHandler = (e: MouseEvent) => {
     })
 };
 const mouseUpHandler = (e: MouseEvent) => {
-    if (!openWindow) return;
+    if (!openWindow) {
+        return;
+    };
+
     isMouseDown = false;
+    isResizeSidesLength = 0;
+    activeSides = {left: false, top: false, right: false, bottom: false};
 
     window.removeEventListener('mousemove', mouseMoveHandler);
     window.removeEventListener('mouseup', mouseUpHandler);
-    activeSides = {left: false, top: false, right: false, bottom: false};
-    isResizeSidesLength = 0;
 
     if (parent && isMouseMove) {
-        localStorage.setItem(name, JSON.stringify(storage));
+        localStorage.setItem(`${name}-app-window`, JSON.stringify(storage));
         pos.previousX = percentX;
         pos.previousY = percentY;
 
@@ -396,8 +415,8 @@ const changeResizeCursor = (e: MouseEvent, pos: string = '') => {
           isAboveY = isMouseDown && mouseYStart > y,
           isBelowY = isMouseDown && mouseYStart < y; 
 
-    const isWidthUnderMin = width <= appData.min_width,
-          isHeightUnderMin = height <= appData.min_height;
+    const isWidthUnderMin = width <= sizes.minWidth,
+          isHeightUnderMin = height <= sizes.minHeight;
 
     let sign: string = '';
 
@@ -435,34 +454,23 @@ const changeResizeCursor = (e: MouseEvent, pos: string = '') => {
 }
 
 const fullscreen = () => {
-    //const topBar = document.getElementById('top-bar') as HTMLDivElement;
-    //const bgImg = document.querySelector('.screen__background') as HTMLDivElement;
-    //const iconPlacement = document.querySelector('.desktop__icons-placement') as HTMLDivElement;
-    const desktop = document.querySelector('.screen__desktop') as HTMLElement;
-    const bg = document.querySelector('.screen__background') as HTMLElement;
-    const dock = document.querySelector('.desktop__dock') as HTMLDivElement;
+    const classes: string[] = ['screen__background', 'desktop__icons-placement', 'desktop__dock'];
 
-    if (isFullScreen) {
-        dock?.classList.remove('screen__dock--fullscreen');
-        desktop?.classList.remove('screen__desktop--fullscreen');
-        bg?.classList.remove('screen__background--fullscreen');
-    } else {
-        dock?.classList.add('screen__dock--fullscreen');
-        desktop?.classList.add('screen__desktop--fullscreen');
-        bg?.classList.add('screen__background--fullscreen');
-    }
-    //const all = [topBar, bgImg, iconPlacement, dock];
-    //const all = [dock, screen];
+    classes.forEach(c => {
+        const el = document.querySelector(`.${c}`);
 
-    //if (isFullScreen) {
-    //    all?.forEach((el: HTMLElement) => {
-    //        el?.classList.remove('bg-fullscreen');
-    //    })
-    //} else {
-    //    all?.forEach((el: HTMLElement) => {
-    //        el?.classList.add('bg-fullscreen');
-    //    })
-    //}
+        if (!el) {
+            return;
+        }
+
+        if (isFullScreen) {
+            el.classList.remove(`${c}--fullscreen`);
+            return;
+        }
+        el.classList.add(`${c}--fullscreen`);
+
+    })
+
     isFullScreen = !isFullScreen;
 }
 const addOrRemoveElDock = (isReduce: boolean, ratio: number, duration: number) => {
@@ -565,7 +573,7 @@ const components: Record<string, Component> = {
     },
     Safari: {
         name: Safari,
-        props: { url, pages },
+        props: { dirName },
     },
     Music: {
         name: Music,
@@ -581,17 +589,12 @@ const components: Record<string, Component> = {
     },
     Preview: {
         name: Preview,
-        props: { unique_name, img_id },
+        props: { dirName, img_id },
     },
     Notes: {
         name: Notes,
         props: null,
     },
-    //System_Settings: {
-    //    name: System_Settings,
-    //    props: null,
-    //},
-
 }
 const currComponent = components[name];
 </script>
@@ -601,23 +604,24 @@ const currComponent = components[name];
 <div bind:this={openWindow} 
     class="app {$isResponsive ? 'app--version-mobile' : 'app--version-pc'}"
     data-app-name={name}
+    data-app-window-id={appWindowId}
     class:app--transition={ isTransitionActive }
-    class:app--full-screen={ isFullScreen }
+    class:app--fullscreen={ isFullScreen }
     class:app--reduced={ reduce }
     class:app--reduce-transi={ isReduceTransi }
+    style="z-index: {zIndex}; {$isResponsive ? '' : `--width: ${width}%; --height: ${height}%; --top: ${percentY}%; --left: ${percentX}%; ${isReduceTransi ? `--reduce-top: ${reduceY}px; --reduce-left: ${reduceX}px; --scale: ${scale}` : ''}`}"
     role="button" 
     tabindex="0" 
-    style="z-index: {zIndex}; {$isResponsive ? '' : `--width: ${width}%; --height: ${height}%; --top: ${percentY}%; --left: ${percentX}%; ${isReduceTransi ? `--reduce-top: ${reduceY}px; --reduce-left: ${reduceX}px; --scale: ${scale}` : ''}`}"
-    on:focusin={() => { changeAppWindowsOrder(uniqueName) }}
-    on:pointerdown={ (e) => { onMouseDown(e) }}
-    on:keydown={ (e) => { onKeyDown(e) }}
+    on:focusin={() => appWindow.focus(appWindowId)}
+    on:pointerdown={ (e) => onMouseDown(e)}
+    on:keydown={ (e) => onKeyDown(e)}
 > 
     {#if reduce}
         <button class="app__overlay" on:click={() => { reduceWindow() }}></button> 
     {/if}
     {#if !$isResponsive}
         <div class="app__action action">
-            <button class='action__btn action__btn--close' on:click={() => { closeAppWindow(uniqueName) }}></button>
+            <button class='action__btn action__btn--close' on:click={() => appWindow.close(appWindowId)}></button>
             <!--<button id={!isFullScreen ? 'reduce-btn desactivated' : 'desactivated'} on:click={() => { reduceWindow() }}></button>-->
             <button class="action__btn action__btn--reduce action__btn--desactivated" on:click={() => { reduceWindow() }}></button>
             <button class="action__btn action__btn--fullscreen" on:click={() => { fullscreen() }}></button>
@@ -720,13 +724,7 @@ const currComponent = components[name];
     left: 0;
     width: 100%;
     height: 100%;
-    max-width: 100%;
-    max-height: 100%;
     padding: 0;
-    border-radius: 0;
-    outline: none;
-    border: none;
-    margin-left: 100%;
 }
 .action {
     display: flex;

@@ -1,7 +1,7 @@
 import { type App } from "../types";
-import Pricing from "../../../components/pricing.svelte";
+import Pricing from "$lib/components/pricing.svelte";
 
-export const apps: App[] = [
+const pcDesktop: App[] = [
     {
         name: 'Projets',
         type: 'Finder',
@@ -21,26 +21,28 @@ export const apps: App[] = [
         src: 'icons/mail_ipsbfs.png',
         shortcut: true,
     },
-    {
-        name: 'Tarif',
-        type: 'Safari',
-        src: 'icons/document_http_hfxro5.png',
-        url: 'https://docs.google.com/spreadsheets/u/0/',
-        pages: {
-            pc: {
-                type: 'Component',
-                page: {
-                    component: Pricing,
-                    props: [],
-                },
-            },
-            mobile: {
-                type: 'Component',
-                page: {
-                    component: Pricing,
-                    props: [],
-                },
-            }
-        },
-    },
+    //{
+    //    name: 'Tarif',
+    //    type: 'Safari',
+    //    src: 'icons/document_http_hfxro5.png',
+    //    url: 'https://docs.google.com/spreadsheets/u/0/',
+    //    pages: {
+    //        pc: {
+    //            type: 'Component',
+    //            page: {
+    //                component: Pricing,
+    //                props: [],
+    //            },
+    //        },
+    //        mobile: {
+    //            type: 'Component',
+    //            page: {
+    //                component: Pricing,
+    //                props: [],
+    //            },
+    //        }
+    //    },
+    //},
 ];
+
+export default pcDesktop;

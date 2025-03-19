@@ -1,12 +1,11 @@
 <script lang="ts">
-import { isResponsive, openAppWindow } from '$lib/index';
-import { fileSystem, type FileSystem } from '$lib/filesystem';
 import { onMount } from 'svelte';
+import { isResponsive } from '$lib/store';
+import { fileSystem, type FileSystem } from '$lib/filesystem';
+import appWindow from '$lib/apps/window-management';
 import Shortcut from './shortcut.svelte';
 import Svg from './svg.svelte';
-import Loader from './loader.svelte';
 import Img from './img.svelte';
-	import { writable } from 'svelte/store';
 
 //export let open: (app: any) => void;
 export let finderPath: string[] = ['Macintosh HD', 'Utilisateur', 'louisgabillet'];
@@ -113,7 +112,7 @@ const navBtns = [
     //}
 ];
 
-let parentDirName: string = finderPath[0];
+//let parentDirName: string = finderPath[0];
 let openDirName: string = finderPath[finderPath?.length - 1];
 let lastPath: FileSystem[] = [];
 
@@ -157,7 +156,7 @@ const changePath = (arr: FileSystem[], location: string[]) => {
     }
 };
 const changeParentDir = (name: string, location: string[] | null = null) => {
-    openDirName = parentDirName = name;
+    openDirName = name;
     path = lastPath = [];
 
     if (location) {
@@ -204,6 +203,7 @@ const openOnClick = (data: FileSystem) => {
     const { type, name } = data;
 
     nameCurrOpen = name;
+    console.log(data, path)
 
     if (data.type === 'Folder') {
         openDir();
@@ -219,6 +219,7 @@ const openOnClick = (data: FileSystem) => {
     //}
     if (type === 'Document' || type === 'Image') {
         data.type = 'Preview';
+        //data.unique_name = parentDirName;
     } else if (type === 'Webloc') {
         data.type = 'Safari';
     }
@@ -234,7 +235,7 @@ const openOnClick = (data: FileSystem) => {
     //    app.unique_name = unique_name;
     //    if (img_id) app.img_id = img_id;
     //}
-    openAppWindow(data);
+    appWindow(data);
 };
 $: lastParentDirName = path[path.length - 2]?.name;
 

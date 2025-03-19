@@ -1,9 +1,10 @@
 <script lang="ts">
-import { globalWindowOrder, isResponsive } from "$lib/index";
+import { isResponsive } from "$lib/store";
 import type { FileSystem } from "$lib/filesystem";
 import Svg from "./svg.svelte";
 import Img from "./img.svelte";
 import type { App } from "$lib/apps/types";
+import appWindows from "$lib/apps/window-management/store";
 import { Image } from "@unpic/svelte";
 
 export let app: App & { outside_link: string };
@@ -34,7 +35,7 @@ $: isOpen = (app: FileSystem) => {
     const indexAlwaysOpen = alwaysOpen.indexOf(type);
     if (indexAlwaysOpen !== -1) return true;
 
-    return $globalWindowOrder?.some(el => el.includes(type)); 
+    return $appWindows.some(w => w.data.type === type); 
 }
 </script>
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-import { isResponsive } from "$lib/index";
-import { notes, type Note } from "$lib/data";
-	import Svg from "./svg.svelte";
+import { isResponsive } from "$lib/store";
+import notes, { type Note } from "$lib/notes";
+import Svg from "./svg.svelte";
 
 export let name: string = 'Qui Suis-Je ?';
 
@@ -22,13 +22,13 @@ const sortByDate = () => {
     const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
     notes.forEach(note => {
-        const date = new Date(note.update_date);
+        const date = new Date(note.updateDate);
         const year = date.getFullYear();
         const monthString= date.toLocaleDateString('fr', { month: 'long' });
 
         const key = note?.pinned ? 'épinglées' : year < currYear ? year : monthString;
         const prev = global[key] ?? [];
-        const sorted = [...prev, note].sort((a, b) => b.update_date.localeCompare(a.update_date));
+        const sorted = [...prev, note].sort((a, b) => b.updateDate.localeCompare(a.updateDate));
 
         global[key] = sorted;
     })
@@ -69,7 +69,7 @@ const sortByDate = () => {
                     on:click={() => activeName = note.name}
                 >
                     <span class="sidebar__title sidebar__text--overflow">{note.name}</span>
-                    <span class="sidebar__text" class:sidebar__text--color-grey={ $isResponsive }>{parseDate(note.update_date)}</span>
+                    <span class="sidebar__text" class:sidebar__text--color-grey={ $isResponsive }>{parseDate(note.updateDate)}</span>
                     <span class="sidebar__text sidebar__text--color-grey sidebar__text--overflow">{note.content.slice(0, 50)}</span>
                 </button>
             {/each}
@@ -160,7 +160,7 @@ const sortByDate = () => {
     {/if}
     <div class="content app__content" class:app__content--full={ $isResponsive }>
         {#if activeNote}
-            <p class="content__p">{dateText(activeNote?.update_date)}</p>
+            <p class="content__p">{dateText(activeNote?.updateDate)}</p>
             <h2 class="content__h2">{activeNote.name}</h2>
             <p class="content__p">{activeNote.content}</p>
         {/if}

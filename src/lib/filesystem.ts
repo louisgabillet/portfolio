@@ -2,6 +2,7 @@ import { apps } from "./apps";
 import { type App } from "./apps/types";
 import { loadProjects } from "./projects";
 import { songs } from "./audio/songs";
+import { toast } from "./toast";
 
 
 export type Type = 'Folder' | 'Webloc' | 'Music' | 'Document' | 'Image' | 'Finder' | 'Launchpad' | 'Notes' | 'Contacts' | 'Mail' | 'Safari' | 'Plist' | 'Preview';
@@ -15,7 +16,32 @@ export interface FileSystem {
     desactivated?: boolean,
 }
 
-const projects = await loadProjects();
+async function updateProjects() {
+    try {
+        const res = await loadProjects();
+
+        const icloud = fileSystem.find(el => el.name === 'iCloud Drive');
+        const projects = icloud?.children?.find(el => el.name === 'Projets') as FileSystem;
+
+        if (!projects) {
+            throw Error("Couldn't load the projects");
+        }
+
+        projects.children = res.map(p => p.app);
+
+    } catch (err) {
+        console.error(err);
+        setTimeout(() => {
+            toast.error({
+                appName: 'Finder',
+                title: 'Chargement des projets',
+                message: `Nous n'avons pas pu charger les projets. Veuillez réessayer.`,
+            })
+        })
+    }
+}
+
+updateProjects();
 
 const secretSongData = songs.find(song => song.id === '1')?.metadata; 
 const defaultName = 'Inconnu';
@@ -201,7 +227,7 @@ export const fileSystem: FileSystem[] = [
                 name: 'Projets',
                 type: 'Folder',
                 src: 'icons/folder_ptfrl4.png',
-                children: projects,
+                children: [],
             },
         ],
     },

@@ -1,4 +1,4 @@
-interface Playlist {
+export interface Playlist {
     //uuid: string,
     id: string,
     track_id: string[],
@@ -21,7 +21,7 @@ interface Playlist {
 
 export const playlists: Playlist[] = [
     {
-        id: '0',
+        id: '1',
         track_id: ['1'],
         metadata: {
             name: 'Morceaux Favoris',
@@ -40,7 +40,7 @@ export const playlists: Playlist[] = [
         }
     },
     {
-        id: '1',
+        id: '2',
         track_id: [],
         metadata: {
             name: 'Test',
@@ -59,7 +59,7 @@ export const playlists: Playlist[] = [
         }
     },
     {
-        id: '2',
+        id: '3',
         track_id: ['2'],
         metadata: {
             name: 'Test 2',
@@ -78,8 +78,8 @@ export const playlists: Playlist[] = [
         },
     },
     {
-        id: '3',
-        track_id: ['2', '1'],
+        id: '4',
+        track_id: ['1', '2', '1', '1'],
         metadata: {
             name: 'Rock',
             desc: 'Rock enjoyer.',

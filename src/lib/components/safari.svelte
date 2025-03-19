@@ -1,47 +1,49 @@
 <script lang="ts">
-import { closeAppWindow, globalWindowOrder, isResponsive } from "$lib";
-import Loader from "./loader.svelte";
+import { onMount } from "svelte";
+import { isResponsive } from "$lib/store";
+import { loadProjectData } from "$lib/projects";
+import appWindows from "$lib/apps/window-management/store";
+import appWindow from "$lib/apps/window-management";
 import Svg from "./svg.svelte";
+import type { Images } from "$lib/projects/types";
 
-export let url: string = '';
-export let pages: any = {
-    pc: {
-        type: '',
-        page: null,
-    },
-    mobile: {
-        type: '',
-        page: null,
-    },
-};
+export let dirName: string;
 
-const { pc, mobile } = pages;
-$: version = $isResponsive ? mobile : pc;
-$: ({type, page} = version);
+let images: Images;
+let url: string;
+let formattedUrl: string;
 
 let isImgLoaded: boolean = false;
-let nameFromLink = url?.split('://')[1]?.split('/')[0];
-$: lastAppOpened = $globalWindowOrder[$globalWindowOrder?.length - 1];
 
+$: lastAppWindow = $appWindows[$appWindows.length - 1];
+
+onMount(async () => {
+    if (dirName) {
+        try {
+            const res = await loadProjectData(dirName);
+
+            if (!res) {
+                return;
+            }
+
+            images = res.images;
+
+            url = res.links.live_demo;
+            formattedUrl = url.split('://')[1]?.split('/')[0];
+
+        } catch (err) {
+            console.error(`Error fetching data of '${dirName}':`, err);
+        }
+    }
+})
 </script>
 
 <div class="app__grid">
-    <!--{#if $isResponsive && type === 'Image'}
-        <div class="controls grid bg-grey">
-            <button class="ok-btn" on:click={() => closeAppWindow(lastAppOpened) }>OK</button>
-            <a href={url} target='_blanck'>{nameFromLink}</a>
-            <span class="icon space-left">
-            </span>
-        </div> 
-    {/if}-->
-    <!--{#if $isResponsive && url}
-<a href="{url}" target="_blank">{nameFromLink}</a> 
-{:else if $isResponsive}-->
     {#if $isResponsive}
-        {#if type === 'Image'}
+        {#if images}
             <div class="controls app__controls controls-header app__controls-header">
-                <button class="controls__item controls__item--distance-right controls-header__item controls-header__btn controls__btn--active controls__text--accent-color" on:click={() => closeAppWindow(lastAppOpened) }>OK</button>
-                <a href={url} class="controls__link controls__text--overflow controls__text--accent-color">{nameFromLink}</a>
+                <button class="controls__item controls__item--distance-right controls-header__item controls-header__btn controls__btn--active controls__text--accent-color" on:click={() => appWindow.close(lastAppWindow.id)}>OK</button>
+                <a href={url} target="_blank" class="controls__link controls__text--overflow controls__text--accent-color">{formattedUrl}</a>
                 <div class="controls__items-wrapper">
                     <span class="controls__item controls-header__item">
                         <Svg name="arrow_clockwise" color="var(--accent-color)" />
@@ -49,8 +51,8 @@ $: lastAppOpened = $globalWindowOrder[$globalWindowOrder?.length - 1];
                 </div>
             </div>
         {/if}
-        <div class="controls app__controls controls-footer app__controls-footer" class:controls__search-bar--no-url={ !url } style={ type === 'Image' ? '--nbr-columns: 4' : ''}>
-            {#if url && type === 'Image'}
+        <div class="controls app__controls controls-footer app__controls-footer" class:controls__search-bar--no-url={ !url } style={ images ? '--nbr-columns: 4' : ''}>
+            {#if url && images}
                 <span class="controls__item controls-footer__item">
                     <Svg name="chevron_left" />
                 </span>
@@ -64,23 +66,23 @@ $: lastAppOpened = $globalWindowOrder[$globalWindowOrder?.length - 1];
                     <Svg name="safari" />
                 </span>
             {:else if url}
-                <a href="{url}" target="_blank" class="search-bar__link">{nameFromLink}</a> 
+                <a href="{url}" target="_blank" class="search-bar__link">{formattedUrl}</a> 
             {:else}
-                <label for="search" class="search-bar controls__search-bar controls__search-bar--bg" class:controls__search-bar--searched={ nameFromLink }> 
-                    <input class="search-bar__input" type="text" bind:value={nameFromLink} autocomplete="off" id="search">
+                <label for="search" class="search-bar controls__search-bar controls__search-bar--bg" class:controls__search-bar--searched={ formattedUrl }> 
+                    <input class="search-bar__input" type="text" bind:value={ formattedUrl } autocomplete="off" id="search">
                     <span class="search-bar__icon search-bar__icon--can-hide" style="margin-right: auto;">
                         <Svg name='magnifyingglass' />
                     </span>
                     <p class="search-bar__placeholder">
-                        {#if !nameFromLink}
+                        {#if !formattedUrl}
                             Rechercher ou saisir un site
                         {/if}
                     </p>
                     <span class="search-bar__icon">
                         <Svg name='microphone_fill' />
                     </span>
-                    {#if nameFromLink}
-                        <button class="search-bar__icon" on:click={() => nameFromLink = '' }>
+                    {#if formattedUrl}
+                        <button class="search-bar__icon" on:click={() => formattedUrl = '' }>
                             <Svg name='x_circle_fill' />
                         </button>
                     {/if}
@@ -102,57 +104,6 @@ $: lastAppOpened = $globalWindowOrder[$globalWindowOrder?.length - 1];
                 </span>
             {/if}
         </div>
-        <!--<div class="controls app__controls app__controls--full {$isResponsive && !url ? 'responsive-grid' : 'full'}" class:bg-grey={$isResponsive && url}>
-            {#if !url}
-                <label for="search" class="search-bar{nameFromLink ? ' searched ' : ' '}home"> 
-                    <span class="icon">
-                        <Svg name='magnifyingglass' />
-                    </span>
-                    <input type="text" bind:value={nameFromLink} autocomplete="off" id="search">
-                    <span class="icon">
-                        <Svg name='microphone_fill' color='#7c7c7c' />
-                    </span>
-                    <p class="placeholder" style="{nameFromLink ? 'visibility: hidden' : ''}">Rechercher ou saisir un site</p>
-                    {#if nameFromLink}
-                        <button on:click={() => nameFromLink = ''}>
-                            <span class="icon">
-                                <Svg name='x_circle_fill' />
-                            </span>
-                        </button> 
-                    {/if}
-                </label>
-                <div class="flex">
-                    <span class="icon">
-                        <Svg name='chevron_left' color='#7c7c7c' />
-                    </span>
-                    <span class="icon">
-                        <Svg name='chevron_right' color='#7c7c7c' />
-                    </span>
-                    <span class="icon" style="--height: 23px">
-                        <Svg name='square_and_arrow_up' color='#7c7c7c' />
-                    </span>
-                    <span class="icon">
-                        <Svg name='book' color='#7c7c7c' />
-                    </span>
-                    <span class="icon">
-                        <Svg name='square_on_square' color='#7c7c7c' />
-                    </span>
-                </div>
-            {:else}
-                <span class="icon">
-                    <Svg name='chevron_left' color='#7c7c7c' />
-                </span>
-                <span class="icon">
-                    <Svg name='chevron_right' color='#7c7c7c' />
-                </span>
-                <span class="icon" style="--height: 23px">
-                    <Svg name='square_and_arrow_up' color='#0A82FF' />
-                </span>
-                <span class="icon" style="--height: 20px">
-                    <Svg name='safari' color='#0A82FF' />
-                </span>
-            {/if}
-        </div>-->
     {:else}
         <div class="controls app__controls app__controls--full">
             <span class="controls__item">
@@ -170,17 +121,17 @@ $: lastAppOpened = $globalWindowOrder[$globalWindowOrder?.length - 1];
                         <span class="search-bar__icon">
                             <Svg name='magnifyingglass' color="var(--accent-color)" />
                         </span>
-                        {nameFromLink}
+                        {formattedUrl}
                     </a> 
                 </div>
             {:else}
-                <label for="search" class="search-bar controls__search-bar controls__search-bar--bg" class:controls__search-bar--searched={ nameFromLink }> 
-                    <input class="search-bar__input" type="text" bind:value={nameFromLink} autocomplete="off" id="search">
+                <label for="search" class="search-bar controls__search-bar controls__search-bar--bg" class:controls__search-bar--searched={ formattedUrl }> 
+                    <input class="search-bar__input" type="text" bind:value={ formattedUrl } autocomplete="off" id="search">
                     <div class="search-bar__placeholder">
                         <span class="search-bar__icon">
                             <Svg name='magnifyingglass' />
                         </span>
-                        {#if !nameFromLink}
+                        {#if !formattedUrl}
                             <p>Rechercher ou saisir un site</p>
                         {/if}
                     </div>
@@ -197,20 +148,26 @@ $: lastAppOpened = $globalWindowOrder[$globalWindowOrder?.length - 1];
             </span>
         </div>
     {/if}
-    <div class="content app__content" class:app__content--no-bg={ !pages.pc.page || !pages.mobile.page }>
-        {#if type === 'Image'}
+    <div class="content app__content" class:app__content--no-bg={ !images }>
+        {#if images}
+            <picture class:loading={ !isImgLoaded }>
+                <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{images.fullPage.mobile}">
+                <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{images.fullPage.pc}">
+                <img class="content__page" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{images.fullPage.pc}' alt="Contenu de la page '{formattedUrl}" on:load={() => isImgLoaded = true }>
+            </picture>
+        {/if}
+        <!--{#if type === 'Image'}
             {#if !isImgLoaded}
                 <Loader /> 
             {/if}
             <picture class:loading={ !isImgLoaded }>
-                <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{mobile.page.src}">
-                <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{pc.page.src}">
-                <img class="content__page" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{pc.page.src}' alt="Contenu de la page '{nameFromLink}" on:load={() => isImgLoaded = true }>
+                <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{fullPage.mobile}">
+                <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{fullPage.pc}">
+                <img class="content__page" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{fullPage.pc}' alt="Contenu de la page '{nameFromLink}" on:load={() => isImgLoaded = true }>
             </picture>
-            <!--<img class="page" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{page.src}' alt="" on:load={() => isImgLoaded = true }>-->
         {:else if type === 'Component'}
             <svelte:component this={page.component} {...page.props} /> 
-        {/if}
+        {/if}-->
     </div>
 </div>
 

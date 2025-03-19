@@ -4,6 +4,7 @@ export const toastDefaultIcons: Record<ToastType, string> = {
     success: '✅',
     error: '❌',
     missing: '❓',
+    blocked: '🚫',
     blank: '',
 }
 

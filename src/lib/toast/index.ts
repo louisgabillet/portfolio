@@ -29,5 +29,6 @@ export const toast = ( content: ToastContent, opts?: ToastOptions ) => createHan
 toast.success = createHandler('success');
 toast.error = createHandler('error');
 toast.missing = createHandler('missing');
+toast.blocked = createHandler('blocked');
 
 toast.remove = (toast: Toast, duration: number = 0) => remove(toast, duration);

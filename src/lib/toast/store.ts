@@ -1,7 +1,5 @@
 import { writable, get, type Writable } from "svelte/store";
-import type { Toast } from "./types";
-
-type Toasts = Record<string, Toast[]>;
+import type { Toast, Toasts } from "./types";
 
 export const toasts: Writable<Toasts> = writable({})
 
