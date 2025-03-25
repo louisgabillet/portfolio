@@ -1,9 +1,8 @@
 import { apps } from "./apps";
 import { type App } from "./apps/types";
-import { loadProjects } from "./projects";
 import { songs } from "./audio/songs";
+import { loadProjects } from "./projects";
 import { toast } from "./toast";
-
 
 export type Type = 'Folder' | 'Webloc' | 'Music' | 'Document' | 'Image' | 'Finder' | 'Launchpad' | 'Notes' | 'Contacts' | 'Mail' | 'Safari' | 'Plist' | 'Preview';
 type Children = FileSystem[] | App[];

@@ -213,7 +213,7 @@ onMount(async () => {
 .controls__search-bar {
     --padding-inline: 20px;
     width: 50%;
-    height: 100%;
+    height: 60%;
     margin: 0 auto;
     border-radius: .2rem;
     padding-inline: var(--padding-inline);

@@ -1,5 +1,16 @@
 import type { SvelteComponent } from "svelte"
 
+export type AppSizeData = {
+    minSize: {
+        width: number,
+        height: number,
+    },
+    resize: {
+        x: boolean,
+        y: boolean,
+    },
+}
+
 export type DeviceApps = {
     pc: App[],
     mobile: App[],

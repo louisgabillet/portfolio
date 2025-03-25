@@ -5,9 +5,8 @@ import { playlists, type Playlist } from "$lib/audio/playlists";
 import { songs, type Song } from "$lib/audio/songs";
 import { player } from "$lib/audio/player";
 import { players } from '$lib/audio/player/store';
-import { get } from "svelte/store";
 import { onMount } from "svelte";
-	import SoundBars from "./soundBars.svelte";
+import SoundBars from "./soundBars.svelte";
 
 interface NavBtn {
     name: string,
@@ -125,14 +124,21 @@ songs.forEach(song => songMap.set(song.id, song));
 const playlistMap = new Map<string, Playlist>();
 playlists.forEach(pl => playlistMap.set(pl.id, pl));
 
-$: defaultCover = {
+$: defaultCoverPlaylist = {
     name: $isResponsive ? 'music_note_list' : 'music_double_note',
+    color: $isResponsive ? '#7c7c7c' : '#a1a1a1',
+    background_color: $isResponsive ? '#21211F' : '#6E6E6E',
+}
+const defaultCoverSong = {
+    name: 'music_double_note',
     color: '#a1a1a1',
     background_color: '#6E6E6E',
 }
 
 $: areControlsActive = playingSong && $audioDuration.raw > 0;
 $: openedPlaylistIsPlaying = playingPlaylist && openedPlaylist ? playingPlaylist.id === openedPlaylist.id : false;
+
+$: console.log(openedPlaylistIsPlaying);
 
 let isPlaylistOpen: boolean = false;
 
@@ -163,7 +169,7 @@ onMount(() => {
     const storedTabName = sessionStorage.getItem(`music-tab-name`);
     const track = audio.track
 
-    if (storedTabName) {
+    if (storedTabName && !$isResponsive) {
         tabName = storedTabName;
     }
 
@@ -185,9 +191,10 @@ onMount(() => {
         }
 
         buffer = $audioBuffer;
+        playingPlaylist = openedPlaylist;
         getPlayingSong(+audioIndex);
     }
-    
+
 })
 
 const changeSessionStorage = (name: string, newValue: string) => {
@@ -218,12 +225,16 @@ const closePlaylist = () => {
     isPlaylistOpen = false;
     buffer = songs;
 
+    const defaultTabName = 'Toutes les playlists';
+    if (tabName !== defaultTabName) {
+        tabName = defaultTabName;
+    }
+
     sessionStorage.removeItem(`music-playlist-open`);
 }
 const getPlayingSong = (songIndex: number) => {
     const playing = buffer[songIndex];
     playingSongIndex = songIndex;
-    console.log(_player.audio.track);
 
     if (playing === playingSong) {
         return true;
@@ -239,7 +250,7 @@ const getPlayingSong = (songIndex: number) => {
     return false;
 }
 const updateBuffer = () => {
-    const areEqual = compareArrays(get(_player.buffer), buffer);
+    const areEqual = compareArrays($audioBuffer, buffer);
 
     if (areEqual) {
         return;
@@ -256,9 +267,10 @@ const handleStart = (songIndex: number, start: boolean = false, noRandom: boolea
         return;
     }
 
-    if (noRandom && !$random) {
+    if (noRandom && $random) {
         player.random(_player);
     }
+
     updateBuffer();
     playingPlaylist = openedPlaylist;
 
@@ -313,11 +325,10 @@ const handlePlay = () => {
 
     player.play(_player);
 }
-
 </script>
 
-<div class="app__grid">
-    <nav class="sidebar app__sidebar">
+<div class="app__grid" style:--playlist-cover-color={ defaultCoverPlaylist.background_color } style:--song-cover-color={ defaultCoverSong.background_color }>
+    <nav class="sidebar app__sidebar" class:app__sidebar--removed={ $isResponsive }> 
         {#each navBtns as {name, svg_name, color, title, active, playlist_id}}
             {#if title}
                 <h5 class="sidebar__title sidebar__category sidebar__text--overflow">{title}</h5> 
@@ -335,163 +346,145 @@ const handlePlay = () => {
             {/if}
         {/each}
     </nav>
-    <!--{#if $isResponsive}
-<div class="controls grid">
-<button class="{currPlaylistName ? 'active' : ''}" on:click={() => currPlaylistName = ''}>
-<span class="icon">
-<Svg name='chevron_left' color='#e84f6a' />
-</span>
-{!currPlaylistName ? 'Bibliothèque' : ''} 
-</button>
-<h2>{!currPlaylistName ? 'Playlists' : ''}</h2>
-<div class="flex">
-{#if !currPlaylistName}
-<div class="round">
-<span class="icon">
-<Svg name='plus' color='#e84f6a' />
-</span>
-</div>
-<div class="round">
-<span class="icon">
-<Svg name='line_3_horizontal_decrease' color='#e84f6a' />
-</span>
-</div>
-{/if}
-<div class="round">
-<span class="icon">
-<Svg name='ellipsis' color='#e84f6a' />
-</span>
-</div>
-</div>
-</div>
-{/if}-->
-    <div class="controls app__controls track">
-        <!--<span class="controls__item controls__item--distance-left">
-            <Svg name='shuffle' color="#414141" />
-        </span>-->
-        <button class="controls__item controls__item--distance-left controls__btn controls__btn--hover" on:click={() => player.random(_player)}>
-            <Svg name='shuffle' color={$random ? "var(--accent-color)" : "#7c7c7c"} />
-        </button>
-        <button 
-            class="controls__item controls__btn controls__btn--hover controls__btn--{areControlsActive ? 'active' : 'desactivated'}" 
-            on:click={() => handleNextAndPrevious(false)}
-        >
-            <Svg name='backward_fill' color={areControlsActive ? "#7c7c7c" : "#414141"} />
-        </button>
-        <button class="controls__item controls__btn controls__btn--play controls__btn--hover" on:click={() => handlePlay()}>
-            <Svg name={$paused ? 'play_fill' : 'pause_fill'} />
-        </button>
-        <button 
-            class="controls__item controls__btn controls__btn--hover controls__btn--{areControlsActive ? 'active' : 'desactivated'}" 
-            on:click={() => handleNextAndPrevious(true)}
-        >
-            <Svg name='forward_fill' color={areControlsActive ? "#7c7c7c" : "#414141"} />
-        </button>
-        <button class="controls__item controls__item--distance-right controls__btn controls__btn--hover" on:click={() => player.loop(_player)}>
-            <Svg name='repeat' color={$loop ? "var(--accent-color)" : "#7c7c7c"} />
-        </button>
-        <div class="playing-song controls__playing-song">
-            <div class="cover playing-song__cover">
-                <Svg name={ defaultCover.name } color={ defaultCover.color } />
-            </div>
-            <div class="playing-song__infos" >
-                {#if !playingSong || !audio.track?.src}
-                    <span class="playing-song__icon">
-                        <Svg name='apple' />
+    {#if $isResponsive}
+        <div class="controls app__controls controls-header app__controls-header">
+            <button class="controls__item controls-header__item controls-header__btn controls-header__btn--grid controls__btn--{isPlaylistOpen ? 'active' : 'desactivated'} " on:click={ closePlaylist }>
+                <Svg name="chevron_left" color="var(--accent-color)" />
+                <span class="controls__text--accent-color controls__text--overflow">{ !isPlaylistOpen ? "Bibliothèque" : '' }</span>
+            </button>
+            <h2 class="controls__h2 controls__text--overflow">{ !isPlaylistOpen ? 'Playlists' : ''}</h2>
+            <div class="controls__items-wrapper">
+                {#if !isPlaylistOpen}
+                    <span class="controls__item controls-header__item controls-header__item--round">
+                        <Svg name="plus" color="var(--accent-color)" />
                     </span>
-                {:else}
-                    <p class="playing-song__text" title="{playingSongName}">{playingSongName}</p>
-                    <p class="playing-song__text playing-song__text--color-grey" title="{playingSongArtist}">{playingSongArtist}</p>
-                    <input 
-                        type="range"
-                        class="controls__input--type-range playing-song__time-bar" 
-                        style:--progress="{ ($audioTime.raw / $audioDuration.raw * 100).toFixed(5) || 0 }%"
-                        bind:value={ $audioTime.raw }
-                        min="0"
-                        max={ $audioDuration.raw }
-                        aria-valuenow={ $audioTime.raw }
-                        on:input={() => player.time(_player, $audioTime.raw)}
-                    >
-                    <div class="playing-song__time playing-song__time--progress">{$audioTime.current}</div>
-                    <div class="playing-song__time playing-song__time--remaining">{$audioTime.remaining}</div>
-                    <span class="playing-song__favorite">
-                        <Svg name={ playingSong.favorite ? 'star_fill' : 'star' } color='#7c7c7c' />
+                    <span class="controls__item controls-header__item controls-header__item--round">
+                        <Svg name="line_3_horizontal_decrease" color="var(--accent-color)" />
                     </span>
                 {/if}
-            </div>
-        </div>
-        <button class="controls__item controls__item--distance-left controls__btn controls__btn--hover" on:click={() => player.volume(_player, 0)}>
-            <Svg name='speaker_fill' />
-        </button>
-        <input 
-            type="range"
-            class="controls__input--type-range controls__volume-bar"
-            style:--progress="{ $volume }%"
-            bind:value={ $volume }
-            min="0"
-            max="100"
-            aria-valuenow={ $volume }
-            on:input={() => player.volume(_player, $volume)}
-        >
-        <button class="controls__item controls__item--distance-right controls__btn controls__btn--hover" on:click={() => player.volume(_player, 100)}>
-            <Svg name='speaker_wave_3_fill' />
-        </button>
-        <span class="controls__item">
-            <Svg name='quote_bubble' color="#414141" />
-        </span>
-        <span class="controls__item">
-            <Svg name='list_bullet' color="#414141" />
-        </span>
-        <!--{#if $isResponsive}
-            <div class="playing-song">
-                <div class="cover">
-                    <span class="icon">
-                        <Svg name='music_double_note' color='#7c7c7c' />
-                    </span>
-                </div>
-                <p title="{activeMusicName}">{activeMusicName || "À l'arrêt"}</p>
-                <button on:click={() => handlePlay()}>
-                    <Svg name={$paused ? 'play_fill' : 'pause_fill'} />
-                </button>
-                <span class="icon">
-                    <Svg name='forward_fill' />
+                <span class="controls__item controls-header__item controls-header__item--round">
+                    <Svg name="ellipsis" color="var(--accent-color)" />
                 </span>
             </div>
-            <div class="tabs">
-                <div class="tab-btn">
-                    <span class="icon">
-                        <Svg name='play_circle_fill' />
-                    </span>
-                    <p>Écouter</p>
+        </div>
+        <div class="controls app__controls controls-footer app__controls-footer">
+            <div class="footer-player controls-footer__player">
+                <div class="cover footer-player__cover">
+                    <Svg name={ defaultCoverSong.name } color={ defaultCoverSong.color } />
+                    <div class="cover__action" class:cover__action--hidden={ $paused }>
+                        <SoundBars />
+                    </div>
                 </div>
-                <div class="tab-btn">
-                    <span class="icon">
-                        <Svg name='square_grid_2x2_fill' />
-                    </span>
-                    <p>Explorer</p>
+                <p class="footer-player__title">{ playingSongName || "À l'ârret" }</p>
+                <button class="footer-player__btn" class:footer-player__btn--desactivated={ buffer.length === 0 } on:click={ handlePlay }>
+                    <Svg name={$paused ? 'play_fill' : 'pause_fill'} color={buffer.length > 0 ? "#fff" : "#414141"}/>
+                </button>
+                <button 
+                    class="footer-player__btn" class:footer-player__btn--desactivated={ !areControlsActive }
+                    on:click={() => handleNextAndPrevious(true)}
+                >
+                    <Svg name='forward_fill' color={ areControlsActive ? "#fff" : '#414141' } />
+                </button>
+            </div>
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name='play_circle_fill' />
+                <span class="controls__text--overflow">Écouter</span>
+            </div>
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name='square_grid_2x2_fill' />
+                <span class="controls__text--overflow">Explorer</span>
+            </div>
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name="dot_radiowaves_left_and_right" />
+                <span class="controls__text--overflow">Radio</span>
+            </div>
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name="play_square_stack" color="var(--accent-color)" />
+                <span class="controls__text--accent-color controls__text--overflow">Bibiothèque</span>
+            </div>
+            <div class="controls__item controls-footer__item controls-footer__item--grid">
+                <Svg name="magnifyingglass" />
+                <span class="controls__text--overflow">Recherche</span>
+            </div>
+        </div>
+    {:else}
+        <div class="controls app__controls track">
+            <button class="controls__item controls__item--distance-left controls__btn controls__btn--hover" on:click={() => player.random(_player)}>
+                <Svg name='shuffle' color={$random ? "var(--accent-color)" : "#7c7c7c"} />
+            </button>
+            <button 
+                class="controls__item controls__btn controls__btn--hover controls__btn--{areControlsActive ? 'active' : 'desactivated'}" 
+                on:click={() => handleNextAndPrevious(false)}
+            >
+                <Svg name='backward_fill' color={areControlsActive ? "#7c7c7c" : "#414141"} />
+            </button>
+            <button class="controls__item controls__btn controls__btn--play controls__btn--hover" class:controls__btn--desactivated={ buffer.length === 0 } on:click={ handlePlay }>
+                <Svg name={$paused ? 'play_fill' : 'pause_fill'} color={buffer.length > 0 ? "#7c7c7c" : "#414141"}/>
+            </button>
+            <button 
+                class="controls__item controls__btn controls__btn--hover controls__btn--{areControlsActive ? 'active' : 'desactivated'}" 
+                on:click={() => handleNextAndPrevious(true)}
+            >
+                <Svg name='forward_fill' color={areControlsActive ? "#7c7c7c" : "#414141"} />
+            </button>
+            <button class="controls__item controls__item--distance-right controls__btn controls__btn--hover" on:click={() => player.loop(_player)}>
+                <Svg name='repeat' color={$loop ? "var(--accent-color)" : "#7c7c7c"} />
+            </button>
+            <div class="playing-song controls__playing-song">
+                <div class="cover playing-song__cover">
+                    <Svg name={ defaultCoverSong.name } color={ defaultCoverSong.color } />
                 </div>
-                <div class="tab-btn">
-                    <span class="icon">
-                        <Svg name='dot_radiowaves_left_and_right' />
-                    </span>
-                    <p>Radio</p>
-                </div>
-                <div class="tab-btn active">
-                    <span class="icon">
-                        <Svg name='play_square_stack' color='#e84f6a' />
-                    </span>
-                    <p>Bibliothèque</p>
-                </div>
-                <div class="tab-btn">
-                    <span class="icon">
-                        <Svg name='magnifyingglass' />
-                    </span>
-                    <p>Recherche</p>
+                <div class="playing-song__infos" >
+                    {#if !playingSong || !audio.track?.src}
+                        <span class="playing-song__icon">
+                            <Svg name='apple' />
+                        </span>
+                    {:else}
+                        <p class="playing-song__text" title="{playingSongName}">{playingSongName}</p>
+                        <p class="playing-song__text playing-song__text--color-grey" title="{playingSongArtist}">{playingSongArtist}</p>
+                        <input 
+                            type="range"
+                            class="controls__input--type-range playing-song__time-bar" 
+                            style:--progress="{ ($audioTime.raw / $audioDuration.raw * 100).toFixed(5) || 0 }%"
+                            bind:value={ $audioTime.raw }
+                            min="0"
+                            max={ $audioDuration.raw }
+                            aria-valuenow={ $audioTime.raw }
+                            on:input={() => player.time(_player, $audioTime.raw)}
+                        >
+                        <div class="playing-song__time playing-song__time--progress">{$audioTime.current}</div>
+                        <div class="playing-song__time playing-song__time--remaining">{$audioTime.remaining}</div>
+                        <span class="playing-song__favorite">
+                            <Svg name={ playingSong.favorite ? 'star_fill' : 'star' } color='#7c7c7c' />
+                        </span>
+                    {/if}
                 </div>
             </div>
-        {/if}-->
-    </div>
-    <div class="content app__content">
+            <button class="controls__item controls__item--distance-left controls__btn controls__btn--hover" on:click={() => player.volume(_player, 0)}>
+                <Svg name='speaker_fill' />
+            </button>
+            <input 
+                type="range"
+                class="controls__input--type-range controls__volume-bar"
+                style:--progress="{ $volume }%"
+                bind:value={ $volume }
+                min="0"
+                max="100"
+                aria-valuenow={ $volume }
+                on:input={() => player.volume(_player, $volume)}
+            >
+            <button class="controls__item controls__item--distance-right controls__btn controls__btn--hover" on:click={() => player.volume(_player, 100)}>
+                <Svg name='speaker_wave_3_fill' />
+            </button>
+            <span class="controls__item">
+                <Svg name='quote_bubble' color="#414141" />
+            </span>
+            <span class="controls__item">
+                <Svg name='list_bullet' color="#414141" />
+            </span>
+        </div>
+    {/if}
+    <div class="content app__content" class:app__content--full={ $isResponsive }>
         {#if !$isResponsive}
             <div class="content__action">
                 <button class="content__action-btn" class:masked={tabName !== 'Toutes les playlists' || !isPlaylistOpen} on:click={ closePlaylist }>
@@ -499,162 +492,27 @@ const handlePlay = () => {
                 </button>
             </div>
         {/if}
-        <!--{#if currPlaylist}
-            <div class="album-page">
-                <div class="presentation">
-                    <div class="cover" style="{currPlaylistCover?.background_color ? `--cover-color: ${currPlaylistCover.background_color}` : ''}">
-                        <span class="icon">
-                            {#if currPlaylistCover?.name}
-                                <Svg name={currPlaylistCover?.name} color={currPlaylistCover?.color ?? '#7c7c7c'} />
-                            {:else if $isResponsive} 
-                                <Svg name='music_note_list' color={currPlaylistCover?.color ?? '#7c7c7c'} />
-                                {:else}
-                                <Svg name='music_double_note' color={currPlaylistCover?.color ?? '#7c7c7c'} />
-                            {/if}
-                        </span>
-                    </div>
-                    {#if $isResponsive}
-                        <h3>{currPlaylistMetadata?.name}</h3>
-                        <p>Mise à jour aujourd'hui</p>
-                        <div class="flex">
-                            {#if currPlaylistSongs[0]}
-                                <button class="action" on:click={() => handleStart(0)}>
-                                    <span class="icon">
-                                        <Svg name='play_fill' color='#e84f6a' />
-                                    </span>
-                                    Lecture
-                                </button>
-                            {:else}
-                                <div class="action">
-                                    <span class="icon">
-                                        <Svg name='play_fill' color='#e84f6a' />
-                                    </span>
-                                    Lecture
-                                </div>
-                            {/if}
-                            <div class="action">
-                                <span class="icon">
-                                    <Svg name='shuffle' color='#e84f6a' />
-                                </span>
-                                <p>Aléatoire</p>
-                            </div>
-                        </div>
-                        <p>{currPlaylistMetadata?.desc}</p>
-                    {:else} 
-                        <div class="flex">
-                            <h3>{currPlaylistMetadata?.name}</h3>
-                            <div class="flex">
-                                <h4>{currPlaylistSongs.length} morceaux</h4>
-                                <div class="dot"></div>
-                                <h4>{getAproximateTime(currPlaylist)}</h4>
-                            </div>
-                            <p>{currPlaylistMetadata?.desc}</p>
-                            <div class="flex" style="gap: 8px;">
-                                {#if currPlaylistSongs[0]}
-                                    <button class="action" on:click={() => handleStart(0)}>
-                                        <span class="icon">
-                                            <Svg name='play_fill' />
-                                        </span>
-                                        Lecture
-                                    </button>
-                                {:else}
-                                    <div class="action">
-                                        <span class="icon">
-                                            <Svg name='play_fill' />
-                                        </span>
-                                        Lecture
-                                    </div>
-                                {/if}
-                                <div class="action">
-                                    <span class="icon">
-                                        <Svg name='shuffle' />
-                                    </span>
-                                    <p>Aléatoire</p>
-                                </div>
-                                <div class="round" style="margin-left: auto;">
-                                    <span class="icon">
-                                        <Svg name='ellipsis' color='#FA2D48' />
-                                    </span>
-                                </div>
-                                <div class="round">
-                                    <span class="icon">
-                                        <Svg name='checkmark' color='#FA2D48' />
-                                    </span>
-                                </div>
-                                <div class="round">
-                                    <span class="icon">
-                                        <Svg name='pencil' color='#FA2D48' />
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    {/if}
-                </div>
-                {#if !$isResponsive}
-                    <div class="song-line" style="align-items: flex-end;">
-                        <span class="icon"></span>
-                        <div class="cover" style="background: transparent;"></div>
-                        <h4>Morceaux</h4> 
-                        <h4>Artiste</h4> 
-                        <h4>Album</h4> 
-                        <h4 class="align-center">Durée</h4> 
-                        <span class="icon"></span>
-                    </div>
-                {/if}
-                {#each currPlaylistSongs as {name, artist, album, duration, url, favorite}, i}
-                    <button class="song-line" class:dark-bg={i % 2 === 0 && !$isResponsive} on:dblclick={() => handleStart(i) }>
-                        <span class="icon on-hover">
-                            {#if favorite}
-                                <Svg name='star_fill' color='#FA2D48' />
-                            {/if}
-                        </span>
-                        <div class="cover">
-                            <span class="icon">
-                                {#if url === activeMusic}
-                                    <Svg name='lines_measurement_horizontal' />
-                                {:else}
-                                    <Svg name='music_double_note' />
-                                {/if}
-                            </span>
-                        </div>
-                        {#if $isResponsive}
-                            <div class="flex">
-                                <p class="title">{name}</p> 
-                                <p>{artist}</p> 
-                            </div> 
-                        {:else}
-                            <p class="title">{name}</p> 
-                            <p>{artist}</p> 
-                            <p>{album}</p> 
-                            <p class="align-center">{duration}</p> 
-                        {/if}
-                        <span class="icon">
-                            <Svg name='ellipsis' color={$isResponsive ? '#fff' : '#FA2D48'} />
-                        </span>
-                    </button>
-                {/each}
-            </div>
-        {/if}-->
         {#if isPlaylistOpen && openedPlaylist}
             <div class="album-page content__album-page">
                 <div class="presentation album-page__presentation">
-                    <div class="cover presentation__cover" style="{openedPlaylistCover.background_color ? `--cover-color: ${openedPlaylistCover.background_color}` : ''}">
-                        <Svg name={openedPlaylistCover.name ?? defaultCover.name} color={openedPlaylistCover.color ?? defaultCover.color} />
+                    <div class="cover presentation__cover" style="{openedPlaylistCover.background_color ? `--playlist-cover-color: ${openedPlaylistCover.background_color}` : ''}">
+                        <Svg name={openedPlaylistCover.name ?? defaultCoverPlaylist.name} color={openedPlaylistCover.color ?? defaultCoverPlaylist.color} />
                     </div>
                     {#if $isResponsive}
-                        <h3>{currPlaylistMetadata?.name}</h3>
-                        <p>Mise à jour aujourd'hui</p>
-                        <div class="flex">
-                            <button class="presentation__action-btn" on:click={() => handleStart(0, true)}>
-                                <Svg name='play_fill' color='#e84f6a' />
-                                <span>Lire</span>
+                        <h3 class="presentation__title presentation__text presentation__text--overflow">{openedPlaylistMetadata.name}</h3>
+                        <div class="presentation__action">
+                            <button class="presentation__action-btn presentation__action-btn--form-rect" class:presentation__action-btn--desactivated={ buffer.length === 0 } on:click={() => handleStart(0, true, true)}>
+                                <span class="presentation__icon">
+                                    <Svg name='play_fill' color='var(--accent-color)' />
+                                </span>Lecture
                             </button>
-                            <div class="presentation__action-btn">
-                                <Svg name='shuffle' color='#e84f6a' />
-                                <span>Aléatoire</span>
-                            </div>
+                            <button class="presentation__action-btn presentation__action-btn--form-rect" class:presentation__action-btn--desactivated={ buffer.length === 0 } on:click={ handleRandom }>
+                                <span class="presentation__icon">
+                                    <Svg name='shuffle' color='var(--accent-color)' />
+                                </span>Aléatoire
+                            </button>
                         </div>
-                        <p>{currPlaylistMetadata?.desc}</p>
+                        <p class="presentation__description presentation__text presentation__text--overflow">{openedPlaylistMetadata.desc}</p>
                     {:else} 
                         <div class="presentation__infos">
                             <h3 class="presentation__title presentation__text presentation__text--overflow">{openedPlaylistMetadata.name}</h3>
@@ -671,13 +529,13 @@ const handlePlay = () => {
                                     </span>Ordre Aléatoire
                                 </button>
                                 <div class="presentation__action-btn presentation__action-btn--form-round presentation__action-btn--desactivated" style="margin-left: auto">
-                                    <Svg name='ellipsis' color='#FA2D48' />
+                                    <Svg name='ellipsis' color='var(--accent-color)' />
                                 </div>
                                 <div class="presentation__action-btn presentation__action-btn--form-round presentation__action-btn--desactivated"> 
-                                    <Svg name='checkmark' color='#FA2D48' />
+                                    <Svg name='checkmark' color='var(--accent-color)' />
                                 </div>
                                 <div class="presentation__action-btn presentation__action-btn--form-round presentation__action-btn--desactivated"> 
-                                    <Svg name='pencil' color='#FA2D48' />
+                                    <Svg name='pencil' color='var(--accent-color)' />
                                 </div>
                             </div>
                         </div>
@@ -696,15 +554,14 @@ const handlePlay = () => {
                 {/if}
                 {#each buffer as {id, metadata, favorite}, i}
                     {@const isPlaying = id === playingSong?.id && playingSongIndex === i}
-                    <button class="categories album-page__categories categories--background" class:categories--background-transparent={i % 2 !== 0 && !$isResponsive} on:dblclick={() => handleStart(i, true) }>
-                        <span class="categories__icon" class:categories__icon--hidden={ !$isResponsive && !favorite }>
-                            <Svg name={ favorite ? 'star_fill' : 'star' } color='#FA2D48' />
+                    <button class="categories album-page__categories" class:categories--background={ !$isResponsive } class:categories--background-transparent={i % 2 !== 0 && !$isResponsive} on:dblclick={() => handleStart(i, true) }>
+                        <span class="categories__icon" class:categories__icon--hidden={ !favorite }>
+                            <Svg name={ favorite ? 'star_fill' : 'star' } color='var(--accent-color)' />
                         </span>
                         <div class="categories__wrapper">
                             <button class="cover categories__cover" on:click={() => handleStart(i, !openedPlaylistIsPlaying)}>
                                 <div class="cover__action" class:cover__action--hidden={ !openedPlaylistIsPlaying || !isPlaying || $paused }>
                                     <span class="cover__icon cover__icon--hide-hover" class:cover__icon--hidden={ !isPlaying || $paused }>
-                                        <!--<Svg name='lines_measurement_horizontal' color="#fff" />-->
                                         <SoundBars />
                                     </span>
                                     <span class="cover__action-btn">
@@ -712,17 +569,22 @@ const handlePlay = () => {
                                     </span>
                                 </div>
                                 <span class="cover__icon">
-                                    <Svg name={ defaultCover.name } color={ defaultCover.color } />
+                                    <Svg name={ defaultCoverSong.name } color={ defaultCoverSong.color } />
                                 </span>
                             </button>
                             <p class="categories__text--color-white categories__text--overflow" title={ metadata.name }>{metadata.name}</p> 
+                            {#if $isResponsive}
+                                <p class="categories__text--overflow" title={ metadata.artist }>{metadata.artist}</p> 
+                            {/if}
                         </div>
-                        <p class="categories__text--overflow" title={ metadata.artist }>{metadata.artist}</p> 
-                        <p class="categories__text--overflow" title={ metadata.album }>{metadata.album}</p> 
-                        <span class="categories__icon categories--desactivated">
-                            <Svg name='arrow_down_circle_fill' color={$isResponsive ? '#fff' : '#7c7c7c'} />
-                        </span>
-                        <p class="categories__text--end categories__text--overflow" title={ metadata.duration }>{metadata.duration}</p> 
+                        {#if !$isResponsive}
+                            <p class="categories__text--overflow" title={ metadata.artist }>{metadata.artist}</p> 
+                            <p class="categories__text--overflow" title={ metadata.album }>{metadata.album}</p> 
+                            <span class="categories__icon categories--desactivated">
+                                <Svg name='arrow_down_circle_fill' color={$isResponsive ? '#fff' : '#7c7c7c'} />
+                            </span>
+                            <p class="categories__text--end categories__text--overflow" title={ metadata.duration }>{metadata.duration}</p> 
+                        {/if}
                         <span class="categories__icon categories--desactivated">
                             <Svg name='ellipsis' color={$isResponsive ? '#fff' : '#7c7c7c'} />
                         </span>
@@ -731,7 +593,7 @@ const handlePlay = () => {
                 <p class="album-page__playlist-duration">{buffer.length} morceaux, {getAproximateTime(buffer)}</p>
             </div> 
         {/if}
-        {#if tabName === 'Toutes les playlists'}
+        {#if tabName === 'Toutes les playlists' || $isResponsive}
             <div class="placement content__placement" class:masked={ isPlaylistOpen }>
                 {#each playlists as playlist}
                     {@const cover = playlist.visual.cover}
@@ -743,16 +605,16 @@ const handlePlay = () => {
                     >
                         <div 
                             class="cover album__cover"
-                            style="{cover.background_color ? `--cover-color: ${cover.background_color}` : ''}"
+                            style="{cover.background_color ? `--playlist-cover-color: ${cover.background_color}` : ''}"
                         >
                             <Svg 
-                                name={cover.name ??  defaultCover.name}
-                                color={cover.color ?? defaultCover.color}
+                                name={ cover.name ??  defaultCoverPlaylist.name }
+                                color={ cover.color ?? defaultCoverPlaylist.color }
                             />
                         </div>
                         <span class="album__name">{name}</span>
                         {#if $isResponsive}
-                            <span class="icon">
+                            <span class="album__icon">
                                 <Svg name='chevron_right' />
                             </span> 
                         {/if}
@@ -774,17 +636,13 @@ const handlePlay = () => {
     --light-grey: #2c2c2a;
     --dark-grey: #21211F;
     --light-grey-track: #424242;
-    --cover-color: #6E6E6E;
     --progress-color: #7c7c7c;
 }
 .app__content {
     --height: var(--fz-xl);
     --extra-padding: 15px;
-    background-color: #1e1e1e;
-    border-top: 1px solid #7c7c7c33;
     display: grid;
     grid-template-rows: min-content 1fr;
-    padding-top: 0;
 }
 .content__action {
     height: 24px;
@@ -820,7 +678,7 @@ const handlePlay = () => {
     --cover-height: 100%;
     height: var(--cover-height);
     aspect-ratio: 1/1;
-    background-color: var(--cover-color); 
+    background-color: var(--playlist-cover-color); 
     position: relative;
     padding: 5px;
 }
@@ -970,19 +828,6 @@ const handlePlay = () => {
     padding-left: var(--extra-padding);
     gap: 15px;
 }
-.presentation__wrapper {
-    --wrapper-gap: 2px;
-    display: flex;
-    align-items: center;
-    gap: var(--wrapper-gap);
-}
-.presentation__dot {
-    width: 2px;
-    aspect-ratio: 1/1;
-    border-radius: 50%;
-    background: #969696;
-    margin-inline: 4px;
-}
 .presentation__cover {
     --cover-height: 175px;
     border-radius: .2rem;
@@ -990,15 +835,9 @@ const handlePlay = () => {
     padding: 25px;
     border-radius: 8px;
 }
-.presentation__infos {
-}
 .presentation__text {
     font-size: var(--fz-s);
     color: #a1a1a1;
-}
-/*.presentation h3, .presentation h4, .presentation .action, .song-line h4 {*/
-.presentation__text--bold {
-    font-weight: 500;
 }
 .presentation__text--overflow {
     overflow: hidden;
@@ -1039,7 +878,7 @@ const handlePlay = () => {
     align-items: center;
     justify-content: center;
     gap: var(--btn-padding);
-    background: #FA2D48;
+    background: var(--accent-color);
     border-radius: .2rem;
     padding-inline: 8px;
 }
@@ -1096,9 +935,6 @@ const handlePlay = () => {
     border-radius: 5px;
     z-index: -1;
 }
-.categories:hover.categories--background::after {
-    background-color: #41414180;
-}
 .categories__wrapper {
     display: flex;
     align-items: center;
@@ -1130,15 +966,10 @@ const handlePlay = () => {
 .categories__icon--hidden {
     visibility: hidden;
 }
-.categories:hover .categories__icon--hidden {
-    visibility: visible;
-}
-.categories:hover .categories__icon :global(> svg) {
-    fill: #FA2D48;
-}
 .categories__cover {
     --cover-height: 35px;
     position: relative;
+    background-color: var(--song-cover-color);
     border-radius: 5px;
     overflow: hidden;
     flex-shrink: 0;
@@ -1153,13 +984,6 @@ const handlePlay = () => {
     padding: 3px;
     display: none;
 }
-.categories:hover .cover__action-btn {
-    display: block;
-}
-.cover__icon--hidden,
-.categories:hover .cover__icon--hide-hover {
-    display: none;
-}
 .cover__action {
     position: absolute;
     inset: 0;
@@ -1169,9 +993,6 @@ const handlePlay = () => {
 .cover__action--hidden {
     visibility: hidden;
 }
-.categories:hover .cover__action--hidden {
-    visibility: visible;
-}
 .album-page__playlist-duration {
     --margin-left: calc(var(--categories__favorite-icon--width) + var(--categories--gap));
     font-size: var(--fz-s);
@@ -1179,574 +1000,216 @@ const handlePlay = () => {
     color: #a1a1a1;
     margin: var(--space-btw) 0 0 var(--margin-left);
 }
-/*.app-grid {
---light-grey: #2c2c2a;
---dark-grey: #21211F;
---light-grey-track: #424242;
---cover-color: #6E6E6E;
+.controls-header__btn {
+    width: fit-content;
 }
-.app-content {
---height: var(--fz-xl);
-background-color: var(--dark-grey); 
-display: grid;
-grid-template-rows: min-content 1fr;
-padding-block: 0;
+.app__controls-footer {
+    --nbr-columns: 5;
+    grid-template-rows: auto auto;
+    background-color: transparent;
+    backdrop-filter: blur(0);
+    outline: none;
+    z-index: 3;
 }
-.masked {
-z-index: -1;
-pointer-events: none;
-opacity: 0;
+.app__controls-footer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: #080808;
+    z-index: -1;
+    mask: linear-gradient(to top, black, black 75%, transparent);
 }
-.go-back {
-width: fit-content;
-padding: 2px;
-margin-block: 5px;
+.controls__items-wrapper {
+    gap: 10px;
 }
-.placement {
-height: min-content;
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-grid-area: 2/1;
-gap: 30px 8px;
+.controls-header__item--round {
+    width: var(--controls__item--height);
+    min-width: var(--controls__item--height);
+    background: var(--dark-fullscreen);
+    border-radius: 50%;
+    padding: 8px;
 }
-.album {
-width: 100%;
-display: flex;
-flex-direction: column;
-gap: 2px;
-font-size: var(--fz-s);
+.footer-player {
+    width: 99%;
+    height: 50px;
+    padding: 8px;
+    background-color: var(--playlist-cover-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 12px;
 }
-.album .cover {
-padding: 15px;
-border-radius: .2rem;
+.controls-footer__player {
+    grid-column: 1/-1;
+    margin-inline: auto;
+    margin-bottom: 8px;
 }
-.album-page {
-width: 100%;
-height: 100%;
-grid-area: 2/1;
+.footer-player__cover {
+    border-radius: 5px;
+    overflow: hidden;
+    background-color: var(--song-cover-color);
 }
-.presentation .cover {
-height: 125px;
-border-radius: .2rem;
-grid-area: 1 / 1 / -1 / 2;
-padding: 25px;
+.footer-player__title {
+    font-size: var(--fz-l);
+    color: #fff;
+    margin-right: auto;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-.presentation {
-display: grid;
-grid-template-columns: min-content 1fr;
-align-items: flex-end;
-gap: 15px;
-font-size: var(--fz-s);
-margin-bottom: 3rem;
-padding-left: 15px;
+.footer-player__btn {
+    height: 100%;
+    padding: 8px;
+    flex-shrink: 0;
 }
-.presentation > .flex {
-display: grid;
-grid-template-rows: min-content min-content 55px min-content;
-gap: 2px;
+.footer-player__btn--desactivated {
+    pointer-events: none;
 }
-.presentation h4 {
-text-transform: uppercase;
-}
-.presentation > .flex p {
-margin: auto 0;
--webkit-line-clamp: 3;
-}
-.presentation .flex > h4, .presentation .flex > p, .presentation div.action, .presentation .round, .song-line h4, .song-line p {
-opacity: .4;
-}
-.presentation h3, .presentation h4, .presentation .action, .song-line h4 {
-font-weight: 500;
-}
-.presentation h3 {
-font-size: var(--fz-l);
-}
-.presentation h3, .presentation p {
-overflow: hidden;
-display: -webkit-box;
--webkit-line-clamp: 2;
--webkit-box-orient: vertical;
-}
-.presentation .dot {
-width: 2px;
-aspect-ratio: 1/1;
-border-radius: 50%;
-background: #969696;
-margin-inline: 4px;
-}
-.presentation .action {
-min-width: 75px;
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 2px;
-color: #fff;
-background: #FA2D48;
-border-radius: .2rem;
-padding: 4px 8px;
-}
-.presentation .icon {
---height: 10px;
-}
-.round {
-background: var(--dark-fullscreen);
-border-radius: 50%;
-padding: 5px;
-}
-.presentation .round .icon {
-aspect-ratio: 1/1;
-}
-.song-line {
-width: 100%;
-height: 35px;
-display: grid;
-grid-template-columns: 10px min-content 1fr 25% 20% 30px min-content;
-align-items: center;
-gap: 5px;
-padding: 5px 15px 5px 0;
-font-size: var(--fz-s);
-text-align: start;
-}
-.song-line > .icon:first-of-type {
---height: 8px;
-}
-.song-line .title {
-opacity: 1;
-}
-.song-line h4, .song-line p {
-max-width: 100%;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-}
-.song-line .cover {
-border-radius: .2rem;
-padding: 2px;
-}
-.song-line .icon {
-aspect-ratio: 1/1;
-opacity: .4;
-}
-.dark-bg {
-background: #1b1b1b;
-}
-.align-center {
-text-align: center;
-}
-.on-hover {
-visibility: hidden;
-}
-.song-line:hover .on-hover {
-visibility: visible;
-}
-input[type=range], input[type=range]::-webkit-slider-thumb {
--webkit-appearance: none;
-appearance: none;
-}
-.flex {
-display: flex;
-align-items: center;
-}
-.hidden {
-visibility: hidden;
-}
-.track .flex {*/
-/*color: #7C7C7C;*/
-/*font-size: var(--fz-xs);
-}
-.volume {
-gap: 2px;
-}
-.controls {
-gap: 4px;
-}
-.playing-song {
-width: 100%;
-height: 100%;
-min-width: 125px;
-background-color: var(--light-grey-track);
-border-radius: 2px;
-overflow: hidden;
-}
-.cover {
-height: 100%;
-aspect-ratio: 1/1;
-background-color: var(--cover-color); 
-position: relative;
-padding: 5px;
-}
-.cover .icon, .song-info .icon {
---height: 100%;
-margin: auto;
-}
-.song-info {
-width: 100%;
-height: 100%;
-position: relative;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: space-between;
-overflow: hidden;
-}
-.time-bar {
-width: 100%;
-height: 2px;
-background: #7C7C7C59;
-}
-.time-bar::-webkit-slider-runnable-track {
--webkit-appearance: none;
-appearance: none;
-height: 10px;
-}
-.volume-bar {
-width: 40px;
-height: 2px;
-background: var(--dark-grey);
-border-radius: 4px;
-}
-.volume-bar::-webkit-slider-thumb {
-width: 8px;
-height: 8px;
-background: #1B1B1B;
-outline: 1px solid #7C7C7C;
-border-radius: 50%;
-}
-h2 {
-padding-block: 5px;*/
-/*font-size: calc(var(--font-size) + 2px);*/
-/*font-size: var(--fz-l);
-font-weight: 500;
-text-align: center;
-}
-.app-controls .big {
---height: 15px;
-}
-.app-controls .medium {
---height: 13px;
-}
-.app-controls .small {
---height: 9px;
-}
-.app-controls .flex .icon {
-opacity: .4;
-aspect-ratio: 1 / 1;
-}
-.track {
-border-bottom: 1px solid grey;
-background-color: #1b1b1b;
-padding: 2px 10px;
-gap: 20px;
-overflow-x: auto;
-}
-.grid {
---full: calc(var(--height) * 10);
---half: calc(var(--full) / 2);
---quarter: calc(var(--full) / 4);
---eighth: calc(var(--full) / 8);
 
-display: grid;
-align-items: center;
-grid-template-columns: 
-var(--eighth) 
-var(--full) 
-var(--eighth) 
-var(--quarter) 
-var(--half) 
-var(--half) 
-var(--quarter) 
-var(--eighth) 
-var(--quarter);
-}
-.song-info p {
-max-width: 90%;
-}
-.playing-song:hover input::-webkit-slider-thumb {
-height: 6px;
-width: 2px;
-background: white;
-outline: 1px solid #1B1B1B;
-border-radius: 2px;
-margin-top: 2px;
-}
-.tab-btn {
-font-size: var(--fz-s);
-opacity: .4;
-color: white;
-text-align: center;
-}
-.tab-btn > .icon {
---height: 40px;
-aspect-ratio: 1/1.5;
-margin: 0 auto 5px;
-}
-.tab-btn.active {
-color: #e84f6a;
-opacity: 1;
+@media (min-width: 1281px) {
+    .app__content {
+        background-color: #1e1e1e;
+        border-top: 1px solid #7c7c7c33;
+        padding-top: 0;
+    }
+    .categories:hover.categories--background::after {
+        background-color: #41414180;
+    }
+    .categories:hover .categories__icon--hidden {
+        visibility: visible;
+    }
+    .categories:hover .categories__icon :global(> svg) {
+        fill: var(--accent-color);
+    }
+    .categories:hover .cover__action-btn {
+        display: block;
+    }
+    .cover__icon--hidden,
+    .categories:hover .cover__icon--hide-hover {
+        display: none;
+    }
+    .categories:hover .cover__action--hidden {
+        visibility: visible;
+    }
 }
 @media (max-width: 1280px) {
-.app-grid, .app-content {
-background: #080808;
+    .app__content {
+        padding-inline: 0;
+        padding-bottom: 9.375rem;
+    }
+    .placement {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .album {
+        --cover-width: 65px;
+        position: relative;
+        grid-template-columns: var(--cover-width) 1fr auto;
+        grid-template-rows: auto;
+        align-items: center;
+        gap: var(--gap);
+    }
+    .placement__album {
+        --gap: 10px;
+        gap: var(--gap);
+        padding: 10px 15px 10px 0;
+    }
+    .album::after {
+        content: '';
+        width: calc(100% - var(--cover-width) - var(--gap));
+        height: 1px;
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background-color: #7c7c7c33;
+        border-radius: 5px;
+    }
+    .album__cover {
+        outline: 1px solid #7c7c7c33;
+    }
+    .album__name {
+        font-size: var(--fz-l);
+        text-align: start;
+    }
+    .album__icon {
+        height: 12px;
+    }
+    .presentation {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 0;
+        padding: 0 15px 15px 20px;
+        border-bottom: 1px solid #7c7c7c33;
+    }
+    .presentation__cover {
+        --cover-height: 235px;
+        padding: 70px;
+    }
+    .presentation__title {
+        font-size: var(--fz-xl);
+    }
+    .presentation__description {
+        width: 100%;
+        font-size: var(--fz-l);
+        margin: 0;
+        text-align: start;
+    }
+    .presentation__action {
+        width: 100%;
+    }
+    .presentation__action-btn {
+        width: 100%;
+        height: 40px;
+        font-size: var(--fz-l);
+    }
+    .presentation__action-btn--form-rect {
+        border-radius: 8px;
+        background-color: var(--playlist-cover-color);
+        color: var(--accent-color);
+    }
+    .presentation__icon {
+        height: 14px;
+    }
+    .categories {
+        --cover-width: 40px;
+        grid-template-columns: var(--favorite-width) 1fr auto;
+        font-size: var(--fz-m);
+    } 
+    .album-page__categories {
+        --gap: 5px;
+        padding-inline: var(--gap) 20px;
+    }
+    .categories::after {
+        content: '';
+        width: calc(100% - var(--favorite-width) - var(--gap) * 2 - var(--cover-width));
+        height: 1px;
+        background-color: #7c7c7c33;
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+    .categories:last-of-type::after {
+        width: calc(100% - var(--favorite-width) - var(--gap) * 2);
+    }
+    .categories__wrapper {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto;
+        gap: 0 var(--gap);
+    }
+    .categories__cover {
+        --cover-height: var(--cover-width);
+        grid-row: 1/-1;
+    }
+    .categories__text--color-white {
+        font-size: var(--fz-l);
+    }
+    .album-page__playlist-duration {
+        font-size: var(--fz-l);
+        font-weight: 400;
+        margin-top: 10px;
+    }
 }
-.app-grid {
-padding-top: 0;
-grid-template-columns: 1fr;
-grid-template-rows: max-content 1fr;
-}
-.app-content, .track {
---height: calc(var(--font-size) * 5);
-grid-area: 1 / 1 / -1 / -1;
-}
-.app-content {
-padding: 6.5rem 0 0;
-}
-.app-controls {
-backdrop-filter: none;
-}
-.track {
---fz-i: 20px;
-padding: 0;
-flex-direction: column;
-gap: 0;
-max-height: none;
-position: absolute;
-left: 0;
-bottom: 0;
-z-index: 1;
-background: none;
-border: none;
-}
-.track::before {
-content: '';
-position: absolute;
-top: 0;
-left: 0;
-bottom: 0;
-right: 0;
-background: var(--dark-sidebar);
-backdrop-filter: blur(30px);
-z-index: -1;
-mask: linear-gradient(to top, black, black 60%, transparent);
-}
-.flex.controls, .flex.volume, .flex.playing-song {
-display: none;
-}
-.playing-song {
-width: 95%;
-height: var(--height);
-display: flex;
-align-items: center;
-gap: 10px;
-padding: 5px;
-border-radius: .75rem;
-}
-.playing-song > p {
-width: 100%;
-max-width: 100%;
-font-size: var(--fz-xl);
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-}
-.playing-song > button, .playing-song > .icon {
-height: 100%;
-padding: 15px;
-aspect-ratio: 1/1;
-}
-.playing-song > .icon {
-opacity: .4;
-padding: 8px;
-}
-.playing-song .cover {
-padding: 10px;
-}
-.cover {
---cover-color: var(--dark-fullscreen); 
-border-radius: .4rem;
-}
-.tabs {
-width: 100%;
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-gap: 0;
-padding: 10px 20px 2rem;
-color: #7c7c7c;
-}
-.controls {
-font-size: var(--fz-xl);
-color: #e84f6a;
-padding: 4rem 15px 10px;
-grid-area: 1 / 1 / 2 / -1;
-z-index: 2;
-background: var(--dark-fullscreen);
-backdrop-filter: blur(var(--blur)); 
-}
-.controls button, .controls .flex .icon {
-opacity: .4;
-}
-.controls button {
-text-align: center;
-padding: 0;
-width: fit-content;
-padding: 5px;
-display: flex;
-align-items: center;
-gap: 4px;
-}
-.controls > .flex {
-justify-content: flex-end;
-gap: 15px;
-}
-.controls .round {
-height: 100%;
-}
-.controls .icon {
---height: 19px;
-aspect-ratio: 1/1;
-}
-.controls .active {
-opacity: 1;
-}
-.controls h2, .controls button {
-max-width: 100%;
-overflow: hidden;
-white-space: nowrap;
-text-overflow: ellipsis;
-}
-.controls h2 {
-margin-inline: auto;
-color: white;
-font-size: inherit;
-max-width: 25ch;
-}
-.grid {
-display: grid;
-grid-template-columns: 1fr max-content 1fr;
-align-items: center;
-}
-.placement {
-grid-template-columns: 1fr;
-gap: 0;
-}
-.album {
---height: 75px;
---padding-inline: 15px;
---padding-block: 5px;
---gap: 15px;
---cover-height: calc(var(--height) - var(--padding-block) * 2);
---width: calc(100% - var(--cover-height) - var(--gap) - var(--padding-inline));
-height: var(--height);
-flex-direction: row;
-align-items: center;
-gap: var(--gap);
-padding: var(--padding-block) var(--padding-inline);
-font-size: var(--fz-xl);
-position: relative;
-}
-.album > .icon {
---height: 15px;
-opacity: .4;
-margin-left: auto;
-}
-.album::before, .presentation::before, .song-line::before { 
-content: '';
-position: absolute;
-bottom: 0;
-right: 0;
-width: var(--width);
-height: 1px;
-background: #7c7c7c33;
-}
-.album:focus, .album:focus-within {
-background: var(--light-grey-track);
-}
-.album:focus::before, .album:focus-within::before {
-opacity: 0;
-}
-.presentation {
---padding: 15px;
---width: calc(100% - var(--padding));
-position: relative;
-display: flex;
-flex-direction: column;
-align-items: center;
-padding: var(--padding);
-margin: 0;
-gap: 0;
-}
-.presentation > h3 {
-font-size: var(--fz-xl);
-}
-.presentation > p {
-opacity: .4;
-font-size: var(--fz-s);
-}
-.presentation > p:last-of-type {
-margin-right: auto;
-font-size: var(--fz-m);
-}
-.presentation .cover {
-height: 225px;
-margin-bottom: 15px;
-border-radius: .4rem;
-}
-.presentation > .flex {
-width: 100%;
-display: flex;
-gap: 15px;
-}
-.presentation .action {
-width: 100%;
-padding: 10px;
-margin-block: 15px;
-font-size: var(--fz-xl);
-gap: 5px;
-background: var(--dark-fullscreen);
-color: #e84f6a;
-}
-.presentation .action > .icon {
---height: 15px;
-}
-.song-line {
---height: 50px;
---padding-inline: 15px;
---padding-block: 5px;
---gap: 5px;
---cover-height: calc(var(--height) - var(--padding-block) * 2);
---width: calc(100% - var(--cover-height) - var(--gap) * 2 - var(--padding-inline));
-height: var(--height);
-padding: var(--padding-block) var(--padding-inline) var(--padding-block) 5px;
-grid-template-columns: min-content min-content 1fr 15px;
-gap: var(--gap);
-position: relative;
-font-size: var(--fz-m);
-}
-.song-line p {
-opacity: .4;
-}
-.song-line .title {
-font-size: var(--fz-l);
-color: #fff;
-}
-.song-line > .flex {
-flex-direction: column;
-align-items: flex-start;
-gap: 2px;
-}
-.song-line .cover {
-padding: 8px;
-}
-.song-line > .icon {
---height: 13px;
-}
-.song-line > .icon:first-of-type {
---height: 10px;
-} 
-.song-line .on-hover {
-visibility: visible;
-}
-.active * {
-color: #e84f6a;
-}
-}*/
 </style>

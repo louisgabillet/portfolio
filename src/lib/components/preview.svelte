@@ -52,7 +52,7 @@ onMount(async () => {
 })
 </script>
 
-<div class="app-grid">
+<div class="app__grid">
     {#if $isResponsive}
         <div class="controls grid">
             <span class="icon">
@@ -62,7 +62,7 @@ onMount(async () => {
             <button class="ok-btn" on:click={() => appWindow.close(lastAppWindow.id) }>OK</button>
         </div> 
     {/if}
-    <div class="app-controls">
+    <div class="controls app__controls app__controls--full">
         {#if $isResponsive}
             <span class="icon">
                 <Svg name='square_and_arrow_up' color='#0A82FF' />
@@ -74,40 +74,40 @@ onMount(async () => {
                 <Svg name='magnifyingglass' color='#0A82FF' />
             </span>
         {:else} 
-            <span class="icon">
-                <Svg name='sidebar_left' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='sidebar_left' />
             </span>
             <p>{fileName}</p>
-            <span class="icon">
-                <Svg name='info_circle' color='#7c7c7c'/>
+            <span class="controls__item">
+                <Svg name='info_circle' />
             </span>
-            <span class="icon">
-                <Svg name='plus_magnifyingglass' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='plus_magnifyingglass' />
             </span>
-            <span class="icon">
-                <Svg name='minus_magnifyingglass' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='minus_magnifyingglass' />
             </span>
-            <span class="icon icon-big"> 
-                <Svg name='square_and_arrow_up' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='square_and_arrow_up' />
             </span>
-            <span class="icon space-a">
-                <Svg name='highlighter' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='highlighter' />
             </span>
-            <span class="icon icon-big">
-                <Svg name='rotate_left' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='rotate_left' />
             </span>
-            <span class="icon">
-                <Svg name='pencil_tip_crop_circle' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='pencil_tip_crop_circle' />
             </span>
-            <span class="icon space-r">
-                <Svg name='rectangle_and_pencil_and_ellipsis' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='rectangle_and_pencil_and_ellipsis' />
             </span>
-            <span class="icon">
-                <Svg name='magnifyingglass' color='#7c7c7c' />
+            <span class="controls__item">
+                <Svg name='magnifyingglass' />
             </span>
         {/if}
     </div>
-    <div class="app-content" class:center-content={ img_id && openedImg }>
+    <div class="content app__content" class:center-content={ img_id && openedImg }>
         {#if img_id && openedImg}
             <Img 
                 src={openedImg.src} 
@@ -223,17 +223,17 @@ onMount(async () => {
 </div>
 
 <style>
-.app-grid {
+.app__grid {
     grid-template-columns: 1fr;
 }
-.app-controls {
+.app__controls {
     grid-column: 1 / -1;
 }
-.app-controls p {
+.app__controls p {
     font-size: var(--fz-xs);
     margin-right: auto;
 }
-.app-controls .icon {
+.app__controls .icon {
     opacity: .4;
 }
 .icon-big {
@@ -335,7 +335,7 @@ img {
     place-content: center;
     text-align: center;
 }
-.controls {
+/*.controls {
     font-size: var(--fz-xl);
     color: #0A82FF;
     padding: 4rem 15px 10px;
@@ -344,7 +344,7 @@ img {
     background: var(--dark-fullscreen);
     backdrop-filter: blur(var(--blur)); 
     gap: 8px;
-}
+}*/
 .controls button {
     padding: 5px;
 }

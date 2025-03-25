@@ -390,7 +390,7 @@ a {
     --icon-size: 10px;
     display: grid;
     grid-template-columns: var(--icon-size) 1fr;
-    grid-template-rows: var(--icon-size);
+    /*grid-template-rows: var(--icon-size);*/
     gap: 5px;
 }
 .sidebar__item--desactivated {

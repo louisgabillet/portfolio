@@ -3,41 +3,14 @@ import { onDestroy, onMount } from 'svelte';
 import { isResponsive } from '$lib/store';
 import { apps } from '$lib/apps'
 import type { App } from '$lib/apps/types';
+import appWindow from '$lib/apps/window-management';
+import appWindows from '$lib/apps/window-management/store';
+import type { AppWindow } from '$lib/apps/window-management/types';
 import Shortcut from '$lib/components/shortcut.svelte';
 import Svg from '$lib/components/svg.svelte';
 import Loader from '$lib/components/loader.svelte';
 import Toaster from '$lib/components/toaster.svelte';
-
-import { player } from '$lib/audio/player';
-import { players } from '$lib/audio/player/store';
-import { songs } from '$lib/audio/songs';
-
-import appWindow from '$lib/apps/window-management';
-import appWindows from '$lib/apps/window-management/store';
-import type { AppWindow } from '$lib/apps/window-management/types';
-
-const playerName = 'test';
-const audioUrls = songs.map(song => song.url); 
-
-const playerName2 = 'abcd';
-const audio2 = player({
-    name: playerName2,
-    buffer: audioUrls,
-});
-$: _player2 = $players[playerName2];
-$: ({ paused: paused2, loop: loop2, volume: volume2, duration: duration2, time: audioTime2 } = audio2);
-
-const audio = player({
-    name: 'test',
-    buffer: audioUrls,
-});
-$: _player = $players[playerName];
-
-
-const { track } = audio;
-$: ({ paused, loop, volume, duration, time: audioTime } = audio);
-
-//$: console.log($players);
+	import { toast } from '$lib/toast';
 
 const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
     lock_screen: {
@@ -153,30 +126,7 @@ function openFullscreen() {
     {#if !isPageLoaded}
         <Loader /> 
     {/if}
-    <!--<button on:click={() => player.start(_player, 0)}>START</button>
-    <button on:click={() => player.play(_player)}>{$paused ? 'PLAY' : 'PAUSE'}</button>
-    <button on:click={() => player.loop(_player)}>LOOP {$loop ? 'ON' : 'OFF'}</button>
-    <button on:click={() => player.volume(_player, 0)}>VOLUME 0%</button>
-    <button on:click={() => player.volume(_player, 100)}>VOLUME 100%</button>
-    <button on:click={() => player.previous(_player)}>PREVIOUS</button>
-    <button on:click={() => player.next(_player)}>NEXT</button>
-    <button on:click={() => player.remove(_player)}>REMOVE</button>
-    <label for="">Volume: { $volume } <input class="input-volume" type="range" bind:value={ $volume } aria-valuenow={ $volume } on:input={() => player.volume(_player, $volume)}></label>
-    <label for="">Current Time: { $audioTime.current } / { $audioTime.remaining } ({ $duration.formatted })</label>
-    <input type="range" step="1" min="0" max={ $duration.raw } bind:value={ $audioTime.raw } aria-valuenow={ $audioTime.raw } on:input={() => player.time(_player, $audioTime.raw)}>
-
-    <button on:click={() => player.start(_player2, 0)}>START</button>
-    <button on:click={() => player.play(_player2)}>{$paused2 ? 'PLAY' : 'PAUSE'}</button>
-    <button on:click={() => player.loop(_player2)}>LOOP {$loop2 ? 'ON' : 'OFF'}</button>
-    <button on:click={() => player.volume(_player2, 0)}>VOLUME 0%</button>
-    <button on:click={() => player.volume(_player2, 100)}>VOLUME 100%</button>
-    <button on:click={() => player.previous(_player2)}>PREVIOUS</button>
-    <button on:click={() => player.next(_player2)}>NEXT</button>
-    <button on:click={() => player.remove(_player2)}>REMOVE</button>
-    <label for="">Volume: { $volume2 } <input class="input-volume" type="range" bind:value={ $volume2 } aria-valuenow={ $volume2 } on:input={() => player.volume(_player2, $volume2)}></label>
-    <label for="">Current Time: { $audioTime2.current } / { $audioTime2.remaining } ({ $duration2.formatted })</label>
-    <input type="range" step="1" min="0" max={ $duration2.raw } bind:value={ $audioTime2.raw } aria-valuenow={ $audioTime2.raw } on:input={() => player.time(_player2, $audioTime2.raw)}>-->
-
+    <button on:click={() => toast({appName: 'Mail', title: 'title', message: 'message' })}>toast</button>
     <div class="commands main__commands">
         <button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
             {#if isFullscreen}
@@ -299,7 +249,9 @@ function openFullscreen() {
                             {/each}
                         </div>
                         {#if $isResponsive}
-                            <button class="home-btn desktop__home-btn transition-320-ease" class:hidden={ !isPowerOn } on:click={ homeButtonAction }></button> 
+                            <button class="home-btn desktop__home-btn transition-320-ease" title="Revenir à la page d'accueil" class:hidden={ !isPowerOn || $appWindows.length === 0 } on:click={ homeButtonAction }>
+                                <div class="home-btn__bar"></div>
+                            </button>
                         {/if}
                     </div>
                 </div>
@@ -432,32 +384,11 @@ function openFullscreen() {
 }
 .device__screen {
     grid-area: 1/1;
+    /*filter: saturate(1.5);*/
 }
 .background {
     width: 100%;
     height: 100%;
-}
-.notif-center {
-    z-index: 1000;
-    padding: 5px 15px;
-    display: flex;
-    flex-direction: column-reverse;
-}
-.screen__notif-center {
-    position: absolute;
-    top: 2rem;
-    right: 0;
-    width: 280px;
-}
-.notif-center--hidden {
-    display: none;
-}
-.notif-wrapper {
-    position: relative;
-    height: var(--notif-wrapper--height);
-    margin-bottom: var(--notif-wrapper--margin-b);
-    display: grid;
-    transition: height 320ms ease, margin 320ms ease;
 }
 .screen__background {
     position: absolute;
@@ -518,31 +449,21 @@ function openFullscreen() {
     margin: auto;
 }
 .home-btn {
-    width: 4rem;
-    background-color: #232323;
-    aspect-ratio: 1 / 1;
-    border-radius: 50%;
-    margin: auto;
-}
-.home-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    margin: auto;
-    width: 2rem;
-    aspect-ratio: inherit;
-    border-radius: inherit;
-    background-color: #cacaca;
-    box-shadow: 
-        0 0 0 4px #838383,
-        0 0 0 8px #535353;
+    width: 32%;
+    padding: 10px;
 }
 .desktop__home-btn {
     position: absolute;
-    bottom: 8%;
+    bottom: 0px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 999;
+    z-index: 9999;
+}
+.home-btn__bar {
+    width: 100%;
+    height: 5px;
+    background-color: #fff;
+    border-radius: 10px;
 }
 .commands {
     display: flex;

@@ -216,9 +216,6 @@ export function pass(player: Player, direction: -1 | 1) {
     const index = get(player.audio.random) ? pickerManager[player.name].getRandom(+currentIndex) : +currentIndex + direction; 
     const willPlay = buff[index];
 
-    console.log('currentIndex', currentIndex);
-    console.log('index', index);
-
     if (!willPlay) {
         stop(player);
         console.log('Buffered audio not found');
