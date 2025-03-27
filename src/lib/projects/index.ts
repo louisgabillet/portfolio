@@ -21,12 +21,10 @@ export async function loadProjects(): Promise<Project[]> {
             const projectName = splitName[splitName.length - 2];
 
             console.error(`Failed to load module at path: ${path}`, err);
-            setTimeout(() => {
-                toast.error({
-                    appName: 'Finder',
-                    title: `Chargement de '${projectName}'`,
-                    message: `Une erreur est survenue lors du chargement du projet: '${projectName}'. Veuillez réessayer.`,
-                })
+            toast.error({
+                appName: 'Finder',
+                title: `Chargement de '${projectName}'`,
+                message: `Une erreur est survenue lors du chargement du projet: '${projectName}'. Veuillez réessayer.`,
             })
             return null;
         }

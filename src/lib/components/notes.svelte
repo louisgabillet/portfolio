@@ -7,6 +7,7 @@ export let name: string = 'Qui Suis-Je ?';
 
 const options: Record<string, string> = { weekly: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 let activeName = $isResponsive ? '' : name;
+
 $: activeNote = notes.find((note) => note.name === activeName) ?? null;
 
 const dateText = (el: string) => new Date(el).toLocaleDateString('fr', options);
@@ -180,6 +181,9 @@ const sortByDate = () => {
 .app__controls--bg-black {
     background-color: #080808;
     outline: none;
+}
+.app__content {
+    user-select: text;
 }
 .sidebar__item {
     --padding-left: 12px;

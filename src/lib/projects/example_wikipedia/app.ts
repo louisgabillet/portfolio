@@ -16,19 +16,16 @@ const app = {
     children: [
         {
             name: 'Accéder au site',
-            type: 'Webloc',
+            type: 'Link',
             url: links.live_demo,
             src: images.logo,
             shortcut: true,
-            outside_link: true,
         },
         {
             dirName,
             name: links.live_demo,
-            //url: links.live_demo,
-            type: 'Webloc',
+            type: 'Safari',
             src: 'icons/document_http_hfxro5.png',
-            //pages: images.fullPage,
         },
         {
             name: 'Images',
@@ -52,7 +49,7 @@ const app = {
         {
             dirName,
             name: 'Étude de cas',
-            type: 'Document',
+            type: 'Preview',
             src: 'icons/document_pdf_qnerhq.png',
         },
     ],

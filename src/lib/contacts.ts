@@ -1,4 +1,4 @@
-import { PUBLIC_EMAIL } from "$env/static/public";
+import { PUBLIC_EMAIL, PUBLIC_NAME } from "$env/static/public";
 
 export interface Contact {
     letter: string,
@@ -18,7 +18,7 @@ interface ContactMethod {
 }
 const contacts: Contact[] = [
     { 
-        letter: 'Louis Gabillet', 
+        letter: PUBLIC_NAME, 
         //mobile: PUBLIC_TEL,
         mail: PUBLIC_EMAIL,
         note: 'Développeur Web indépendant.', 

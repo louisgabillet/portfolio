@@ -8,9 +8,8 @@ export interface AppWindow {
     created_at: number;
 	id: string;
     data: App,
+    state: 'moving' | 'fullscreen' | 'reduce', 
 }
-export type AppWindows = AppWindow[];
-
 export interface AppWindowOptions {
     limit?: number;
 }

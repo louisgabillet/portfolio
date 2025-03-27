@@ -1,5 +1,5 @@
 import { fail, type Actions } from '@sveltejs/kit';
-import { SECRET_KEY, SENDGRID_API_KEY } from '$env/static/private';
+import { SECRET_RECAPTCHA_KEY, SENDGRID_API_KEY } from '$env/static/private';
 import { PUBLIC_EMAIL } from '$env/static/public';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
@@ -82,15 +82,17 @@ export const actions: Actions = {
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `secret=${SECRET_KEY}&response=${token}`,
+                    body: `secret=${SECRET_RECAPTCHA_KEY}&response=${token}`,
                 }
             );
+
             const captchaData = await captchaVerification.json();
 
             if (!captchaData.success) {
                 data.content.title = 'Verification reCAPTCHA échouée';
                 data.content.message = 'Votre vérification reCAPTCHA a échouée. Veuillez réessayer ultérieuremment.';
                 data.opts.icon = '🚫'
+
                 return fail(400, data); 
             }
 
@@ -101,6 +103,7 @@ export const actions: Actions = {
                 data.content.title = 'Activité suspecte';
                 data.content.message = 'Vos actions ont été jugées suspecte (🤖). Veuillez réessayez ultérieuremment.';
                 data.opts.icon = '🚨'
+
                 return fail(403, data);
             }
 
@@ -125,14 +128,17 @@ export const actions: Actions = {
 
             try {
                 //await transporter.sendMail(mailOptions);
+                
                 data.success = true;
                 data.content.title = 'Email envoyé';
                 data.content.message = `Votre email m'a bien été envoyé. Merci 🙏`;
                 data.opts.icon = '🎉'
+
                 return data;
             } catch {
                 data.content.title = "Échec de l'envoi";
                 data.content.message = "L'envoi de votre email n'a pas pu être effectué. Veuillez réessayez ultérieuremment.";
+
                 return fail(400, data);
             }
 
@@ -140,6 +146,7 @@ export const actions: Actions = {
             data.content.title = 'Erreur du serveur';
             data.content.message = "Le serveur à connu une erreur. Veuillez réessayez ultérieuremment.";
             data.opts.icon = '💥'
+
             return fail(500, data);
         }
 

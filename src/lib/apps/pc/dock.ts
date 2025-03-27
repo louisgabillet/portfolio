@@ -1,3 +1,4 @@
+import { PUBLIC_USERNAME } from "$env/static/public";
 import { type App } from "../types";
 
 const pcDock: App[] = [
@@ -41,11 +42,11 @@ const pcDock: App[] = [
         name: 'Téléchargements',
         type: 'Finder',
         src: 'icons/folder_downloads_fjswrg.png',
-        path: ['Macintosh HD', 'Utilisateur', 'louisgabillet', 'Téléchargements'],
+        path: ['Macintosh HD', 'Utilisateur', PUBLIC_USERNAME, 'Téléchargements'],
         shortcut: true,
     },
     {
-        name: 'Bin',
+        name: 'Poubelle',
         type: 'Finder',
         src: 'icons/trash_empty_atuxjv.png',
         path: ['Poubelle'],

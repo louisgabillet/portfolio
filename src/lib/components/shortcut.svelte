@@ -1,51 +1,40 @@
 <script lang="ts">
 import { isResponsive } from "$lib/store";
-import type { FileSystem } from "$lib/filesystem";
 import Svg from "./svg.svelte";
 import Img from "./img.svelte";
 import type { App } from "$lib/apps/types";
 import appWindows from "$lib/apps/window-management/store";
-import { Image } from "@unpic/svelte";
+import type { FileChildren } from "$lib/filesystem";
 
-export let app: App & { outside_link: string };
+export let app: App & { children?: FileChildren[] };
 export let action: () => void;
 export let dock: boolean = false;
 export let bold: boolean = false;
 
 const alwaysOpen: string[] = ['Finder', 'Music'];
 
-$: isOutsideLink = app?.outside_link;
-$: isDesactivated= app?.desactivated;
 $: tag = isOutsideLink ? 'a' : 'div';
-$: link_attr = {
-    href: app?.url,
-    target: '_blank',
-}
+$: link_attr = isOutsideLink && app?.url ? { href: app?.url, target: '_blank' } : {};
+$: appNameAttr = dock ? { 'data-app-name': app.type } : {};
+
+$: isOutsideLink = app.type === 'Link';
+$: isDesactivated= app?.desactivated;
+$: isOpen = !app?.shortcut && (alwaysOpen.indexOf(app.type) !== -1 || $appWindows.some(w => w.data.type === app.type)); 
 
 const actionHandler = () => {
     if (isOutsideLink || isDesactivated) return;
     action();
-}
-
-$: isOpen = (app: FileSystem) => {
-    const { type, shortcut } = app;
-
-    if (shortcut) return false;
-
-    const indexAlwaysOpen = alwaysOpen.indexOf(type);
-    if (indexAlwaysOpen !== -1) return true;
-
-    return $appWindows.some(w => w.data.type === type); 
 }
 </script>
 
 
 <svelte:element 
     this={tag} 
-    {...(isOutsideLink && app?.url ? {...link_attr} : {})}  
+    {...link_attr}  
     class="shortcut"  
     class:shortcut--desactivated={ isDesactivated }
     class:dock__shortcut={ dock }
+    {...appNameAttr}  
 >
     {#if $isResponsive || dock}
         <button 
@@ -57,17 +46,10 @@ $: isOpen = (app: FileSystem) => {
                 src={app.src}
                 alt="Icône '{app.type}'"
             />
-            <!--<img src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{app.src}' alt="" style="visibility: {isImgLoaded ? 'visible' : 'hidden'};" on:load={() => isImgLoaded = true }>-->
-            <!--<Image
-                src={`https://res.cloudinary.com/dejb4brmy/image/upload/portfolio/images/${app.src}`}
-                width={160}
-                height={160}
-                alt={app.app_name}
-            />-->
         </button>
         <button class="shortcut__btn" on:click={ actionHandler }> 
             {#if dock && !$isResponsive}
-                <span class="shortcut__dot" style="{isOpen(app) ? '' : 'display: none'}"></span>
+                <span class="shortcut__dot" style="{isOpen ? '' : 'display: none'}"></span>
             {:else if !dock}
                 <span class="shortcut__text-overflow">
                     <span title="{app.name}" class="shortcut__name" class:shortcut__name--color-blue={ tag === 'a' }> 
@@ -76,7 +58,7 @@ $: isOpen = (app: FileSystem) => {
                 </span>
             {/if}
         </button>
-        {#if app?.type === 'Folder'}
+        {#if app.type === 'Folder'}
             <p class="shortcut__p">{app.children?.length ?? 0} élément{app.children? 's' : ''}</p>
         {/if}
     {:else}
@@ -88,14 +70,6 @@ $: isOpen = (app: FileSystem) => {
                 src={app.src}
                 alt="Icône '{app.type}'"
             />
-            <!--<img src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{app.src}' alt="" style="visibility: {isImgLoaded ? 'visible' : 'hidden'};" on:load={() => isImgLoaded = true }>-->
-            <!--<Image
-                src={`https://res.cloudinary.com/dejb4brmy/image/upload/w_auto/portfolio/images/${app.src}`}
-                width={100}
-                height={100}
-                alt={app.app_name}
-                unstyled
-                />-->
             {#if app?.shortcut}
                 <span class="icon shortcut__icon">
                     <Svg name='arrowshape_turn_up_right_fill' color='#000' />
@@ -140,6 +114,8 @@ $: isOpen = (app: FileSystem) => {
 }
 .dock__shortcut {
     gap: 0;
+    position: relative;
+    overflow: visible;
 }
 .shortcut__btn {
     position: relative;

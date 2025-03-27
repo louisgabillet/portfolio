@@ -1,138 +1,158 @@
-import Window from "$lib/components/window.svelte";
 import { get, writable, type Writable } from "svelte/store";
-import type { AppWindow, AppWindowProps, AppWindows } from "./types";
+import type { AppWindow } from "./types";
 import { browser } from "$app/environment";
-import { SvelteComponent } from "svelte";
 import { toast } from "$lib/toast";
 import type { ToastContent } from "$lib/toast/types";
 
-type WindowManager = {
-    id: string,
-    type: string,
-    child: SvelteComponent<AppWindowProps>, 
-}
+type LimitError = {
+    appName: string,
+    title: string,
+    message: string,
+} 
+
 type LimitManager = Record<string, number>;
 type ToastManager = Record<string, boolean>;
+type ReducedManager = Record<string, AppWindow['id'][]>;
 
-const appWindows: Writable<AppWindows> = writable([])
+const appWindows: Writable<AppWindow[]> = writable([]);
 export default appWindows;
 
-const windowManager: WindowManager[] = []; 
-const limitManager: LimitManager = { global: 70 };
+const limitManager: LimitManager = { global: 100 };
 const toastManager: ToastManager = {};
+const reducedManager: ReducedManager = {}
 
-const showError = (limitName: string, log: string, toastContent: ToastContent) => {
-    console.log(log);
-
+const showError = (limitName: string, toastContent: ToastContent) => {
     if (toastManager[limitName]) {
         return;
     }
 
     toastManager[limitName] = true;
-    setTimeout(() => {
-        toast.blocked(toastContent);
-    })
+    toast.blocked(toastContent);
 }
 export function open(app: AppWindow) {
-    if (!browser) {
+    if (!browser) return;
+
+    const _appWindows = get(appWindows);
+    const type = app.data.type;
+
+    const fullscreenAppWindow: HTMLElement | null = document.querySelector('.app[data-fullscreen]'); 
+    const isReduced = reducedManager[app.data.type];
+
+    const exceedsGlobalLimit = _appWindows.length >= limitManager['global'];
+    const exceedsWindowLimit = get(appWindows).filter(app => app.data.type === type).length >= limitManager[type]; 
+
+
+    if (fullscreenAppWindow) {
+        const id = fullscreenAppWindow.dataset.windowId;
+        if (id) fullscreen(id);
+    }
+    if (isReduced) {
+        removeReduce(app.data.type);
+        return;
+    }
+    if (exceedsGlobalLimit) {
+        showError('global', { appName: 'Finder', title: 'Limite globale atteinte', message: `La limite globale de fenêtres ouvertes (${limitManager['global']}) a été atteinte.` });
+        return;
+    }
+    if (exceedsWindowLimit) {
+        showError(type, { appName: type, title: 'Limite atteinte', message: `La limite de fenêtres ouvertes (${limitManager[type]}) pour l'application "${type}" a été atteinte.` });
+
+        const lastAppWindow = _appWindows.findLast(w => w.data.type === type);
+        if (lastAppWindow) focus(lastAppWindow.id);
+
         return;
     }
 
-    if (windowManager.length >= limitManager['global']) {
-        showError(
-            'global',
-            'Global limit for windows reached',
-            {
-                appName: 'Finder',
-                title: 'Limite globale atteinte',
-                message: `La limite de fenêtres ouvertes (${limitManager['global']}) a été atteinte.`,
-            });
-
-        return;
-    }
-
-    const target = document.querySelector('.screen__desktop');
-    if (!target) {
-        console.log('Location for the window not found');
-        return;
-    };
-
-    const data = app.data;
-    const type = data.type;
-    const nbrWindowOpened = document.querySelectorAll(`[data-app-name='${type}']`)?.length ?? 0;
-
-    if (nbrWindowOpened + 1 > limitManager[type]) {
-        showError(
-            type,
-            `Limit of windows for '${type}' reached`, 
-            {
-                appName: type,
-                title: 'Limite atteinte',
-                message: `La limite de fenêtres ouvertes pour ${type} (${limitManager[type]}) a été atteinte.`,
-            });
-
-        const lastAppWindow = windowManager.findLast(w => w.type === type);
-        if (lastAppWindow) {
-            focus(lastAppWindow.id);
-        }
-
-        return;
-    }
-    
-    const child: SvelteComponent<AppWindowProps> = new Window({
-        target,
-        props: {
-            name: type,
-            appWindowId: app.id,
-            appInfos: data,
-        }
-    })
-
-    windowManager.push({ id: app.id, type, child }); 
     appWindows.update(($appWindows) => [...$appWindows, app]);
-
-    const newAppWindow = document.querySelector(`[data-app-window-id='${app.id}']`) as HTMLDivElement;
-    if (newAppWindow) {
-        newAppWindow.focus({ preventScroll: true });
-    }
+    setTimeout(() => focusWindow(app.id));
 }
 export function close(appWindowId: AppWindow['id']) {
-    const index = windowManager.findIndex(w => w.id === appWindowId);
-
-    if (index === -1) {
-        console.log(`No window found`);
-        return;
-    }
-
-    const appWindow = windowManager.splice(index, 1)[0];
-
-    appWindow.child.$destroy();
     appWindows.update(($appWindows) => $appWindows.filter(w => w.id !== appWindowId));
 }
 export function focus(appWindowId: AppWindow['id']) {
-    const lastWindow = windowManager[windowManager.length -1];
-    if (lastWindow.id === appWindowId) {
-        return;
-    }
+    const _appWindows = get(appWindows);
+    const lastWindow = _appWindows[_appWindows.length -1];
+    const index = _appWindows.findIndex(w => w.id === appWindowId);
 
-    const index = windowManager.findIndex(w => w.id === appWindowId);
-    if (index === -1) {
-        console.log(`No window found`);
-        return;
-    }
+    if (lastWindow.id === appWindowId || index === -1) return;
 
-    const extract = <T>(arr: T[]) => arr.splice(index, 1);
-
-    const [extractedFromManager] = extract(windowManager);
-    const [extractedFromAppWindows] = extract(get(appWindows));
-
-    windowManager.push(extractedFromManager);
+    const [ extractedFromAppWindows ] = get(appWindows).splice(index, 1);
     appWindows.update(($appWindows) => [...$appWindows.filter(w => w.id !== appWindowId), extractedFromAppWindows]);
 }
 export function limit(type: string, limit: number) {
-    if (limit === limitManager[type]) {
-        return;
-    }
+    if (limit === limitManager[type]) return;
 
     limitManager[type] = limit;
+}
+export function fullscreen(appWindowId: AppWindow['id']) {
+    const screen = document.querySelector('.device__screen') as HTMLElement | null;
+    const appWindow = document.querySelector(`[data-window-id='${appWindowId}']`) as HTMLElement | null;
+
+    [screen, appWindow].forEach(el => {
+        if (!el) return;
+
+        const fullscreen = el.dataset.fullscreen;
+
+        if (fullscreen !== undefined) {
+            el.removeAttribute('data-fullscreen');
+            return;
+        } 
+
+        el.dataset.fullscreen = '';
+    })
+}
+export function reduce(appWindowId: AppWindow['id'], appName: string) {
+    const screen: HTMLElement | null = document.querySelector('.device__screen[data-fullscreen]');
+    const isFullscreen: boolean = screen ? screen.dataset.fullscreen !== undefined : false;
+
+    if (isFullscreen) return;
+
+    const reduced = reducedManager[appName]; 
+    if (!reduced) reducedManager[appName] = [];
+
+    addReduce(appWindowId, appName);
+}
+const addReduce = (appWindowId: AppWindow['id'], appName: string) => {
+    const round = (n: number): string => (n).toFixed(5);
+
+    const dockApp = document.querySelector(`.dock__shortcut[data-app-name='${appName}']`);
+    const appWindow = document.querySelector(`.app[data-window-id='${appWindowId}']`) as HTMLElement;
+    const desktop = document.querySelector('.screen__desktop');
+
+    if (!dockApp || !appWindow || !desktop) return;
+
+    const { x: desktopX, y: desktopY } = desktop.getBoundingClientRect();
+    const { x: dockX, y: dockY, width: dockWidth, height: dockHeight } = dockApp.getBoundingClientRect();
+    const { width: appWidth, height: appHeight } = appWindow.getBoundingClientRect();
+
+    const properties = [
+        { name: '--reduce-left', value: `${round((dockX - desktopX) - (appWidth / 2) + (dockWidth / 2))}px` },
+        { name: '--reduce-top', value: `${round((dockY - desktopY) - (appHeight / 2) + (dockHeight / 2))}px` },
+        { name: '--reduce-scale', value: round(dockWidth / appWidth) },
+    ]
+
+    reducedManager[appName].push(appWindowId)
+    appWindow.dataset.reduce = '';
+    properties.forEach(p => appWindow.style.setProperty(p.name, p.value))
+}
+const removeReduce = (appName: string) => {
+    const reduced = reducedManager[appName];
+    const lastId: string = reduced[reduced.length - 1];
+    const properties = ['--reduce-left', '--reduce-top', '--reduce-scale']
+
+    const appWindow = document.querySelector(`.app[data-window-id='${lastId}']`) as HTMLElement;
+    if (!appWindow) return;
+
+    reducedManager[appName].pop();
+    if (reducedManager[appName].length === 0) delete reducedManager[appName];
+
+    focus(lastId);
+    setTimeout(() => focusWindow(lastId));
+
+    appWindow.removeAttribute('data-reduce');
+    properties.forEach(p => appWindow.style.removeProperty(p))
+}
+const focusWindow = (appWindowId: AppWindow['id']) => {
+    const focusedWindow: HTMLElement | null = document.querySelector(`.app[data-window-id='${appWindowId}'] > .app__container`);
+    if (focusedWindow) focusedWindow.focus({ preventScroll: true });
 }

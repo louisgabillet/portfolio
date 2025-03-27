@@ -1,4 +1,5 @@
 <script lang="ts">
+import { PUBLIC_NAME } from '$env/static/public';
 import { onDestroy, onMount } from 'svelte';
 import { isResponsive } from '$lib/store';
 import { apps } from '$lib/apps'
@@ -10,7 +11,7 @@ import Shortcut from '$lib/components/shortcut.svelte';
 import Svg from '$lib/components/svg.svelte';
 import Loader from '$lib/components/loader.svelte';
 import Toaster from '$lib/components/toaster.svelte';
-	import { toast } from '$lib/toast';
+import Window from '$lib/components/window.svelte';
 
 const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
     lock_screen: {
@@ -24,28 +25,11 @@ const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
         day: '2-digit',
     }
 }
+const maxWidthIphone: number = 1280;
+const pcAppsMap = new Map<string, App & { top_bar: string[] }>();
+
 const formatDate = (options: Intl.DateTimeFormatOptions) => new Date().toLocaleDateString('fr', options).replace(',', '');
 const formatTime = (time: number) => time.toString().padStart(2, '0');
-
-const maxWidthIphone: number = 1280;
-let windowWidth: number;
-let isPowerOn: boolean = false;
-let isFullscreen: boolean = false;
-let timeInterval: ReturnType<typeof setInterval>;
-let date: string = formatDate(dateOptions.lock_screen);
-let time: string; 
-
-let isPageLoaded: boolean = false;
-
-const pcAppsMap = new Map<string, App>();
-apps.pc.global.forEach(app => pcAppsMap.set(app.type, app));
-
-$: lastAppWindow = $appWindows[$appWindows.length - 1];
-$: topBarName = lastAppWindow ? lastAppWindow.data.type : 'Finder';
-$: topBarData = pcAppsMap.get(topBarName) ?? { name: '', top_bar: []};
-
-let language: string = 'Français';
-
 const updatedTime = () => {
     const now = new Date();
     const hours = formatTime(now.getHours());
@@ -58,10 +42,48 @@ const updatedTime = () => {
         date = formatDate(options);
     }
 }
+
+let timeInterval: ReturnType<typeof setInterval>;
+let date: string = formatDate(dateOptions.lock_screen);
+let time: string; 
+
+let windowWidth: number;
 let desktopContent: App[] = [];
 let dockContent: App[] = [];
+
+//let isFullscreen: boolean = false;
+let isPowerOn: boolean = false;
+let isPageLoaded: boolean = false;
+
+let language: string = 'Français';
+let screen: HTMLElement | undefined = undefined;
+
+$: lastAppWindow = $appWindows[$appWindows.length - 1];
+$: topBarName = lastAppWindow ? lastAppWindow.data.type : 'Finder';
+$: topBarData = pcAppsMap.get(topBarName) ?? { name: '', top_bar: []};
+
+apps.pc.global.forEach(app => pcAppsMap.set(app.type, app));
 updatedTime();
 
+onMount(() => {
+    screen = document.querySelector('.device__lock-screen') as HTMLElement;
+    if (screen) {
+        screen.addEventListener('click', () => {
+            isPowerOn = true;
+            date = formatDate(dateOptions.top_bar);
+        })
+    }
+
+    onWindowResize();
+    timeInterval = setInterval(updatedTime, 1000);
+
+    window.addEventListener('resize', onWindowResize)
+
+    isPageLoaded = true;
+})
+onDestroy(() => {
+    clearInterval(timeInterval);
+})
 
 const homeButtonAction = () => {
     if ($appWindows.length <= 0) {
@@ -72,29 +94,6 @@ const homeButtonAction = () => {
         appWindow.close(w.id)
     })
 }
-
-let screen: HTMLElement | undefined = undefined;
-
-
-onMount(() => {
-    screen = document.querySelector('.device__lock-screen') as HTMLElement;
-    screen?.addEventListener('click', () => {
-        isPowerOn = true;
-        date = formatDate(dateOptions.top_bar);
-    })
-
-    onWindowResize();
-    timeInterval = setInterval(updatedTime, 1000);
-
-    window.addEventListener('resize', onWindowResize)
-
-    isPageLoaded = true;
-})
-
-onDestroy(() => {
-    clearInterval(timeInterval);
-})
-
 const onWindowResize = () => {
     const isWindowSmaller = windowWidth <= maxWidthIphone;
 
@@ -111,13 +110,16 @@ const onWindowResize = () => {
         dockContent = dockContentUpdated;
     }
 }
-function openFullscreen() {
-    const screen = document.querySelector('.device__screen');
-    if (screen) {
-        isFullscreen = !isFullscreen;
-        screen.requestFullscreen();
-    }
-}
+//function openFullscreen() {
+//    const screen = document.querySelector('.device__screen');
+//
+//    if (!screen) {
+//        return;
+//    }
+//
+//    isFullscreen = !isFullscreen;
+//    screen.requestFullscreen();
+//}
 </script>
 
 <svelte:window bind:innerWidth={windowWidth}/>
@@ -126,15 +128,14 @@ function openFullscreen() {
     {#if !isPageLoaded}
         <Loader /> 
     {/if}
-    <button on:click={() => toast({appName: 'Mail', title: 'title', message: 'message' })}>toast</button>
     <div class="commands main__commands">
-        <button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
+        <!--<button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
             {#if isFullscreen}
                 <Svg name='fullscreen_off' color="#fff" />
             {:else} 
                 <Svg name='fullscreen_on' color="#fff" />
             {/if}
-        </button>
+        </button>-->
     </div>
     <section class="main__sect main__sect-1 transition-320-ease" class:hidden={ !isPageLoaded }>
         <div class='device'>
@@ -161,7 +162,7 @@ function openFullscreen() {
                         {#if !$isResponsive}
                             <div class="lock-screen__pp"></div>
                             <div>
-                                <h3 class="lock-screen__h3 lock-screen__text">Louis Gabillet</h3>
+                                <h3 class="lock-screen__h3 lock-screen__text">{PUBLIC_NAME}</h3>
                                 <h4 class="lock-screen__h3 lock-screen__text">Développeur Web</h4>
                             </div>
                         {/if}
@@ -240,6 +241,9 @@ function openFullscreen() {
                                 <Shortcut {app} action={() => appWindow(app)} bold /> 
                             {/each}
                         </div>
+                        {#each $appWindows as { id, data }, i (id)}
+                            <Window appWindowId={ id } name={ data.type } appInfos={ data } zIndex={ i } />   
+                        {/each}
                         <div class="dock desktop__dock {$isResponsive ? 'icons-placement' : 'desktop__dock--flex'} transition-320-ease" class:hidden={!isPowerOn} style="{$isResponsive && $appWindows.length > 0 ? 'z-index: -1' : ''}"> 
                             {#each dockContent as app, i}
                                 {#if i === dockContent?.length - 2 && !$isResponsive}
@@ -386,6 +390,13 @@ function openFullscreen() {
     grid-area: 1/1;
     /*filter: saturate(1.5);*/
 }
+.device__screen:global([data-fullscreen]) .screen__background,
+.device__screen:global([data-fullscreen]) .desktop__icons-placement {
+    transform: translateX(-100%);
+}
+.device__screen:global([data-fullscreen]) .desktop__dock {
+    transform: translateY(105%);
+}
 .background {
     width: 100%;
     height: 100%;
@@ -421,15 +432,16 @@ function openFullscreen() {
 }
 .dock {
     position: relative;
-    box-shadow: 0 0 6px 0 var(--color-shadow);
-    border-radius: .6rem;
+    border-radius: 1rem;
     background-color: #4A4A4A63; 
     backdrop-filter: blur(50px);
-    padding: 2px 2px 4px;
+    padding: 2px 2px 0;
+    border: 1px solid #4A4A4A63;
+    outline: 1px solid #1a1a1a;
 }
 .desktop__dock {
     max-width: var(--max-width);
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     z-index: 4;
 }
 .desktop__dock--flex {
@@ -475,14 +487,14 @@ function openFullscreen() {
     right: 1%;
     z-index: 1000;
 }
-.commands__btn {
+/*.commands__btn {
     height: 15px;
     aspect-ratio: 1/1;
 }
 .commands__btn--desactivated {
     opacity: .4;
     pointer-events: none;
-}
+}*/
 .top-bar {
     width: 100%;
     background-color: #0000002E;
@@ -554,33 +566,6 @@ to {
 }
 }
 
-.float-name {
-    position: absolute;
-    top: -1.75rem;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    display: none;
-    padding: 2.5px 10px;
-    background-color: #4A4A4A63; 
-    backdrop-filter: blur(50px);
-    border-radius: 2px;
-}
-.app:hover .float-name {
-    display: inline;
-}
-.triangle {
-    width: 0;
-    height: 0;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 5px solid #4A4A4A63;
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
 @media (max-width: 1280px) {
     .device__placement {
         padding: 6.5%; 
@@ -593,7 +578,7 @@ to {
     }
     .screen {
         grid-template-rows: 1fr;
-        border-radius: .75rem;
+        border-radius: 1rem;
     }
     .screen__desktop {
         --max-width: 100%;
@@ -619,7 +604,7 @@ to {
         top: 2.5%;
         background: transparent;
         backdrop-filter: none;
-        z-index: 1000;
+        z-index: 1000
     }
     .top-bar__p {
         font-size: var(--fz-xl);

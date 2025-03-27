@@ -7,6 +7,7 @@ import { player } from "$lib/audio/player";
 import { players } from '$lib/audio/player/store';
 import { onMount } from "svelte";
 import SoundBars from "./soundBars.svelte";
+import type { PlayerData } from "$lib/audio/player/types";
 
 interface NavBtn {
     name: string,
@@ -16,6 +17,17 @@ interface NavBtn {
     active?: boolean,
     playlist_id?: string;
 }
+
+const playlistNavBtns: NavBtn[] = playlists.map(playlist => (
+    {
+        name: playlist.metadata.name,
+        svg_name: playlist.visual.nav_btn.name ?? 'music_note_list',
+        color: playlist.visual.nav_btn.color ?? '#a1a1a1',
+        background_color: playlist.visual.cover.background_color ?? '#6e6e6e',
+        active: true,
+        playlist_id: playlist.id,
+    }
+))
 const navBtns: NavBtn[]  = [
     { 
         name: 'Écouter',
@@ -67,93 +79,17 @@ const navBtns: NavBtn[]  = [
         title: 'Playlists',
         active: true, 
     },
-    ...playlists.map(playlist => (
-        {
-            name: playlist.metadata.name,
-            svg_name: playlist.visual.nav_btn.name ?? 'music_note_list',
-            color: playlist.visual.nav_btn.color ?? '#a1a1a1',
-            background_color: playlist.visual.cover.background_color ?? '#6e6e6e',
-            active: true,
-            playlist_id: playlist.id,
-        }
-    ))
+    ...playlistNavBtns,
 ]
 
-const timeToSeconds = (time: string): number => {
-    const [minutes, seconds] = time.split(':').map(Number);
-    return minutes * 60 + seconds;
-}
-
-const getAproximateTime = (songs: Song[]) => {
-    const isPlural = (el: number) => el > 1 ? 's' : '';
-    const totalSeconds = songs.reduce((acc, obj) => acc + timeToSeconds(obj.metadata.duration), 0);
-
-    const days = totalSeconds/ 86400;
-    const hours = totalSeconds / 3600; 
-    const minutes = totalSeconds / 60; 
-
-    if (minutes < 60) {
-        return `${Math.round(minutes)} minute${isPlural(minutes)}`;
-    } 
-    if (hours < 24) {
-        return `${(hours).toFixed(2)} hour${isPlural(hours)}`;
-    }
-
-    return `${(days).toFixed(2)} day${isPlural(days)}`;
-}
-let tabName: string = 'Toutes les playlists';
-
-const onTabClick = (name: string, playlistId: string | undefined) => {
-    tabName = name
-    changeSessionStorage('music-tab-name', name);
-
-    if (!playlistId) {
-        closePlaylist();
-        return;
-    }
-
-    const playlist = playlistMap.get(playlistId);
-    if (playlist) {
-        openPlaylist(playlist);
-    }
-}
-
 const songMap = new Map<string, Song>();
-songs.forEach(song => songMap.set(song.id, song));
-
 const playlistMap = new Map<string, Playlist>();
-playlists.forEach(pl => playlistMap.set(pl.id, pl));
 
-$: defaultCoverPlaylist = {
-    name: $isResponsive ? 'music_note_list' : 'music_double_note',
-    color: $isResponsive ? '#7c7c7c' : '#a1a1a1',
-    background_color: $isResponsive ? '#21211F' : '#6E6E6E',
-}
 const defaultCoverSong = {
     name: 'music_double_note',
     color: '#a1a1a1',
     background_color: '#6E6E6E',
 }
-
-$: areControlsActive = playingSong && $audioDuration.raw > 0;
-$: openedPlaylistIsPlaying = playingPlaylist && openedPlaylist ? playingPlaylist.id === openedPlaylist.id : false;
-
-$: console.log(openedPlaylistIsPlaying);
-
-let isPlaylistOpen: boolean = false;
-
-let openedPlaylist: Playlist; 
-let openedPlaylistMetadata: Playlist['metadata'];
-let openedPlaylistCover: Playlist['visual']['cover']; 
-
-$: audioBuffer = _player.buffer;
-let buffer: Song[] = songs; 
-
-let playingPlaylist: Playlist;
-let playingSong: Song;
-let playingSongIndex: number = 0;
-let playingSongName: string;
-let playingSongArtist: string;
 
 const playerName = 'Music';
 const audio = player({
@@ -161,8 +97,35 @@ const audio = player({
     buffer: songs,
 });
 
+let tabName: string = 'Toutes les playlists';
+let isPlaylistOpen: boolean = false;
+let buffer: Song[] = songs; 
+
+let openedPlaylist: Playlist; 
+let openedPlaylistMetadata: Playlist['metadata'];
+let openedPlaylistCover: Playlist['visual']['cover']; 
+
+let playingPlaylist: Playlist;
+let playingSong: Song;
+let playingSongIndex: number = 0;
+let playingSongName: string;
+let playingSongArtist: string;
+
+$: defaultCoverPlaylist = {
+    name: $isResponsive ? 'music_note_list' : 'music_double_note',
+    color: $isResponsive ? '#7c7c7c' : '#a1a1a1',
+    background_color: $isResponsive ? '#21211F' : '#6E6E6E',
+}
+
+$: audioBuffer = _player.buffer;
 $: _player = $players[playerName];
 $: ({ paused, loop, random, volume, duration: audioDuration, time: audioTime } = audio);
+
+$: areControlsActive = playingSong && $audioDuration.raw > 0;
+$: openedPlaylistIsPlaying = playingPlaylist && openedPlaylist ? playingPlaylist.id === openedPlaylist.id : false;
+
+songs.forEach(song => songMap.set(song.id, song));
+playlists.forEach(pl => playlistMap.set(pl.id, pl));
 
 onMount(() => {
     const storedPlayistId = sessionStorage.getItem(`music-playlist-open`);
@@ -190,13 +153,52 @@ onMount(() => {
             return;
         }
 
-        buffer = $audioBuffer;
+        buffer = $audioBuffer as Song[];
         playingPlaylist = openedPlaylist;
         getPlayingSong(+audioIndex);
     }
 
 })
 
+
+const compareArrays = (a: PlayerData['buffer'], b: Song[]) => a.length === b.length && a.every((element, index) => element === b[index]);
+
+const timeToSeconds = (time: string): number => {
+    const [minutes, seconds] = time.split(':').map(Number);
+    return minutes * 60 + seconds;
+}
+const getAproximateTime = (songs: Song[]) => {
+    const isPlural = (el: number) => el > 1 ? 's' : '';
+    const totalSeconds = songs.reduce((acc, obj) => acc + timeToSeconds(obj.metadata.duration), 0);
+
+    const days = totalSeconds/ 86400;
+    const hours = totalSeconds / 3600; 
+    const minutes = totalSeconds / 60; 
+
+    if (minutes < 60) {
+        return `${Math.round(minutes)} minute${isPlural(minutes)}`;
+    } 
+    if (hours < 24) {
+        return `${(hours).toFixed(2)} hour${isPlural(hours)}`;
+    }
+
+    return `${(days).toFixed(2)} day${isPlural(days)}`;
+}
+
+const onTabClick = (name: string, playlistId: string | undefined) => {
+    tabName = name
+    changeSessionStorage('music-tab-name', name);
+
+    if (!playlistId) {
+        closePlaylist();
+        return;
+    }
+
+    const playlist = playlistMap.get(playlistId);
+    if (playlist) {
+        openPlaylist(playlist);
+    }
+}
 const changeSessionStorage = (name: string, newValue: string) => {
     const stored = sessionStorage.getItem(name);
 
@@ -206,7 +208,6 @@ const changeSessionStorage = (name: string, newValue: string) => {
 
     sessionStorage.setItem(name, newValue);
 }
-
 const openPlaylist = (playlist: Playlist) => {
     isPlaylistOpen = true;
 
@@ -258,9 +259,6 @@ const updateBuffer = () => {
 
     player.buffer(_player, buffer);
 }
-
-const compareArrays = (a: string[], b: string[]) => a.length === b.length && a.every((element, index) => element === b[index]);
-
 const handleStart = (songIndex: number, start: boolean = false, noRandom: boolean = false) => {
     if (buffer.length === 0) {
         console.log('no buffered songs');

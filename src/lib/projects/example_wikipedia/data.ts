@@ -36,14 +36,14 @@ const data: Data = {
             {
                 img_id: '1',
                 name: `Page d'accueil`,
-                type: 'Image',
+                type: 'Preview',
                 src: `projects/example_wikipedia/pc/home_tkxqmr.png`,
                 pc: true,
             },
             {
                 img_id: '2',
                 name: `Page d'accueil`,
-                type: 'Image',
+                type: 'Preview',
                 src: `projects/example_wikipedia/mobile/home_il6jic.png`,
                 mobile: true,
             }

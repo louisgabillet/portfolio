@@ -2,12 +2,17 @@ import { type App } from "../types";
 import Pricing from "$lib/components/pricing.svelte";
 
 const mobileDesktop: App[] = [
+    //{
+    //    name: 'Projets',
+    //    type: 'Finder',
+    //    src: 'icons/folder_ptfrl4.png',
+    //    path: ['iCloud Drive', 'Projets'],
+    //    shortcut: true,
+    //},
     {
-        name: 'Projets',
+        name: 'Fichiers',
         type: 'Finder',
-        src: 'icons/folder_ptfrl4.png',
-        path: ['iCloud Drive', 'Projets'],
-        shortcut: true,
+        src: 'icons/Files_molorj',
     },
     {
         name: 'Notes',

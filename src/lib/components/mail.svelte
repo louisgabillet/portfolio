@@ -1,38 +1,52 @@
+<script lang='ts' context='module'>
+declare const grecaptcha: any;
+</script>
+
 <script lang="ts">
-import { PUBLIC_SITE_KEY, PUBLIC_EMAIL } from "$env/static/public";
+import { PUBLIC_RECAPTCHA_KEY, PUBLIC_EMAIL } from "$env/static/public";
 import { isResponsive  } from "$lib/store";
-import { applyAction, deserialize, enhance } from '$app/forms';
+import { applyAction, deserialize } from '$app/forms';
 import type { ActionResult } from "@sveltejs/kit";
 import Svg from "./svg.svelte";
-	import { page } from "$app/stores";
-	import { invalidateAll } from "$app/navigation";
-	import { onMount } from "svelte";
-	import { object } from "zod";
-	import { toast } from "$lib/toast";
+import { invalidateAll } from "$app/navigation";
+import { toast } from "$lib/toast";
+import type { ToastContent, ToastOptions } from "$lib/toast/types";
 
-const key = PUBLIC_SITE_KEY;
+type Form = {
+    success: boolean,
+    send_notification: boolean,
+    content: ToastContent,
+    opts: ToastOptions,
+    errors: {
+        subject?: string[],
+        email?: string[],
+        text?: string[],
+        content?: string[],
+    }
+}
+
+const recaptchaPublicKey = PUBLIC_RECAPTCHA_KEY;
+
+let form: Form | null = null;
+
 //let cc: string = '';
 let subject: string = '';
 let email: string = '';
 let text: string = '';
 
-//$: linkToMailMe = `mailto:gabillet.louis@gmail.com?cc=${cc}&subject=${subject}&body=${text}`
 $: linkToMailMe = `mailto:${PUBLIC_EMAIL}?subject=${subject}&body=${text}`
-
-//$: form = $page.form;
-let form: Record<string, any>|null = null;
-$: errors = form?.errors;
+$: errors = form ? form.errors : null;
 
 $: isFormComplete = [subject, email, text].every(value => value);
 
 const getCaptchaToken = async () => {
     return new Promise<string | null>(resolve => {
         grecaptcha.ready(async () => {
-            if (!key) {
+            if (!recaptchaPublicKey) {
                 resolve(null);
                 return;
             }
-            const token = await grecaptcha.execute(key, { action: "submit" })
+            const token = await grecaptcha.execute(recaptchaPublicKey, { action: "submit" })
             resolve(token)
         })
     });
@@ -54,48 +68,42 @@ const handleSubmit =  async (e: SubmitEvent & { currentTarget: EventTarget & HTM
 
     const result: ActionResult = deserialize(await response.text());
     const type = result.type;
-    console.log(result)
 
     if (type === "success" || type === "failure") {
 
-        const data = result.data;
+        const data = result.data as Form;
         if (!data) return;
 
         form = data;
 
         if (data.success) {
+            const appWindow: HTMLElement | null = currTarget.closest('.app__container');
+
             currTarget.reset();
             resetForm();
+
+            if (appWindow) appWindow.focus({ preventScroll: true })
         }
 
         await invalidateAll()
     }
-    if (form?.send_notification) {
-        toast(form.content, form.opts);
-    }
+
+    if (form && form.send_notification) toast(form.content, form.opts);
 
     applyAction(result)
 }
 
 const resetForm = () => {
-    if (subject) subject = '';
-    if (email) email = '';
-    if (text) text = '';
+    subject = '';
+    email = '';
+    text = '';
 }
-
-onMount(() => {
-    form = null;
-})
-</script>
-<script lang='ts' context='module'>
-declare const grecaptcha: any;
 </script>
 
 <svelte:head>
-    <script src="https://www.recaptcha.net/recaptcha/api.js?trustedtypes=true&render={key}"></script>
+    <script src="https://www.recaptcha.net/recaptcha/api.js?trustedtypes=true&render={recaptchaPublicKey}"></script>
 </svelte:head>
 
-<!--<form class="app__grid" method="POST" on:submit|preventDefault={onSubmit}>-->
 <form class="app__grid" method="POST" action="?/email" on:submit={ handleSubmit } >
     {#if $isResponsive}
         <div class="controls app__controls controls-header app__controls-header">
@@ -149,20 +157,6 @@ declare const grecaptcha: any;
                 {/if}
             </div>
         {/if}
-        <!--<div class="content__line" class:content__line--state-error={ $isResponsive ? errors?.email : errors?.cc }>
-            <p class="content__label">Cc{$isResponsive ? '/Cci, De*' : ''} :</p>
-            {#if $isResponsive}
-                <input class="content__input" type="email" bind:value={email} name='email'>
-                {#if errors?.email}
-                    <p class="content__error-message">{errors.email[0]}</p> 
-                {/if}
-            {:else}
-                <input class="content__input" type="text" bind:value={cc} name='cc'>
-                {#if errors?.cc}
-                    <p class="content__error-message">{errors.cc[0]}</p> 
-                {/if}
-            {/if}
-        </div>-->
         <div class="content__line" class:content__line--state-error={ errors?.subject }>
             <p class="content__label">Objet* :</p>
             <input class="content__input" type="text" bind:value={subject} name='subject'>

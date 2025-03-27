@@ -20,11 +20,11 @@ $: isNotEmpty = _toasts.some(value => Array.isArray(value) && value.length > 0);
             class="notif-wrapper"
             style="--notif-wrapper--height: 0; --notif-wrapper--margin-b: 0"
         >
-            {#each toastsFlat as toast, index}
+            {#each toastsFlat as toast, index (toast.id)}
                 <Toast 
                     _toast={ toast }
-                    { index } 
                     length={ toastsLength } 
+                    { index } 
                 /> 
             {/each}
         </div>
@@ -37,8 +37,8 @@ $: isNotEmpty = _toasts.some(value => Array.isArray(value) && value.length > 0);
                 {#each category[1] as toast, index (toast.id)}
                     <Toast 
                         _toast={ toast }
-                        { index }
                         length={ category[1].length }
+                        { index }
                     /> 
                 {/each}
             </div>

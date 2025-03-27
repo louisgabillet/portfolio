@@ -2,9 +2,9 @@ import { type App } from "../types";
 
 const mobileGlobal: (App & { top_bar: string[] })[] = [
     {
-        name: 'Fichier',
-        type: 'Finder',
-        src: 'icons/finder_csztph.png',
+        name: 'Fichiers',
+        type: 'Finders',
+        src: 'icons/Files_molorj',
         top_bar: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Fenêtre', 'Aide'], 
     },
     {
@@ -37,11 +37,6 @@ const mobileGlobal: (App & { top_bar: string[] })[] = [
         src: 'icons/music_s8ah6d.png',
         top_bar: ['Fichier', 'Édition', 'Morceau', 'Présentation', 'Commandes', 'Compte', 'Aide'], 
     },
-    //    name: 'System Settings',
-    //    app_name: 'System_Settings',
-    //    src: 'icons/system_settings_jgbute.png',
-    //    top_bar: ['Files', 'Edit', 'View', 'Window', 'Help'], 
-    //},
 ];
 
 export default mobileGlobal;

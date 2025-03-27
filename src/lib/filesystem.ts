@@ -1,17 +1,19 @@
+import { PUBLIC_USERNAME } from "$env/static/public";
 import { apps } from "./apps";
 import { type App } from "./apps/types";
 import { songs } from "./audio/songs";
 import { loadProjects } from "./projects";
 import { toast } from "./toast";
 
-export type Type = 'Folder' | 'Webloc' | 'Music' | 'Document' | 'Image' | 'Finder' | 'Launchpad' | 'Notes' | 'Contacts' | 'Mail' | 'Safari' | 'Plist' | 'Preview';
-type Children = FileSystem[] | App[];
+export type Type = 'Folder' | 'Link' | 'Music' | 'Finder' | 'Launchpad' | 'Notes' | 'Contacts' | 'Mail' | 'Safari' | 'Plist' | 'Preview';
+
+export type FileChildren = FileSystem | App;
 
 export interface FileSystem {
     name: string,
     type: Type,
     src: string,
-    children: Children,
+    children: FileChildren[],
     desactivated?: boolean,
 }
 
@@ -30,12 +32,10 @@ async function updateProjects() {
 
     } catch (err) {
         console.error(err);
-        setTimeout(() => {
-            toast.error({
-                appName: 'Finder',
-                title: 'Chargement des projets',
-                message: `Nous n'avons pas pu charger les projets. Veuillez réessayer.`,
-            })
+        toast.error({
+            appName: 'Finder',
+            title: 'Chargement des projets',
+            message: `Nous n'avons pas pu charger les projets. Veuillez réessayer.`,
         })
     }
 }
@@ -102,7 +102,7 @@ export const fileSystem: FileSystem[] = [
                 src: 'icons/folder_users_iqods9.png',
                 children: [
                     {
-                        name: 'louisgabillet',
+                        name: PUBLIC_USERNAME,
                         type: 'Folder',
                         src: 'icons/folder_home_hqnwvk.png',
                         children: [
@@ -119,7 +119,7 @@ export const fileSystem: FileSystem[] = [
                                 children : apps.pc.desktop,
                             },
                             {
-                                name: 'Documents',
+                                name: 'Preview',
                                 type: 'Folder',
                                 src: 'icons/folder_ptfrl4.png',
                                 children: [],

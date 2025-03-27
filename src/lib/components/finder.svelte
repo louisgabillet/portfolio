@@ -1,250 +1,200 @@
 <script lang="ts">
+import { PUBLIC_USERNAME } from '$env/static/public';
 import { onMount } from 'svelte';
 import { isResponsive } from '$lib/store';
-import { fileSystem, type FileSystem } from '$lib/filesystem';
+import { fileSystem, type FileSystem, type FileChildren } from '$lib/filesystem';
 import appWindow from '$lib/apps/window-management';
 import Shortcut from './shortcut.svelte';
 import Svg from './svg.svelte';
 import Img from './img.svelte';
 
-//export let open: (app: any) => void;
-export let finderPath: string[] = ['Macintosh HD', 'Utilisateur', 'louisgabillet'];
+type NavBtn = {
+    name: string,
+    svg_name: string,
+    title?: string,
+    color: string,
+    location: string[],
+    desactivated?: boolean,
+}
 
-const navBtns = [
+export let finderPath: string[] = ['Macintosh HD', 'Utilisateur', PUBLIC_USERNAME];
+
+const navBtns: NavBtn[] = [
     {
         name: 'Airdrop',
         svg_name: 'airdrop',
         title: 'Favoris',
         color: 'var(--accent-color)',
+        location: ['Airdrop'],
         desactivated: true
     },
     {
         name: 'Récents',
         svg_name: 'clock',
         color: 'var(--accent-color)',
-        desactivated: true
+        location: ['Récents'],
+        desactivated: true,
     },
     {
         name: 'Bureau',
         svg_name: 'menubar_dock_rectangle',
         color: 'var(--accent-color)',
-        location: ['Macintosh HD', 'Utilisateur', 'louisgabillet'],
+        location: ['Macintosh HD', 'Utilisateur', PUBLIC_USERNAME, 'Bureau'],
     },
     {
         name: 'Téléchargements',
         svg_name: 'arrow_down_circle',
         color: 'var(--accent-color)',
-        location: ['Macintosh HD', 'Utilisateur', 'louisgabillet']
+        location: ['Macintosh HD', 'Utilisateur', PUBLIC_USERNAME, 'Téléchargements']
     },
     {
         name: 'Applications',
         svg_name: 'app_store',
         color: 'var(--accent-color)',
-        location: ['Macintosh HD']
+        location: ['Macintosh HD', 'Applications']
     },
     {
-        name: 'louisgabillet',
+        name: PUBLIC_USERNAME,
         svg_name: 'house',
-        location: ['Macintosh HD', 'Utilisateur'],
+        location: ['Macintosh HD', 'Utilisateur', PUBLIC_USERNAME],
         color: 'var(--accent-color)'
     },
-    { name: 'Projets', svg_name: 'folder', location: ['iCloud Drive'], color: 'var(--accent-color)' },
+    { 
+        name: 'Projets',
+        svg_name: 'folder',
+        location: ['iCloud Drive', 'Projets'],
+        color: 'var(--accent-color)' 
+    },
     {
         name: 'iCloud Drive',
         svg_name: 'cloud',
         title: 'iCloud',
-        color: '#48d9fa'
+        color: '#48d9fa',
+        location: ['iCloud Drive'],
     },
     {
         name: 'Partagé',
         svg_name: 'folder_badge_person_crop',
         color: '#48d9fa',
+        location: ['Partagé'],
         desactivated: true
     },
-    //{
-    //    name: 'Rouge',
-    //    svg_name: 'circle_fill',
-    //    title: 'Tags',
-    //    color: 'var(--color-btn-close)',
-    //    desactivated: true
-    //},
-    //{
-    //    name: 'Orange',
-    //    svg_name: 'circle_fill',
-    //    color: 'var(--color-btn-reduce)',
-    //    desactivated: true
-    //},
-    //{
-    //    name: 'Jaune',
-    //    svg_name: 'circle_fill',
-    //    color: '#ffe414',
-    //    desactivated: true
-    //},
-    //{
-    //    name: 'Vert',
-    //    svg_name: 'circle_fill',
-    //    color: 'var(--color-btn-fullscreen)',
-    //    desactivated: true
-    //},
-    //{
-    //    name: 'Bleu',
-    //    svg_name: 'circle_fill',
-    //    color: 'var(--accent-color)',
-    //    desactivated: true
-    //},
-    //{
-    //    name: 'Violet',
-    //    svg_name: 'circle_fill',
-    //    color: '#da72ff',
-    //    desactivated: true
-    //},
-    //{
-    //    name: 'Gris',
-    //    svg_name: 'circle_fill',
-    //    color: '#969597',
-    //    desactivated: true
-    //},
-    //{
-    //    name: 'All tags',
-    //    svg_name: 'circlebadge_2',
-    //    color: '#7c7c7c',
-    //    desactivated: true
-    //}
 ];
 
-//let parentDirName: string = finderPath[0];
-let openDirName: string = finderPath[finderPath?.length - 1];
 let lastPath: FileSystem[] = [];
+let lastBranch: FileSystem[] = [];
+
+let previousPath: FileSystem[] = [];
+let previousBranch: FileSystem[] = [];
 
 $: path = [] as FileSystem[];
-$: children = path[path?.length - 1]?.children;
+$: children = isPath ? path[path.length - 1].children : [];
 
-$: isPreviousActive = path?.length > 1;
-$: isNextActive = lastPath?.length > 0 && lastPath[lastPath?.length - 1]?.name !== openDirName;
+$: lastParentDirName = $isResponsive && path.length > 1 ? path[path.length - 2].name : '';
+$: openDirName = isPath ? path[path.length - 1].name : '';
+
+$: isPath = path.length > 0;
+$: isPreviousActive = previousPath.length > 0 || previousBranch.length > 0;
+$: isNextActive = (lastPath?.length > 0 && lastPath[lastPath?.length - 1]?.name !== openDirName) || lastBranch.length > 0;
 
 $: if ($isResponsive && path[0]?.name !== 'iCloud Drive') {
     path = [];
-    changePath(fileSystem, ['iCloud Drive']);
+    goToLocation(['iCloud Drive']);
 }
 
-onMount(() => {
-    goInPath(finderPath);
-});
+onMount(() => goToLocation(finderPath));
 
-const goInPath = (location: string[]) => {
-    location?.forEach((folder) => {
-        const arr = path[path?.length - 1];
-        const parent = arr ? arr?.children : fileSystem;
-        if (parent) {
-            const goIn: FileSystem | undefined = parent?.find((dir) => dir?.name === folder);
-            if (goIn) path = [...path, goIn];
+const goToLocation = (location: string[]) => {
+    let currentParent: FileChildren[] = fileSystem;
+    let updatedPath: FileSystem[] = [];
+
+    location.forEach((folder) => {
+        const newPath = currentParent.find((dir) => dir.name === folder) as FileSystem;
+
+        if (!newPath) {
+            currentParent = [];
+            return;
         }
+
+        updatedPath.push(newPath);
+        currentParent = newPath.children; 
     });
+
+    path = updatedPath;
+}
+const changeParentDir = (name: string, location: string[]) => {
+    if (openDirName === name) return;
+
+    //openDirName = name;
+    previousBranch = path;
+
+    path = [];
+    lastPath = [];
+
+    goToLocation(location);
 };
-let nameCurrOpen: string = '';
+const openDir = (data: FileSystem) => {
+    path = [...path, data];
 
-const changePath = (arr: FileSystem[], location: string[]) => {
-    let currentLevel = arr;
+    previousPath = [...previousPath, data]
+    lastPath = [];
 
-    for (const key of location) {
-        const nextLevel = currentLevel.find((obj) => obj.name === key);
-        if (nextLevel) path.push(nextLevel);
+    previousBranch = [];
+    lastBranch = [];
 
-        if (nextLevel?.children) {
-            currentLevel = nextLevel.children;
-        }
-    }
-};
-const changeParentDir = (name: string, location: string[] | null = null) => {
-    openDirName = name;
-    path = lastPath = [];
-
-    if (location) {
-        location.push(name);
-    } else {
-        location = [name];
-    }
-    changePath(fileSystem, location);
-};
-const openDir = () => {
-    openDirName = nameCurrOpen;
-
-    //const opened = children?.find((dir) => dir?.name === dirName);
-    const opened = children?.find((dir) => dir?.name === nameCurrOpen);
-    if (opened?.type === 'Folder') {
-        path = [...path, opened];
-        lastPath = [];
-    }
     const focused = document.activeElement;
-    if (focused) {
-        const parent = focused.closest('.app') as HTMLElement;
-        parent?.focus();
-    }
+    if (!focused) return;
+
+    const parent: HTMLElement | null = focused.closest('.app__container');
+    if (parent) parent.focus();
 };
 const goBackInTree = () => {
-    if (path?.length <= 1 || !isPreviousActive) return;
-    //const newPath = path?.slice(0, -1);
-    //path = newPath;
-    const last = path?.pop();
-    if (last) lastPath = [...lastPath, last];
-    path = [...path];
-    openDirName = path[path?.length - 1]?.name;
-    //console.log(path, newPath)
-};
-const goBackToLast = () => {
-    if (lastPath?.length === 0 || !isNextActive) return;
+    if (path.length <= 1 && previousBranch.length === 0 || !isPreviousActive) return;
 
-    const last = lastPath?.pop();
-    if (last) path = [...path, last];
-    openDirName = path[path?.length - 1]?.name;
-};
-const openOnClick = (data: FileSystem) => {
-    //const { type, name, url, pages, src, unique_name } = data;
-    const { type, name } = data;
-
-    nameCurrOpen = name;
-    console.log(data, path)
-
-    if (data.type === 'Folder') {
-        openDir();
+    if (previousBranch.length > 0) {
+        lastBranch = path;
+        path = previousBranch;
+        previousBranch = [];
         return;
     }
-    //const app: any = { name, type, src };
-    //const test: any = {
-    //    unique_name,
-    //    name,
-    //    img_id: '2',
-    //    type: type === 'Document' || type === 'Image' ? 'Preview' : type === 'Webloc' ? 'Safari' : type,
-    //    src,
-    //}
-    if (type === 'Document' || type === 'Image') {
-        data.type = 'Preview';
-        //data.unique_name = parentDirName;
-    } else if (type === 'Webloc') {
-        data.type = 'Safari';
+
+    const last = path.pop();
+    if (last) lastPath.push(last);
+
+    path = path;
+    previousPath = [...previousPath.slice(0, previousPath.length - 1)];
+};
+const goBackToLast = () => {
+    if (lastPath.length === 0 && lastBranch.length === 0 || !isNextActive) return;
+
+    if (lastBranch.length > 0) {
+        previousBranch = path;
+        path = lastBranch;
+        lastBranch = [];
+        return;
     }
 
-    //if (type === 'Webloc' || type === 'Safari') {
-    //    app.type = 'Safari';
-    //    app.url = url;
-    //    app.pages = pages;
-    //} else if (type === 'Document' || type === 'Image') {
-    //    const img = { name, src };
-    //    app.type = 'Preview';
-    //    //app.preview_data = { [type.toLowerCase()]: pages ?? img };
-    //    app.unique_name = unique_name;
-    //    if (img_id) app.img_id = img_id;
-    //}
+    const last = lastPath.pop();
+    if (!last) return;
+
+    path = [...path, last];
+    previousPath = [...previousPath, last];
+};
+const openOnClick = (data: FileChildren) => {
+    if (data.type === 'Folder') {
+        openDir(data as FileSystem);
+        return;
+    }
+
     appWindow(data);
 };
-$: lastParentDirName = path[path.length - 2]?.name;
+const jumpPath = (index: number) => {
+    if (index >= path.length - 1) return;
 
-const jumpPath = (name: string) => {
-    const index = path.findIndex((path) => path.name === name) + 1;
-    if (index < path.length) {
-        path.length = index;
-        openDirName = name;
-    }
+    previousBranch = [...path];
+    lastPath = [];
+
+    path.length = index + 1;
 };
 </script>
 
@@ -301,13 +251,13 @@ const jumpPath = (name: string) => {
         </div>
     {:else}
         <div class="controls app__controls">
-            <button class="controls__item controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isPreviousActive } title="Voir les dossiers vus précédemment" on:click={ goBackInTree }>
+            <button class="controls__item controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isPreviousActive } title="Voir les dossiers précédemment consultés" on:click={ goBackInTree }>
                 <Svg name="chevron_left" color={isPreviousActive ? '#fff' : "#7c7c7c"} />
             </button>
-            <button class="controls__item controls__item--space-right controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isNextActive } title="Voir les dossiers vus précédemment" on:click={ goBackToLast }>
+            <button class="controls__item controls__item--space-right controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isNextActive } title="Voir les dossiers précédemment consultés" on:click={ goBackToLast }>
                 <Svg name="chevron_right" color={isNextActive ? "#fff" : "#7c7c7c"}/>
             </button>
-            <h2 class="controls__h2 controls__h2--distance-right">{openDirName}</h2>
+            <h2 class="controls__h2 controls__h2--distance-right" title={ openDirName }>{openDirName}</h2>
             <span class="controls__item controls__item--space-right">
                 <Svg name="square_grid_2x2" />
             </span>
@@ -328,7 +278,7 @@ const jumpPath = (name: string) => {
             </span>
         </div>
         <div class="line app__line tabs app__tabs">
-            <p class="line__p" title={openDirName}>{openDirName}</p>
+            <p class="line__p" title={ openDirName }>{openDirName}</p>
             <span class="tabs__icon">
                 <Svg name="plus" />
             </span>
@@ -336,23 +286,18 @@ const jumpPath = (name: string) => {
     {/if}
     <div class="content app__content" class:app__content--full={ $isResponsive }>
         <div class="icons-placement app__icons-placement">
-            {#if children}
-                {#each children as repo}
-                    <Shortcut
-                        app={repo}
-                        action={() => openOnClick(repo)}
-                    />
-                {/each}
-            {/if}
+            {#each children as repo}
+                <Shortcut
+                    app={repo}
+                    action={() => openOnClick(repo)}
+                />
+            {/each}
         </div>
-        <!--{#if $isResponsive}
-<p class="line__p nbr-el__p">{children?.length ?? 0} élément{(children?.length ?? 0) > 1 ? 's' : ''}</p>
-{/if}-->
     </div>
     {#if !$isResponsive}
         <div class="route app__route">
-            {#each path as path}
-                <button class="route__btn" title={path.name} on:click={() => jumpPath(path.name)}>
+            {#each path as path, i}
+                <button class="route__btn" title={path.name} on:click={() => jumpPath(i)}>
                     <Img
                         width="10"
                         src={path.src}
@@ -427,6 +372,9 @@ const jumpPath = (name: string) => {
 .line__p {
     font-size: var(--fz-xs);
     text-align: center;
+    padding-inline: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .nbr-el {
     display: grid;

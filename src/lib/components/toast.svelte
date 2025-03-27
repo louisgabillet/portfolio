@@ -50,6 +50,14 @@ $: imgWidth = $isResponsive ? '45' : '30';
 
 const isSameDay = (d1: Date, d2: Date): boolean => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 const formatTime = (t: number): string => t.toString().padStart(2, '0');
+const callTomorrow = (d: Date) => rtTimeout = setTimeout(() => getRelativeTime(_toast.created_at), new Date(d).setHours(24, 0, 0, 0) - d.getTime())
+
+const isYesterday = (d1: Date, yesterday: Date) => {
+    const date1 = new Date(d1);
+    date1.setDate(date1.getDate() - 1);
+
+    return isSameDay(date1, yesterday);
+}
 
 const startRtInterval = () => {
     rtInterval = setInterval(() => {
@@ -75,7 +83,14 @@ const getRelativeTime = (date: string | number | Date) => {
         const hours = formatTime(time.getHours());
         const minutes = formatTime(time.getMinutes());
 
+        const yesterday = isYesterday(time, now);
+
         clearTimeout(rtTimeout);
+
+        if (yesterday) {
+            callTomorrow(now)
+            return `hier ${hours}:${minutes}`;
+        }
 
         return `${day} ${hours}:${minutes}`;
     }
@@ -91,10 +106,8 @@ const getRelativeTime = (date: string | number | Date) => {
         const hours = formatTime(time.getHours());
         const minutes = formatTime(time.getMinutes());
 
-        const tomorrow = new Date(now).setHours(24, 0, 0, 0) - now.getTime();
-
         clearInterval(rtInterval);
-        rtTimeout = setTimeout(() => getRelativeTime(_toast.created_at), tomorrow)
+        callTomorrow(now)
 
         return `${hours}:${minutes}`;
     };
@@ -225,10 +238,6 @@ onDestroy(() => {
     >
         <Svg name="xmark" color="#fff" />
     </button>
-    <!--<button 
-        class="notif__content" 
-        on:click={ open }
-    >-->
     <button 
         class="notif__content" 
         on:pointerdown={ pointerdown }
@@ -295,7 +304,8 @@ onDestroy(() => {
     column-gap: 8px;
     background-color: var(--bg-color);
     backdrop-filter: blur(var(--blur));
-    outline: 1px solid #1d1d1d;
+    border: 1px solid var(--bg-color);
+    outline: 1px solid #1a1a1a;
     padding: 8px;
     border-radius: 14px;
 }
@@ -318,7 +328,6 @@ onDestroy(() => {
     position: relative;
     width: min-content;
     grid-row: 1/-1;
-    pointer-events: none;
 }
 .notif__text--overflow {
     --nbr-lines: 2;
