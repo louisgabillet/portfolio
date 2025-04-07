@@ -161,7 +161,8 @@ onMount(() => {
                 const attrName = change.attributeName;
                 const index = track.dataset.audioIndex;
 
-                if (!attrName || !index || attrName !== 'src') return;
+                console.log('ob', attrName, index);
+                if (attrName !== 'src' || !index) return;
 
                 getPlayingSong(+index);
             });
@@ -317,7 +318,7 @@ const handlePlay = () => {
 }
 </script>
 
-<div class="app__grid" style:--playlist-cover-color={ defaultCoverPlaylist.background_color } style:--song-cover-color={ defaultCoverSong.background_color }>
+<div class="app__grid" data-moving-target style:--playlist-cover-color={ defaultCoverPlaylist.background_color } style:--song-cover-color={ defaultCoverSong.background_color }>
     <nav class="sidebar app__sidebar" class:app__sidebar--removed={ $isResponsive }> 
         {#each navBtns as {name, svg_name, color, title, active, playlist_id}}
             {#if title}
@@ -398,7 +399,7 @@ const handlePlay = () => {
             </div>
         </div>
     {:else}
-        <div class="controls app__controls track">
+        <div class="controls app__controls" data-moving-target>
             <button class="controls__item controls__item--distance-left controls__btn controls__btn--hover" on:click={() => player.random(_player)}>
                 <Svg name='shuffle' color={$random ? "var(--accent-color)" : "#7c7c7c"} />
             </button>
@@ -424,7 +425,7 @@ const handlePlay = () => {
                 <div class="cover playing-song__cover">
                     <Svg name={ defaultCoverSong.name } color={ defaultCoverSong.color } />
                 </div>
-                <div class="playing-song__infos" >
+                <div class="playing-song__infos" data-moving-target>
                     {#if !playingSong || !audio.track?.src}
                         <span class="playing-song__icon">
                             <Svg name='apple' />
@@ -642,7 +643,7 @@ const handlePlay = () => {
     z-index: 1;
 }
 .content__action-btn {
-    width: fit-content;
+    width: 20px;
     height: 100%;
     padding: 4px;
 }
@@ -650,7 +651,6 @@ const handlePlay = () => {
     background-color: #191919;
 }
 .controls__btn--play {
-    width: 25px;
     padding-block: 2px;
 }
 .playing-song {
@@ -687,6 +687,7 @@ const handlePlay = () => {
 }
 .playing-song__icon {
     height: 100%;
+    aspect-ratio: 1/1;
     padding: 5px;
 }
 .playing-song__text {
@@ -699,6 +700,7 @@ const handlePlay = () => {
 }
 .playing-song__favorite {
     height: 8px;
+    aspect-ratio: 1/1;
     position: absolute;
     top: 4px;
     right: 4px;
@@ -755,15 +757,20 @@ const handlePlay = () => {
     outline: 1px solid #7C7C7C;
     border-radius: 50%;
 }
-.app__controls:hover .playing-song__time-bar::-webkit-slider-thumb {
+.playing-song__time-bar::-webkit-slider-thumb {
     height: 8px;
     width: 1px;
-    background-color: var(--progress-color);
-    outline: 1px solid var(--progress-color);
+    background-color: transparent;
     border-radius: 2px;
     margin-top: 2px;
 }
-.app__controls:hover .playing-song__time {
+.app__controls:hover .playing-song__time-bar::-webkit-slider-thumb,
+.playing-song__time-bar:active::-webkit-slider-thumb {
+    background-color: var(--progress-color);
+    outline: 1px solid var(--progress-color);
+}
+.app__controls:hover .playing-song__time,
+.playing-song__time-bar:active ~.playing-song__time {
     opacity: 1;
 }
 .placement {
@@ -867,7 +874,6 @@ const handlePlay = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--btn-padding);
     background: var(--accent-color);
     border-radius: .2rem;
     padding-inline: 8px;
@@ -879,6 +885,7 @@ const handlePlay = () => {
 }
 .presentation__icon {
     height: 10px;
+    aspect-ratio: 2/1;
 }
 .categories {
     --favorite-width: 10px; 
@@ -1051,6 +1058,7 @@ const handlePlay = () => {
 }
 .footer-player__btn {
     height: 100%;
+    aspect-ratio: 1.5/1;
     padding: 8px;
     flex-shrink: 0;
 }
@@ -1125,6 +1133,7 @@ const handlePlay = () => {
     }
     .album__icon {
         height: 12px;
+        aspect-ratio: 2/1;
     }
     .presentation {
         display: flex;

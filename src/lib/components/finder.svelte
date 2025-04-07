@@ -198,7 +198,7 @@ const jumpPath = (index: number) => {
 };
 </script>
 
-<div class="app__grid" class:app__grid--version-pc={ !$isResponsive }>
+<div class="app__grid" class:app__grid--version-pc={ !$isResponsive } data-moving-target>
     <nav class="sidebar app__sidebar" class:app__sidebar--removed={ $isResponsive }>
         {#each navBtns as { name, svg_name, title, location, color, desactivated }}
             {#if title}
@@ -250,7 +250,7 @@ const jumpPath = (index: number) => {
             </div>
         </div>
     {:else}
-        <div class="controls app__controls">
+        <div class="controls app__controls" data-moving-target>
             <button class="controls__item controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isPreviousActive } title="Voir les dossiers précédemment consultés" on:click={ goBackInTree }>
                 <Svg name="chevron_left" color={isPreviousActive ? '#fff' : "#7c7c7c"} />
             </button>

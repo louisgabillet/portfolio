@@ -14,7 +14,7 @@ let isImgLoaded = false;
 
 const handleLoad = () => {
     isImgLoaded = true;
-    img.removeEventListener('load', handleLoad)
+    if (img) img.removeEventListener('load', handleLoad)
 }
 
 onMount(() => {

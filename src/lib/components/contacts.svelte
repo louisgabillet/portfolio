@@ -56,7 +56,7 @@ const filterByFirstLetter = () => {
 }
 </script>
 
-<div class="app__grid">
+<div class="app__grid" data-moving-target>
     <nav class="sidebar app__sidebar" class:app__sidebar--full={ $isResponsive } style="{$isResponsive ? `z-index: ${isContactOpen ? '-' : ''}1` : ''}">
         {#each filterByFirstLetter() as res}
             {#if $isResponsive}
@@ -119,7 +119,7 @@ const filterByFirstLetter = () => {
             </div>
         </div>
     {/if}
-    <div class="content app__content contact" class:app__content--full={ $isResponsive }>
+    <div class="content app__content contact" class:app__content--full={ $isResponsive } data-moving-target>
         {#if isContactOpen && contactInfo.id}
             <div class="contact__header">
                 <div class="pp contact__pp">
@@ -254,10 +254,12 @@ const filterByFirstLetter = () => {
     background: #7C7C7C;
     margin-right: 5px;
     padding: 5px;
-}
-.pp__letter {
+    width: 45px;
     font-size: 1.875rem;
     aspect-ratio: 1/1;
+}
+.pp__letter {
+    font-size: 1em;
     text-align: center;
 }
 .contact__links-wrapper {
@@ -302,6 +304,9 @@ const filterByFirstLetter = () => {
 }
 .contact__line:last-of-type {
     border: none;
+}
+.contact__line  .contact__icon {
+    aspect-ratio: 2/1;
 }
 .contact__line--min-h {
     min-height: 8rem;

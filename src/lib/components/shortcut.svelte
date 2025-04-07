@@ -71,7 +71,7 @@ const actionHandler = () => {
                 alt="Icône '{app.type}'"
             />
             {#if app?.shortcut}
-                <span class="icon shortcut__icon">
+                <span class="shortcut__icon">
                     <Svg name='arrowshape_turn_up_right_fill' color='#000' />
                 </span>
             {/if}
@@ -149,6 +149,7 @@ const actionHandler = () => {
     -webkit-box-orient: vertical;
 }
 .shortcut__icon {
+    width: 10px;
     height: 7px;
     position: absolute;
     bottom: 5%;

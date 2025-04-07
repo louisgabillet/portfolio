@@ -272,8 +272,7 @@ const copyColor = (color: Color) => {
 .page {
     --gap: 15px;
     width: 350px;
-    min-height: 495px;
-    /*aspect-ratio: 210 / 297;*/
+    aspect-ratio: 210 / 297;
     background: white;
     color: black;
     overflow: hidden;

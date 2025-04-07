@@ -43,13 +43,13 @@ const startMoveOnMouseDown = (e: MouseEvent) => {
     const isMoving: boolean = e.clientY <= rect.y + MARGIN_FOR_MOVE; 
     
     setTimeout(() => {
-        const windowIsFocused: boolean = document.activeElement === self;
+        const target: HTMLElement | null = e.target as HTMLElement;
         const screen: HTMLElement | null = document.querySelector('.device__screen[data-fullscreen]');
+
+        const isTargetForMoving: boolean = target ? target.dataset.movingTarget !== undefined : false;
         const alreadyFullscreen: boolean = screen ? screen.dataset.fullscreen !== undefined : false;
 
-        if (alreadyFullscreen || $isResponsive || !isMoving || !windowIsFocused) {
-            return;
-        };
+        if ($isResponsive || !isMoving || !isTargetForMoving || alreadyFullscreen) return;
 
         isMouseDown = true;
 
@@ -114,7 +114,7 @@ const onKeyDown = (e: KeyboardEvent) => {
     bind:this={ self }
     class="app__container"
     data-app-window-id={ appWindowId }
-    on:focusin={() => appWindow.focus(appWindowId)}
+    on:mousedown={() => appWindow.focus(appWindowId)}
     on:mousedown={ startMoveOnMouseDown }
     on:keydown={ onKeyDown }
 >

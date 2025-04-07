@@ -51,7 +51,7 @@ const loadAudio = (player: Player) => {
 
     addEvents(player);
     track.autoplay = player.opts.autoplay;
-    track.volume = storedVolume ? +storedVolume / 100 : 0.1;
+    track.volume = storedVolume ? +storedVolume / 100 : 0.2;
 
     if (storedLoop === 'true') {
         loop(player);

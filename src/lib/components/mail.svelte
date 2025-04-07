@@ -25,8 +25,6 @@ type Form = {
     }
 }
 
-const recaptchaPublicKey = PUBLIC_RECAPTCHA_KEY;
-
 let form: Form | null = null;
 
 //let cc: string = '';
@@ -42,11 +40,11 @@ $: isFormComplete = [subject, email, text].every(value => value);
 const getCaptchaToken = async () => {
     return new Promise<string | null>(resolve => {
         grecaptcha.ready(async () => {
-            if (!recaptchaPublicKey) {
+            if (!PUBLIC_RECAPTCHA_KEY) {
                 resolve(null);
                 return;
             }
-            const token = await grecaptcha.execute(recaptchaPublicKey, { action: "submit" })
+            const token = await grecaptcha.execute(PUBLIC_RECAPTCHA_KEY, { action: "submit" })
             resolve(token)
         })
     });
@@ -101,10 +99,10 @@ const resetForm = () => {
 </script>
 
 <svelte:head>
-    <script src="https://www.recaptcha.net/recaptcha/api.js?trustedtypes=true&render={recaptchaPublicKey}"></script>
+    <script src="https://www.google.com/recaptcha/api.js?trustedtypes=true&render={PUBLIC_RECAPTCHA_KEY}"></script>
 </svelte:head>
 
-<form class="app__grid" method="POST" action="?/email" on:submit={ handleSubmit } >
+<form class="app__grid" method="POST" action="?/email" on:submit={ handleSubmit }>
     {#if $isResponsive}
         <div class="controls app__controls controls-header app__controls-header">
             <button class="controls__item controls__item--distance-right controls__item--mw-mc controls-header__item controls-header__btn controls__btn--active controls__text--accent-color controls__text--overflow" type="button" on:click={ resetForm }>Annuler</button>
@@ -116,7 +114,7 @@ const resetForm = () => {
             </div>
         </div>
     {:else}
-        <div class="controls app__controls app__controls--full">
+        <div class="controls app__controls app__controls--full" data-moving-target>
             <button class="controls__item controls__btn controls__btn--hover" class:controls__btn--desactivated={ !isFormComplete } title="Envoyer le message" type="submit">
                 <Svg name='paperplane' color={isFormComplete ? '#fff' : "#7c7c7c"} />
             </button>
@@ -151,7 +149,7 @@ const resetForm = () => {
         {#if $isResponsive}
             <div class="content__line" class:content__line--state-error={ errors?.email }>
                 <p class="content__label">De* :</p>
-                <input class="content__input" type="text" bind:value={email} name='email'>
+                <input class="content__input" type="text" bind:value={email} name='email' autocomplete="off">
                 {#if errors?.email}
                     <p class="content__error-message">{errors.email[0]}</p> 
                 {/if}
@@ -159,7 +157,7 @@ const resetForm = () => {
         {/if}
         <div class="content__line" class:content__line--state-error={ errors?.subject }>
             <p class="content__label">Objet* :</p>
-            <input class="content__input" type="text" bind:value={subject} name='subject'>
+            <input class="content__input" type="text" bind:value={subject} name='subject' autocomplete="off">
             {#if errors?.subject}
                 <p class="content__error-message">{errors.subject[0]}</p> 
             {/if}
@@ -167,7 +165,7 @@ const resetForm = () => {
         {#if !$isResponsive}
             <div class="content__line" class:content__line--state-error={ errors?.email }>
                 <p class="content__label">De* :</p>
-                <input class="content__input" type="text" bind:value={email} name='email'>
+                <input class="content__input" type="text" bind:value={email} name='email' autocomplete="off">
                 {#if errors?.email}
                     <p class="content__error-message">{errors.email[0]}</p> 
                 {/if}
@@ -177,7 +175,7 @@ const resetForm = () => {
             {#if errors?.content}
                 <p class="content__error-message">{errors.content[0]}</p> 
             {/if}
-            <textarea class="content__textarea" name="content" id="content" bind:value={text} placeholder="*"></textarea>
+            <textarea class="content__textarea" name="content" id="content" bind:value={text} placeholder="*" autocomplete="off"></textarea>
         </label>
         <span class="content__captcha-text">
             This site is protected by reCAPTCHA and the Google 

@@ -81,17 +81,17 @@ html {
 /* TODO -> Change all 'overflow: auto' to 'overflow; scroll' to always have the space reserved */
 /* TODO -> Move the scrollbar to not be under the resize divs */
 body *::-webkit-scrollbar {
-    background: transparent;
+    background-color: transparent;
     width: 5px;
     height: 5px;
 }
 body *::-webkit-scrollbar-thumb {
-    background: transparent;
+    background-color: #7C7C7C;
     border-radius: 10px;
 }
-body *:hover::-webkit-scrollbar-thumb {
+/*body *:hover::-webkit-scrollbar-thumb {
     background: #7C7C7C;
-}
+}*/
 body {
     overflow-x: hidden;
     font: var(--font);
@@ -230,6 +230,7 @@ a {
 }
 .controls__item {
     height: 65%;
+    aspect-ratio: 1.5/1;
     padding: 4px;
     flex-shrink: 0;
 }
@@ -280,6 +281,7 @@ a {
     font-size: var(--fz-xl);
 }
 .controls-header__btn--grid {
+    width: fit-content;
     display: grid;
     grid-template-columns: var(--controls__item--height) 1fr;
     align-items: center;
@@ -296,6 +298,7 @@ a {
 .controls-footer__item {
     --controls-footer__item--height: 48px;
     height: var(--controls-footer__item--height);
+    aspect-ratio: auto;
     font-size: 10px;
     color: #7c7c7c;
     text-align: center;
@@ -458,7 +461,7 @@ to {
     }
     .app__controls {
         outline: 1px solid #7c7c7c33;
-        z-index: 2;
+        z-index: 3;
     }
     .controls__h2 {
         font-size: var(--fz-xl);

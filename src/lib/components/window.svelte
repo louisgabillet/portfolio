@@ -52,6 +52,7 @@ let appWindowPrevSizes = appWindowSizes;
 let resizeSides = { top: false, left: false, right: false, bottom: false }
 
 $: lastAppWindowOpened = $appWindows[$appWindows.length - 1];
+$: isLastOpened = lastAppWindowOpened ? lastAppWindowOpened.id === appWindowId : false;
 
 const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
 const round = (val: number): number => +val.toFixed(5);
@@ -234,6 +235,7 @@ const handleClose = () => {
     data-window-id={ appWindowId }
     class="app {$isResponsive ? 'app--version-mobile' : 'app--version-pc'}"
     class:app--transition={ !$isResponsive && !isMouseDown && isFullyLoaded }
+    class:app--focused={ isLastOpened }
     style:z-index={ zIndex }
     style="{ !$isResponsive ? `--left: ${appWindowPositions.x}%; --top: ${appWindowPositions.y}%; --width: ${appWindowSizes.width}%; --height: ${appWindowSizes.height}%;` : '' }"
 > 
@@ -255,7 +257,7 @@ const handleClose = () => {
         { calculateOffset }
         { round }
     />
-    {#if !$isResponsive && lastAppWindowOpened?.id === appWindowId}
+    {#if !$isResponsive && isLastOpened}
         {#each resizeBtns as { axe, pos }}
             <button 
                 class="app__resize app__resize--axe-{axe} app__resize--pos-{pos}"
@@ -381,10 +383,10 @@ const handleClose = () => {
     border-radius: 50%;
     background-color: #7c7c7c33;
 }
-.app:focus-within {
+.app--focused {
     box-shadow: 0 0 1rem 0 var(--color-shadow);
 }
-.app:focus-within .action__btn {
+.app--focused .action__btn {
     background-color: var(--btn-color);
 }
 .action__btn--fullscreen {

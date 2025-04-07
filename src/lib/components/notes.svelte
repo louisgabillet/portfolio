@@ -125,7 +125,7 @@ const sortByDate = () => {
             {/if}
         </div>
     {:else}
-        <div class="controls app__controls app__controls--full">
+        <div class="controls app__controls app__controls--full" data-moving-target>
             <span class="controls__item">
                 <Svg name='sidebar_left' />
             </span>

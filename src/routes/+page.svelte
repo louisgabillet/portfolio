@@ -353,8 +353,8 @@ const onWindowResize = () => {
     font-size: var(--fz-s);
 }
 .lock-screen__icon {
+    width: 2.75rem;
     height: 2.75rem;
-    aspect-ratio: 1 / 1;
     border-radius: 50%;
     padding: 10px;
     background: var(--dark-fullscreen);
@@ -522,6 +522,7 @@ const onWindowResize = () => {
 }
 .top-bar__icon {
     height: 10px;
+    aspect-ratio: 2/1;
 }
 .top-bar__language {
     margin-left: auto; 
@@ -529,6 +530,7 @@ const onWindowResize = () => {
 }
 .top-bar__logo {
     height: 12px;
+    aspect-ratio: 2/1;
 }
 .top-bar__h5 {
     font-weight: 600;
