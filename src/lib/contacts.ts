@@ -1,6 +1,7 @@
 import { PUBLIC_EMAIL, PUBLIC_NAME } from "$env/static/public";
 
 export interface Contact {
+    id: string,
     letter: string,
     mobile?: string,
     mail: string,
@@ -18,10 +19,11 @@ interface ContactMethod {
 }
 const contacts: Contact[] = [
     { 
+        id: '0',
         letter: PUBLIC_NAME, 
         //mobile: PUBLIC_TEL,
         mail: PUBLIC_EMAIL,
-        note: 'Développeur Web indépendant.', 
+        note: 'Développeur Web front-end indépendant.', 
         self: true, 
         contactMethod: [
             { 
@@ -39,13 +41,13 @@ const contacts: Contact[] = [
             { 
                 name: 'github',
                 svg_name: 'github',
-                value: 'https://github.com',
+                value: 'https://github.com/louisgabillet',
                 blank: true
             },
             {
                 name: 'linkedin',
                 svg_name: 'linkedin',
-                value: 'https://fr.linkedin.com',
+                value: 'https://www.linkedin.com/in/louis-gabillet/',
                 blank: true
             },
         ],

@@ -8,7 +8,7 @@ import type {
     ToastOptions 
 } from "./types";
 
-const createToast = ( type: ToastType = 'blank', content: ToastContent, opts?: ToastOptions ) => ({
+const createToast = (type: ToastType = 'blank', content: ToastContent, opts?: ToastOptions) => ({
     created_at: Date.now(),
     type,
     appName: content.appName,
@@ -16,6 +16,7 @@ const createToast = ( type: ToastType = 'blank', content: ToastContent, opts?: T
     message: content.message,
     icon: opts?.icon,
     id: opts?.id || genId(),
+    props: opts?.props,
 })
 
 const createHandler = (type?: ToastType): ToastHandler => (content, opts) => {

@@ -14,8 +14,13 @@ export type Descriptions = {
     outcome: string,
     challenges: string,
 }
+export type Color = {
+    name: string,
+    hex: string,
+    fontColor?: string,
+}
 export type Design = {
-    colorCode: string[],
+    colorCode: Color[],
     fonts: string[],
 }
 export type Links = {
@@ -23,7 +28,7 @@ export type Links = {
     source_code: string,
 }
 export type Gallery = {
-    img_id: string,
+    imgId: string,
     //unique_name: string
     name: string,
     type: Type,

@@ -7,13 +7,13 @@ import { apps } from '$lib/apps';
 import type { App, AppSizeData } from '$lib/apps/types';
 import WindowAction from './windowAction.svelte';
 
-export let name: string;
 export let appWindowId: string;
-export let appInfos: App;
+export let appWindowData: App;
 export let zIndex: number;
 
 const MARGIN_FOR_RESIZE: number = 10;
-const appInDock: boolean = apps.pc.dock.some(app => app.type === name)  
+const type = appWindowData.type;
+const appInDock: boolean = apps.pc.dock.some(app => app.type === type);
 
 const defaultAppSizeData: AppSizeData = {
     minSize: {
@@ -33,12 +33,12 @@ const resizeBtns = [
 ]
 
 let openWindow: HTMLDivElement;
-let dekstop: HTMLElement | null;
-let dekstopRect: DOMRect;
-
+let desktop: HTMLElement | null;
+let desktopRect: DOMRect | null = null;
 
 let isMouseDown: boolean = false;
 let isFullyLoaded: boolean = false;
+//let responsiveChanged: boolean = $isResponsive;
 
 let mouseDownStartPos = { x: 0, y: 0 }
 
@@ -59,21 +59,17 @@ const calculateSize = (min: number, isResize: boolean, multiplier: number) => is
 const calculatePos = (size: number, isResize: boolean) => isResize ? +(50 - Math.min(75, size) / 2).toFixed(5) : size;
 
 onMount(() => {
-    if ($isResponsive) return;
+    const id = $appWindows.filter(app => app.data.type === type).length;
+    const appStorageSize = localStorage.getItem(`${type.toLowerCase()}-window-size`);
+    const appStoragePos = localStorage.getItem(`${type.toLowerCase()}-window-position`);
 
-    dekstop = document.querySelector('.screen__desktop');
-    if (dekstop) dekstopRect = dekstop.getBoundingClientRect();
-
-    setTimeout(() => isFullyLoaded = true, 320)
-
-    const appData = apps.pc.global.find(app => app.type === name) ?? defaultAppSizeData;
-
+    const appData = apps.pc.global.find(app => app.type === type) ?? defaultAppSizeData;
     const resize = appData.resize;
+
     if (minSizes !== appData.minSize) minSizes = appData.minSize;
 
-    const id = $appWindows.filter(app => app.data.type === name).length;
-    const appStorageSize = localStorage.getItem(`${name.toLowerCase()}-window-size`);
-    const appStoragePos = localStorage.getItem(`${name.toLowerCase()}-window-position`);
+    desktop = document.querySelector('.screen__desktop');
+    setTimeout(() => isFullyLoaded = true, 320)
 
     const size = appStorageSize ? 
         JSON.parse(appStorageSize) :
@@ -98,24 +94,24 @@ onMount(() => {
     }
 })
 onDestroy(() => {
-    const storageName: string = name.toLowerCase()
+    const storageName: string = type.toLowerCase()
 
     localStorage.setItem(`${storageName}-window-position`, JSON.stringify(appWindowPositions));
     localStorage.setItem(`${storageName}-window-size`, JSON.stringify(appWindowSizes));
 })
 
-const calculateOffset = (e: MouseEvent) => {
-    if (!dekstopRect) return { offsetX: 0, offsetY: 0 };
+const calculateOffset = (e: MouseEvent, rect: DOMRect | null) => {
+    if (!rect) return { offsetX: 0, offsetY: 0 };
 
-    const x: number = clamp(e.clientX, dekstopRect.left, dekstopRect.right);
-    const y: number = clamp(e.clientY, dekstopRect.top, dekstopRect.bottom);
+    const x: number = clamp(e.clientX, rect.left, rect.right);
+    const y: number = clamp(e.clientY, rect.top, rect.bottom);
 
     const distanceX = x - mouseDownStartPos.x;
     const distanceY = y - mouseDownStartPos.y;
 
     return {
-        offsetX: distanceX / dekstopRect.width * 100,
-        offsetY: distanceY / dekstopRect.height * 100,
+        offsetX: distanceX / rect.width * 100,
+        offsetY: distanceY / rect.height * 100,
     }
 }
 const changeSize = (offset: number, side: 'left' | 'top') => {
@@ -147,7 +143,7 @@ const updateSides = (e: MouseEvent, pos: string) => {
 }
 
 const changeCursorOnResizeMouseOver = (e: MouseEvent, side: string) => {
-    if (isMouseDown || !dekstop) {
+    if (isMouseDown || !desktop) {
         return;
     };
 
@@ -166,16 +162,14 @@ const changeCursorOnResizeMouseOver = (e: MouseEvent, side: string) => {
         cursor = 'ns';
     }
 
-    if (cursor) {
-        dekstop.style.cursor = cursor + '-resize';
-    }
+    if (cursor) desktop.style.cursor = cursor + '-resize';
 }
 const resetCursorOnResizeMouseOver = () => {
-    if (isMouseDown || !dekstop) {
+    if (isMouseDown || !desktop) {
         return;
     }
 
-    dekstop.style.removeProperty('cursor');
+    desktop.style.removeProperty('cursor');
     resizeSides = {
         top: false,
         left: false,
@@ -200,11 +194,13 @@ const startResizeOnMouseDown = (e: MouseEvent) => {
         y: parseFloat(openWindow.style.getPropertyValue('--top')),
     }
 
+    if (desktop) desktopRect = desktop.getBoundingClientRect();
+
     window.addEventListener('mousemove', resizeOnMouseMove);
     window.addEventListener('mouseup', stopResizeOnMouseUp);
 }
 const resizeOnMouseMove = (e: MouseEvent) => {
-    const { offsetX, offsetY } = calculateOffset(e);
+    const { offsetX, offsetY } = calculateOffset(e, desktopRect);
 
     const isResiseX: boolean = resizeSides.left || resizeSides.right;
     const isResiseY: boolean = resizeSides.top || resizeSides.bottom;
@@ -222,7 +218,7 @@ const stopResizeOnMouseUp = () => {
     window.removeEventListener('mousemove', resizeOnMouseMove);
     window.removeEventListener('mouseup', stopResizeOnMouseUp);
 
-    localStorage.setItem(`${name.toLowerCase()}-window-size`, JSON.stringify(appWindowSizes));
+    localStorage.setItem(`${type.toLowerCase()}-window-size`, JSON.stringify(appWindowSizes));
 }
 
 const handleClose = () => {
@@ -245,7 +241,7 @@ const handleClose = () => {
         <div class="app__action action">
             <button 
                 class='action__btn action__btn--close' title="Fermer" on:click={ handleClose }></button>
-            <button class="action__btn action__btn--reduce" class:action__btn--desactivated={ !appInDock } title="Réduire" on:click={() => appWindow.reduce(appWindowId, name)}></button>
+            <button class="action__btn action__btn--reduce" class:action__btn--desactivated={ !appInDock } title="Réduire" on:click={() => appWindow.reduce(appWindowId, type)}></button>
             <button class="action__btn action__btn--fullscreen" title="Plein Écran" on:click={() => appWindow.fullscreen(appWindowId)}></button>
         </div>
     {/if}
@@ -253,7 +249,8 @@ const handleClose = () => {
         bind:mouseDownStartPos
         bind:appWindowPositions 
         bind:isMouseDown
-        { appInfos }
+        { desktop }
+        { appWindowData }
         { appWindowId }
         { calculateOffset }
         { round }

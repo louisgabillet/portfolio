@@ -10,21 +10,41 @@ const data: Data = {
         targetAudience: ['Curieux', 'Passionés'],
     },
     design: {
-        colorCode: ['#fff', '#000'],
+        colorCode: [
+            { 
+                name: 'Gris neutre',
+                hex: '#7c7c7c',
+            },
+            {
+                name: 'Noir profond',
+                hex: '#000', 
+            },
+            {
+                name: 'Bleu azur',
+                hex: '#0a82ff', 
+            },
+            {
+                name: 'Noir de jais',
+                hex: '#1b1b1b', 
+            },
+            {
+                name: 'Blanc',
+                hex: '#fff', 
+                fontColor: '#000' 
+            },
+        ],
         fonts: ['Arial']
     },
     descriptions: {
-        intro: 'Dignitatemque iudicio iudicio laus rei auctoritatem cepit suspicionibus ordinis in cepit senatus mihi accepto huius ordinis cum in die doloribus.',
+        intro: 'Intro pour décrire le client et sa demande',
+        process: 'Description du processus de réalisation de la demande.',
+        challenges: 'Difficultés rencontrées pendant la réalisation de la demande.',
+        outcome: 'Explication du produit final.',
 
-        process: 'Vilitatem ad restitisset occidi ordinis ni ei restitisset restitisset restitisset cum ad tunc iussit Honoratus tunc comes efferatus celebrari restitisset occidi ideo intempestivam intempestivam constantia Honoratus restitisset elogio quod Honoratus constantia responderunt ei ordinis comes ideo ad Honoratus vilitatem celebrari Antiochensis et efferatus perissent Antiochensis gravius efferatus Honoratus constantia constantia.',
-
-        outcome: 'Vilitatem ad restitisset occidi ordinis ni ei restitisset restitisset restitisset cum ad tunc iussit Honoratus tunc comes efferatus celebrari restitisset occidi ideo intempestivam intempestivam constantia Honoratus restitisset elogio quod Honoratus constantia responderunt ei ordinis comes ideo ad Honoratus vilitatem celebrari Antiochensis et efferatus perissent Antiochensis gravius efferatus Honoratus constantia constantia.',
-
-        challenges: 'Et Montius est addensque prodesse fidis primos prodesse id mandaverat sonu Constantii consulens conperto conveniet Constantii ad conveniet commune obiurgatorio.',
     },
     links: {
         live_demo: 'https://fr.wikipedia.org/wiki/Programmation_web',
-        source_code: 'https://github.com',
+        source_code: 'https://github.com/louisgabillet',
     },
     images: {
         logo: 'projects/example_wikipedia/logo_pyd3ai.png',
@@ -34,14 +54,14 @@ const data: Data = {
         },
         gallery: [
             {
-                img_id: '1',
+                imgId: '1',
                 name: `Page d'accueil`,
                 type: 'Preview',
                 src: `projects/example_wikipedia/pc/home_tkxqmr.png`,
                 pc: true,
             },
             {
-                img_id: '2',
+                imgId: '2',
                 name: `Page d'accueil`,
                 type: 'Preview',
                 src: `projects/example_wikipedia/mobile/home_il6jic.png`,

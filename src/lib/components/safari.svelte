@@ -7,7 +7,7 @@ import appWindow from "$lib/apps/window-management";
 import Svg from "./svg.svelte";
 import type { Images } from "$lib/projects/types";
 
-export let dirName: string;
+export let dirName: string | null = null;
 
 let images: Images;
 let url: string;

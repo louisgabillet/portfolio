@@ -149,13 +149,25 @@ onMount(() => {
     if (track) {
         const audioIndex = track.dataset.audioIndex;
 
-        if (!audioIndex) {
+        if (audioIndex) {
+            buffer = $audioBuffer as Song[];
+            playingPlaylist = openedPlaylist;
+            getPlayingSong(+audioIndex);
             return;
-        }
+        };
 
-        buffer = $audioBuffer as Song[];
-        playingPlaylist = openedPlaylist;
-        getPlayingSong(+audioIndex);
+        const observer = new MutationObserver((changes) => {
+            changes.forEach(change => {
+                const attrName = change.attributeName;
+                const index = track.dataset.audioIndex;
+
+                if (!attrName || !index || attrName !== 'src') return;
+
+                getPlayingSong(+index);
+            });
+        });
+
+        observer.observe(track, { attributes : true });
     }
 
 })
@@ -237,9 +249,7 @@ const getPlayingSong = (songIndex: number) => {
     const playing = buffer[songIndex];
     playingSongIndex = songIndex;
 
-    if (playing === playingSong) {
-        return true;
-    }
+    if (playing === playingSong) return true;
 
     const metadata = playing.metadata;
     const secret = metadata?.secret;
@@ -265,40 +275,23 @@ const handleStart = (songIndex: number, start: boolean = false, noRandom: boolea
         return;
     }
 
-    if (noRandom && $random) {
-        player.random(_player);
-    }
+    if (noRandom && $random) player.random(_player);
 
     updateBuffer();
     playingPlaylist = openedPlaylist;
 
     const isSameIndex: boolean = playingSongIndex === songIndex;
-    const isSameSong: boolean = getPlayingSong(songIndex);
+    const isSameSong: boolean = buffer[songIndex] === playingSong;
 
     if (!isSameSong || !isSameIndex || start) {
+        if (isSameSong) getPlayingSong(songIndex)
         player.start(_player, songIndex);
+
         return;
     }
 
     player.play(_player);
 };
-const handleNextAndPrevious = (next: boolean) => {
-    if (next) {
-        player.next(_player);
-    } else {
-        player.previous(_player);
-    }
-
-    const track = _player.audio.track;
-    if (!track) {
-        return;
-    }
-    const index = track.dataset.audioIndex;
-
-    if (index) {
-        playingSongIndex = +index;
-    }
-}
 const handleRandom = () => {
     if (!$random) {
         player.random(_player);
@@ -316,7 +309,6 @@ const handlePlay = () => {
     }
 
     if (!audio.track?.src) {
-        getPlayingSong(0);
         updateBuffer();
         playingPlaylist = openedPlaylist;
     }
@@ -379,7 +371,7 @@ const handlePlay = () => {
                 </button>
                 <button 
                     class="footer-player__btn" class:footer-player__btn--desactivated={ !areControlsActive }
-                    on:click={() => handleNextAndPrevious(true)}
+                    on:click={() => player.next(_player)}
                 >
                     <Svg name='forward_fill' color={ areControlsActive ? "#fff" : '#414141' } />
                 </button>
@@ -412,7 +404,7 @@ const handlePlay = () => {
             </button>
             <button 
                 class="controls__item controls__btn controls__btn--hover controls__btn--{areControlsActive ? 'active' : 'desactivated'}" 
-                on:click={() => handleNextAndPrevious(false)}
+                on:click={() => player.previous(_player)}
             >
                 <Svg name='backward_fill' color={areControlsActive ? "#7c7c7c" : "#414141"} />
             </button>
@@ -421,7 +413,7 @@ const handlePlay = () => {
             </button>
             <button 
                 class="controls__item controls__btn controls__btn--hover controls__btn--{areControlsActive ? 'active' : 'desactivated'}" 
-                on:click={() => handleNextAndPrevious(true)}
+                on:click={() => player.next(_player)}
             >
                 <Svg name='forward_fill' color={areControlsActive ? "#7c7c7c" : "#414141"} />
             </button>
@@ -1046,6 +1038,7 @@ const handlePlay = () => {
     border-radius: 5px;
     overflow: hidden;
     background-color: var(--song-cover-color);
+    flex-shrink: 0;
 }
 .footer-player__title {
     font-size: var(--fz-l);

@@ -6,7 +6,6 @@ import { apps } from '$lib/apps'
 import type { App } from '$lib/apps/types';
 import appWindow from '$lib/apps/window-management';
 import appWindows from '$lib/apps/window-management/store';
-import type { AppWindow } from '$lib/apps/window-management/types';
 import Shortcut from '$lib/components/shortcut.svelte';
 import Svg from '$lib/components/svg.svelte';
 import Loader from '$lib/components/loader.svelte';
@@ -47,7 +46,6 @@ let timeInterval: ReturnType<typeof setInterval>;
 let date: string = formatDate(dateOptions.lock_screen);
 let time: string; 
 
-let windowWidth: number;
 let desktopContent: App[] = [];
 let dockContent: App[] = [];
 
@@ -86,15 +84,13 @@ onDestroy(() => {
 })
 
 const homeButtonAction = () => {
-    if ($appWindows.length <= 0) {
-        return;
-    }
+    if ($appWindows.length <= 0) return;
 
-    $appWindows.forEach((w: AppWindow) => {
-        appWindow.close(w.id)
-    })
+    appWindows.set([]);
 }
 const onWindowResize = () => {
+    const windowWidth = window.innerWidth;
+
     const isWindowSmaller = windowWidth <= maxWidthIphone;
 
     const desktopContentUpdated = isWindowSmaller ? apps.mobile.desktop : apps.pc.desktop;
@@ -121,8 +117,6 @@ const onWindowResize = () => {
 //    screen.requestFullscreen();
 //}
 </script>
-
-<svelte:window bind:innerWidth={windowWidth}/>
 
 <main class="main">
     {#if !isPageLoaded}
@@ -242,7 +236,7 @@ const onWindowResize = () => {
                             {/each}
                         </div>
                         {#each $appWindows as { id, data }, i (id)}
-                            <Window appWindowId={ id } name={ data.type } appInfos={ data } zIndex={ i } />   
+                            <Window appWindowId={ id } appWindowData={ data } zIndex={ i } />   
                         {/each}
                         <div class="dock desktop__dock {$isResponsive ? 'icons-placement' : 'desktop__dock--flex'} transition-320-ease" class:hidden={!isPowerOn} style="{$isResponsive && $appWindows.length > 0 ? 'z-index: -1' : ''}"> 
                             {#each dockContent as app, i}

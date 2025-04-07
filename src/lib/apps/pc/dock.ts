@@ -42,14 +42,18 @@ const pcDock: App[] = [
         name: 'Téléchargements',
         type: 'Finder',
         src: 'icons/folder_downloads_fjswrg.png',
-        path: ['Macintosh HD', 'Utilisateur', PUBLIC_USERNAME, 'Téléchargements'],
+        props: {
+            finderPath: ['Macintosh HD', 'Utilisateur', PUBLIC_USERNAME, 'Téléchargements'],
+        },
         shortcut: true,
     },
     {
         name: 'Poubelle',
         type: 'Finder',
         src: 'icons/trash_empty_atuxjv.png',
-        path: ['Poubelle'],
+        props: {
+            finderPath: ['Poubelle'],
+        },
         shortcut: true,
     },
 ]

@@ -4,12 +4,6 @@ import { browser } from "$app/environment";
 import { toast } from "$lib/toast";
 import type { ToastContent } from "$lib/toast/types";
 
-type LimitError = {
-    appName: string,
-    title: string,
-    message: string,
-} 
-
 type LimitManager = Record<string, number>;
 type ToastManager = Record<string, boolean>;
 type ReducedManager = Record<string, AppWindow['id'][]>;
@@ -21,13 +15,13 @@ const limitManager: LimitManager = { global: 100 };
 const toastManager: ToastManager = {};
 const reducedManager: ReducedManager = {}
 
-const showError = (limitName: string, toastContent: ToastContent) => {
+const showError = (limitName: string, toastContent: ToastContent, isToast: boolean = false) => {
     if (toastManager[limitName]) {
         return;
     }
 
     toastManager[limitName] = true;
-    toast.blocked(toastContent);
+    if (isToast) toast.blocked(toastContent);
 }
 export function open(app: AppWindow) {
     if (!browser) return;
@@ -40,7 +34,6 @@ export function open(app: AppWindow) {
 
     const exceedsGlobalLimit = _appWindows.length >= limitManager['global'];
     const exceedsWindowLimit = get(appWindows).filter(app => app.data.type === type).length >= limitManager[type]; 
-
 
     if (fullscreenAppWindow) {
         const id = fullscreenAppWindow.dataset.windowId;

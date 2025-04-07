@@ -41,48 +41,10 @@ export const playlists: Playlist[] = [
     },
     {
         id: '2',
-        track_id: [],
+        track_id: ['2', '4', '5', '1', '6', '3'],
         metadata: {
-            name: 'Test',
-            desc: 'un test.',
-        },
-        visual: {
-            cover: {
-                name: null,
-                color: null, 
-                background_color: null, 
-            },
-            nav_btn: {
-                name: null,
-                color: null, 
-            },
-        }
-    },
-    {
-        id: '3',
-        track_id: ['2'],
-        metadata: {
-            name: 'Test 2',
-            desc: 'un test n°2.',
-        },
-        visual: {
-            cover: {
-                name: null,
-                color: null, 
-                background_color: null, 
-            },
-            nav_btn: {
-                name: null,
-                color: null, 
-            },
-        },
-    },
-    {
-        id: '4',
-        track_id: ['1', '2', '1', '1'],
-        metadata: {
-            name: 'Rock',
-            desc: 'Rock enjoyer.',
+            name: 'Grands Classiques',
+            desc: 'Des classiques qui nous font voyager dans des époques révolues.',
         },
         visual: {
             cover: {

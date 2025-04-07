@@ -6,10 +6,13 @@ import { onMount } from "svelte";
 import { loadProjectData } from "$lib/projects"
 import appWindows from "$lib/apps/window-management/store";
 import appWindow from "$lib/apps/window-management";
-import type { Details, Gallery, Images, Links, Design, Descriptions } from "$lib/projects/types";
+import type { Details, Gallery, Images, Links, Design, Descriptions, Color } from "$lib/projects/types";
+import { toast } from "$lib/toast";
 
-export let img_id: string;
+export let imgId: string | null = null;
 export let dirName: string;
+
+const fileName: string = 'Étude de cas';
 
 let details: Details;
 let design: Design;
@@ -17,15 +20,9 @@ let descriptions: Descriptions;
 let links: Links;
 let images: Images;
 
-let fileName: string;
 let openedImg: Gallery | undefined;
 
 $: lastAppWindow = $appWindows[$appWindows.length - 1];
-
-const isPlural = (word: string, arr: string[]) =>  {
-    const length = arr.length;
-    return length > 1 ? word + 's' : word;
-}
 
 onMount(async () => {
     if (dirName) {
@@ -42,42 +39,61 @@ onMount(async () => {
             links = res.links;
             images = res.images;
 
-            fileName = details.name;
-            openedImg = images.gallery.find(img => img.img_id === img_id);
+            if (imgId) openedImg = images.gallery.find(img => img.imgId === imgId);
 
         } catch (err) {
             console.error(`Error fetching data of '${dirName}':`, err);
         }
     }
 })
+
+const isPlural = (word: string, arr: string[]) =>  {
+    const length = arr.length;
+    return length > 1 ? word + 's' : word;
+}
+const copyColor = (color: Color) => {
+    navigator.clipboard.writeText(color.hex)
+
+    const props = { imgId, dirName };
+    toast({
+        appName: 'Preview',
+        title: `Copie de ${color.name}`,
+        message: `La couleur '${color.name}' (${color.hex}) a été copié dans le presse-papier.`,
+    }, { props })
+}
 </script>
 
 <div class="app__grid">
     {#if $isResponsive}
-        <div class="controls grid">
-            <span class="icon">
-                <Svg name='list_bullet' color='#0A82FF' />
+        <div class="controls app__controls controls-header app__controls-header">
+            <span class="controls__item controls-header__item">
+                <Svg name='list_bullet' color='var(--accent-color)' />
             </span>
-            <h2>{fileName}</h2>
-            <button class="ok-btn" on:click={() => appWindow.close(lastAppWindow.id) }>OK</button>
+            <h2 class="controls__h2 controls__text--overflow">{fileName}</h2>
+            <div class="controls__items-wrapper">
+                <button class="controls__item controls-header__item controls-header__btn controls__btn--active" on:click={() => appWindow.close(lastAppWindow.id)}>OK</button>
+            </div>
         </div> 
-    {/if}
-    <div class="controls app__controls app__controls--full">
-        {#if $isResponsive}
-            <span class="icon">
-                <Svg name='square_and_arrow_up' color='#0A82FF' />
+        <div class="controls app__controls controls-footer app__controls-footer">
+            <span class="controls__item controls-footer__item controls-footer__item--semi-transparent">
+                <Svg name='square_and_arrow_up' color='var(--accent-color)' />
             </span>
-            <span class="icon">
-                <Svg name='pencil_tip_crop_circle' color='#0A82FF' />
+            <span class="controls__item controls-footer__item controls-footer__item--semi-transparent">
+                <Svg name='pencil_tip_crop_circle' color='var(--accent-color)' />
             </span>
-            <span class="icon">
-                <Svg name='magnifyingglass' color='#0A82FF' />
+            <span class="controls__item controls-footer__item controls-footer__item--semi-transparent">
+                <Svg name='rectangle_and_pencil_and_ellipsis' color='var(--accent-color)' />
             </span>
-        {:else} 
-            <span class="controls__item">
+            <span class="controls__item controls-footer__item controls-footer__item--semi-transparent">
+                <Svg name='magnifyingglass' color='var(--accent-color)' />
+            </span>
+        </div>
+    {:else} 
+        <div class="controls app__controls app__controls--full">
+            <span class="controls__item controls__item--space-right">
                 <Svg name='sidebar_left' />
             </span>
-            <p>{fileName}</p>
+            <p class="controls__file-name">{fileName}</p>
             <span class="controls__item">
                 <Svg name='info_circle' />
             </span>
@@ -90,7 +106,7 @@ onMount(async () => {
             <span class="controls__item">
                 <Svg name='square_and_arrow_up' />
             </span>
-            <span class="controls__item">
+            <span class="controls__item controls__item--space-right controls__item--space-left">
                 <Svg name='highlighter' />
             </span>
             <span class="controls__item">
@@ -105,69 +121,76 @@ onMount(async () => {
             <span class="controls__item">
                 <Svg name='magnifyingglass' />
             </span>
-        {/if}
-    </div>
-    <div class="content app__content" class:center-content={ img_id && openedImg }>
-        {#if img_id && openedImg}
+        </div>
+    {/if}
+    <div class="content app__content" class:app__content--full={ $isResponsive }>
+        {#if openedImg}
             <Img 
                 src={openedImg.src} 
                 alt={openedImg.name} 
             />
         {:else if details}
-            <div class="page">
-                <h1>{details.name}</h1>
+            <div class="page content__page">
+                <h1 class="page__title">Étude de cas</h1>
                 <!--<h2>{subtitle}</h2>-->
+                <h2 class="page__subtitle">{details.name}</h2>
             </div>
-            <div class="page">
-                <h2>Informations</h2>
+            {#if descriptions.intro}
+                <div class="page content__page">
+                    <h2 class="page__subtitle">Intro:</h2>
+                    <p class="page__text">{descriptions.intro}</p> 
+                </div>
+            {/if}
+            <div class="page content__page">
+                <h2 class="page__subtitle">Informations</h2>
                 {#if details.client}
-                    <div class="flex">
-                        <h3>Client:</h3>
-                        <a href="{links.live_demo}" target="_blank">{details.client}</a> 
+                    <div class="page__line">
+                        <h3 class="page__text page__text--bold">Client:</h3>
+                        <a class="page__text page__link" href="{links.live_demo}" target="_blank">{details.client}</a> 
                     </div>
                 {/if}
                 {#if details.date}
-                    <div class="flex">
-                        <h3>Date:</h3>
-                        <p>{details.date}</p> 
+                    <div class="page__line">
+                        <h3 class="page__text page__text--bold">Date:</h3>
+                        <p class="page__text">{details.date}</p> 
                     </div>
                 {/if}
-                <!--{#if site_type}
-                    <div class="flex">
-                        <h3>Type de site:</h3>
-                        <p>{site_type}</p> 
-                    </div>
-                {/if}-->
                 {#if details.requests}
-                    <h3>{isPlural('Demande', details.requests)}:</h3>
-                    <ul>
+                    <h3 class="page__text page__text--bold page__text--margin-top">{isPlural('Demande', details.requests)}:</h3>
+                    <ul class="page__list">
                         {#each details.requests as request}
-                            <li>{request}</li> 
+                            <li class="page__list-item page__text">{request}</li> 
                         {/each}
                     </ul>
                 {/if}
                 {#if details.technologies}
-                    <h3>{isPlural('Outil', details.technologies)} {isPlural('utilisé', details.technologies)}:</h3>
-                    <ul>
+                    <h3 class="page__text page__text--bold page__text--margin-top">{isPlural('Outil', details.technologies)} {isPlural('utilisé', details.technologies)}:</h3>
+                    <ul class="page__list">
                         {#each details.technologies as techno}
-                            <li>{techno}</li> 
+                            <li class="page__list-item page__text">{techno}</li> 
                         {/each}
                     </ul>
                 {/if}
                 {#if details.targetAudience}
-                    <h3>Audience visée:</h3>
-                    <ul>
+                    <h3 class="page__text page__text--bold page__text--margin-top">Audience visée:</h3>
+                    <ul class="page__list">
                         {#each details.targetAudience as target}
-                            <li>{target}</li> 
+                            <li class="page__list-item page__text">{target}</li> 
                         {/each}
                     </ul>
                 {/if}
             </div>
-            <div class="page">
-                <h2>Visuels</h2>
+            {#if descriptions.process}
+                <div class="page content__page">
+                    <h2 class="page__subtitle">Processus:</h2>
+                    <p class="page__text">{descriptions.process}</p> 
+                </div>
+            {/if}
+            <div class="page content__page">
+                <h2 class="page__subtitle">Visuels</h2>
                 {#if images.logo}
-                    <div class="flex" style="align-items: center;">
-                        <h3>Logo:</h3>
+                    <div class="page__line" style="align-items: center;">
+                        <h3 class="page__text page__text--bold">Logo:</h3>
                         <Img 
                             width='50'
                             src={images.logo} 
@@ -176,48 +199,40 @@ onMount(async () => {
                     </div>
                 {/if}
                 {#if design.fonts}
-                    <h3>{isPlural('Police', design.fonts)} d'écriture:</h3>
-                    <ul>
+                    <h3 class="page__text page__text--bold page__text--margin-top">{isPlural('Police', design.fonts)} d'écriture:</h3>
+                    <ul class="page__list">
                         {#each design.fonts as font}
-                            <li>{font}</li> 
+                            <li class="page__list-item page__text">{font}</li> 
                         {/each}
                     </ul>
                 {/if}
                 {#if design.colorCode}
-                    <h3>Code Couleur:</h3>
-                    <div class="list-placement">
+                    <h3 class="page__text page__text--bold page__text--margin-top">Code Couleur:</h3>
+                    <div class="page__list">
                         {#each design.colorCode as color}
-                            <button class="color" style="--color: {color};" on:click={() => navigator.clipboard.writeText(color)}>
-                                <p>{color}</p>
+                            <button
+                                class="page__list-item page__text page__color"
+                                style:--color={ color?.fontColor || color.hex }
+                                on:click={() => copyColor(color)}
+                            >
+                                { color.name }: {color.hex}
                             </button>
                         {/each}
                     </div>
                 {/if}
             </div>
-            <div class="page">
-                <h2>Intro:</h2>
-                {#if descriptions.intro}
-                    <p>{descriptions.intro}</p> 
-                {/if}
-            </div>
-            <div class="page">
-                <h2>Processus:</h2>
-                {#if descriptions.process}
-                    <p>{descriptions.process}</p> 
-                {/if}
-            </div>
-            <div class="page">
-                <h2>Difficultés:</h2>
-                {#if descriptions.challenges}
-                    <p>{descriptions.challenges}</p> 
-                {/if}
-            </div>
-            <div class="page">
-                <h2>Résultat:</h2>
-                {#if descriptions.outcome}
-                    <p>{descriptions.outcome}</p> 
-                {/if}
-            </div>
+            {#if descriptions.challenges}
+                <div class="page content__page">
+                    <h2 class="page__subtitle">Difficultés:</h2>
+                    <p class="page__text">{descriptions.challenges}</p> 
+                </div>
+            {/if}
+            {#if descriptions.outcome}
+                <div class="page content__page">
+                    <h2 class="page__subtitle">Résultat:</h2>
+                    <p class="page__text">{descriptions.outcome}</p> 
+                </div>
+            {/if}
         {/if}
     </div>
 </div>
@@ -225,196 +240,118 @@ onMount(async () => {
 <style>
 .app__grid {
     grid-template-columns: 1fr;
+    --accent-color: #0a82ff;
 }
 .app__controls {
     grid-column: 1 / -1;
 }
-.app__controls p {
-    font-size: var(--fz-xs);
-    margin-right: auto;
+.app__controls-footer {
+    --nbr-columns: 4;
 }
-.app__controls .icon {
+.controls-header__item:first-of-type {
+    width: min-content;
+    padding-inline: 8px;
+}
+.controls-header__btn {
+    color: var(--accent-color);
+}
+.controls-footer__item {
+    --padding-block: calc((var(--controls-footer__item--height) - var(--controls__item--icon-height)) / 2);
+    padding-block: var(--padding-block);
+}
+.controls-footer__item--semi-transparent {
     opacity: .4;
 }
-.icon-big {
-    --height: 12px;
-}
-.space-a {
-    margin-inline: 10px;
-}
-.space-r {
-    margin-right: 10px;
-}
-.center-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-h1 {
-    font-size: 1.25rem;
-}
-h2 {
-    font-size: var(--fz-xl);
-    text-align: center;
-}
-.list-placement {
-    border: 1px solid #7c7c7c33;
-}
-.list-placement, ul {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-}
-ul {
-    list-style-type: none;
-    padding-left: 15px;
-}
-a {
-    color: #0A82FF;
-}
-h3, li, p, a {
-    font-size: var(--fz-m);
-}
-li::before {
-    content: '-';
-    margin-right: 5px;
-}
-.flex {
-    display: flex;
-    align-items: flex-end;
-}
-.page > .flex, .page > h3 {
-    margin-block: 15px 5px;
-}
-.flex h3 {
-    margin-right: 5px;
-}
-.logo {
-    height: 50px;
-}
-.text-grid {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-}
-.text-grid h3, .text-grid li {
-    margin: 0;
-}
-.color-container {
-    outline: 1px solid #7c7c7c33;
+.controls__file-name {
+    font-size: var(--fz-s);
+    margin-right: auto;
     overflow: hidden;
-    display: flex;
-}
-.color {
-    width: 100%;
-    background-color: var(--color);
-    display: grid;
-    place-content: center;
-    padding: 5px;
-}
-.color > p {
-    color: #fff;
-    mix-blend-mode: difference;
-    opacity: 0;
-    transition: opacity .32s ease;
-}
-img {
-    max-width: 100%;
-    max-height: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .page {
+    --gap: 15px;
     width: 350px;
-    aspect-ratio: 210 / 297;
+    min-height: 495px;
+    /*aspect-ratio: 210 / 297;*/
     background: white;
-    margin: 0 auto 10px auto;
     color: black;
-    padding: 35px;
     overflow: hidden;
     user-select: text;
+}
+.content__page {
+    margin: 0 auto 8px auto;
+    padding: 35px;
 }
 .page:first-of-type {
     display: grid;
     place-content: center;
     text-align: center;
 }
-/*.controls {
+.page:last-of-type {
+    margin-bottom: 0;
+}
+.page__line {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    margin-top: var(--gap);
+}
+.page__line:first-of-type {
+    margin-top: 0;
+}
+.page__title {
+    font-size: 1.25rem;
+}
+.page__subtitle {
     font-size: var(--fz-xl);
-    color: #0A82FF;
-    padding: 4rem 15px 10px;
-    grid-area: 1 / 1 / 2 / -1;
-    z-index: 2;
-    background: var(--dark-fullscreen);
-    backdrop-filter: blur(var(--blur)); 
-    gap: 8px;
-}*/
-.controls button {
-    padding: 5px;
+    text-align: center;
+    margin-bottom: var(--gap);
 }
-.controls > .icon {
-    opacity: .4;
+.page__text {
+    font-size: var(--fz-m);
 }
-.ok-btn {
-    font-size: 17px;
-    margin-left: auto;
+.page__text--bold {
+    font-weight: 600;
 }
-.controls .icon {
-    --height: 20px;
-    aspect-ratio: 1/1;
+.page__text--margin-top {
+    margin-top: var(--gap);
 }
-.controls .flex .icon {
-    aspect-ratio: 1/1;
+.page__link {
+    color: var(--accent-color);
 }
-.controls h2 {
-    max-width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+.page__list {
+    list-style-type: none;
+    padding-left: 15px;
+    display: flex;
+    flex-wrap: wrap;
 }
-.controls h2 {
-    margin-inline: auto;
-    color: white;
-    max-width: 25ch;
-    font-weight: 500;
+.page__list-item {
+    display: flex;
+    overflow-wrap: anywhere;
+    min-width: 100%;
 }
-.grid {
-    display: grid;
-    grid-template-columns: 1fr max-content 1fr;
-    align-items: center;
+.page__list-item::before {
+    content: '-';
+    margin-right: 5px;
 }
-@media (min-width: 1281px) {
-    .app-controls {
-        padding-left: 3.5rem;
-    }
-    .color:hover > p {
-        opacity: 1;
-    }
+.page__color {
+    color: var(--color);
+    gap: 5px;
 }
+
 @media (max-width: 1280px) {
-    .app-grid {
-        padding-top: 0;
-        grid-template-columns: 1fr;
-        grid-template-rows: max-content 1fr max-content;
-    }
-    .app-content {
-        padding-block: 6.5rem 4rem;
-        grid-area: 1 / 1 / -1 / -1;
-    }
-    .app-controls {
-        padding: 10px 20px 2rem;
-        grid-area: 3 / 1 / -1 / -1;
-    }
-    .app-controls .icon {
-        --height: 20px;
-        aspect-ratio: 1/1;
+    .app__content {
+        padding-inline: 0;
     }
     .page {
         width: 100%;
+        margin-bottom: 5px;
     }
-    .color > p {
-        opacity: 1;
-    }
-    h2 {
+    .page__subtitle {
         font-size: 18px;
     }
-    h3, li, p, a {
+    .page__text {
         font-size: var(--fz-l);
     }
 }

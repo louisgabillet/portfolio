@@ -1,5 +1,6 @@
 <script lang="ts">
-import { PUBLIC_NAME } from '$env/static/public';
+import type { App } from '$lib/apps/types';
+import appWindow from '$lib/apps/window-management';
 import contacts, { type Contact } from '$lib/contacts';
 import { isResponsive } from "$lib/store";
 import Svg from './svg.svelte';
@@ -9,19 +10,32 @@ interface Sorted {
     contacts: Contact[];
 }
 
+export let contactId: string = '0';
+
 const alphabet = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "#"];
-const defaultContact = {
+const defaultContact: Contact = {
+    id: '',
     letter: '',
     mobile: '',
     mail: '',
     contactMethod: [],
     note: '',
 }
+const contactInfoApp: Record<string, App> = {
+    'e-mail': { name: 'Mail', type: 'Mail', src: '' }
+}
 
-let contactName = $isResponsive ? '' : PUBLIC_NAME;
+let isContactOpen: boolean = $isResponsive ? false : true;
 
-$: contactInfo = contacts.find(contact => contact.letter === contactName) || defaultContact; 
+$: contactInfo = contacts.find(contact => contact.id === contactId) || defaultContact; 
 $: ({ letter, mobile, mail, note } = contactInfo);
+
+$: if (!$isResponsive && !isContactOpen && contactInfo) isContactOpen = true;
+
+const changeTab = (id: string) => {
+    contactId = id;
+    if (!isContactOpen) isContactOpen = true;
+}
 
 const filterByFirstLetter = () => {
     let global: Record<string, Contact[]> = {};
@@ -43,24 +57,24 @@ const filterByFirstLetter = () => {
 </script>
 
 <div class="app__grid">
-    <nav class="sidebar app__sidebar" class:app__sidebar--full={ $isResponsive } style="{$isResponsive ? `z-index: ${contactName? '-' : ''}1` : ''}">
+    <nav class="sidebar app__sidebar" class:app__sidebar--full={ $isResponsive } style="{$isResponsive ? `z-index: ${isContactOpen ? '-' : ''}1` : ''}">
         {#each filterByFirstLetter() as res}
             {#if $isResponsive}
                 <h5 class="sidebar__title sidebar__category sidebar__text--overflow">{res.letter}</h5>
             {/if}
-            {#each res.contacts as { letter, self }, i}
+            {#each res.contacts as { id, letter, self }, i}
                 {@const splitName = letter.split(' ') }
                 {@const part1 = splitName[0] }
                 {@const part2 = splitName[1] }
                 <button
                     class="sidebar__item sidebar__item--grid"
                     class:sidebar__item--icon={ self }
-                    class:sidebar__item--focused={!$isResponsive && letter === contactName}
+                    class:sidebar__item--focused={ !$isResponsive && id === contactId }
                     class:sidebar__item--bold={ !part2 }
                     class:sidebar__item--border-top={ $isResponsive && i === 0 }
                     class:sidebar__item--border-bottom={ $isResponsive }
                     title={letter}
-                    on:click={() => contactName = letter }
+                    on:click={() => changeTab(id)}
                 >
                     <span class="sidebar__text sidebar__text--overflow">
                         {part1}
@@ -78,7 +92,7 @@ const filterByFirstLetter = () => {
         {/each}
     </nav>
     {#if $isResponsive}
-        {#if !contactName}
+        {#if !isContactOpen}
             <div class="alphabet">
                 {#each alphabet as letter}
                     <p class="alphabet__letter">{letter}</p> 
@@ -86,16 +100,16 @@ const filterByFirstLetter = () => {
             </div>
 
         {/if}
-        <div class="controls app__controls controls-header app__controls-header" class:controls-header--no-bg={ contactName }>
-            <button class="controls__item controls-header__item controls-header__btn controls-header__btn--grid controls__btn--{contactName ? 'active' : 'desactivated'} {contactName ? 'controls-header__btn--bg controls-header__btn--round' : ''}" on:click={() => contactName = '' }>
-                <Svg name="chevron_left" color={contactName ? "#fff" : "var(--accent-color)"} />
-                {#if !contactName}
+        <div class="controls app__controls controls-header app__controls-header" class:controls-header--no-bg={ isContactOpen }>
+            <button class="controls__item controls-header__item controls-header__btn controls-header__btn--grid controls__btn--{isContactOpen ? 'active' : 'desactivated'} {isContactOpen ? 'controls-header__btn--bg controls-header__btn--round' : ''}" on:click={() => isContactOpen = false}>
+                <Svg name="chevron_left" color={isContactOpen ? "#fff" : "var(--accent-color)"} />
+                {#if !isContactOpen}
                     <span class="controls__text--accent-color controls__text--overflow">Listes</span>
                 {/if}
             </button>
-            <h2 class="controls__h2 controls__text--overflow">{!contactName ? 'Contacts' : ''}</h2>
+            <h2 class="controls__h2 controls__text--overflow">{!isContactOpen ? 'Contacts' : ''}</h2>
             <div class="controls__items-wrapper">
-                {#if !contactName}
+                {#if !isContactOpen}
                     <span class="controls__item controls-header__item">
                         <Svg name="ellipsis_circle" color="var(--accent-color)" />
                     </span>
@@ -106,23 +120,32 @@ const filterByFirstLetter = () => {
         </div>
     {/if}
     <div class="content app__content contact" class:app__content--full={ $isResponsive }>
-        {#if contactInfo.letter}
-                <div class="contact__header">
-                    <div class="pp contact__pp">
-                        <span class="pp__letter">{letter?.split('')[0]?.toUpperCase()}</span>
-                    </div>
-                    <h2 class="contact__name contact__name--overflow">{letter}</h2>
+        {#if isContactOpen && contactInfo.id}
+            <div class="contact__header">
+                <div class="pp contact__pp">
+                    <span class="pp__letter">{letter?.split('')[0]?.toUpperCase()}</span>
                 </div>
-                <div class="contact__links-wrapper">
-                    {#each contactInfo.contactMethod as {name, svg_name, value, prefix, blank}}
-                    <a class="link contact__link" href="{prefix ?? ''}{value}" class:contact__link--desactivated={ !value } target={blank ? "_blank" : ""}>
-                        <span class="contact__icon link__icon">
-                            <Svg name={svg_name} color={$isResponsive ? "var(--accent-color)" : "#fff"} />
-                        </span>
-                        {name}
-                    </a> 
-                    {/each}
-                </div>
+                <h2 class="contact__name contact__name--overflow">{letter}</h2>
+            </div>
+            <div class="contact__links-wrapper">
+                {#each contactInfo.contactMethod as {name, svg_name, value, prefix, blank}}
+                    {#if blank}
+                        <a class="link contact__link" href="{prefix ?? ''}{value}" class:contact__link--desactivated={ !value } target="_blank">
+                            <span class="contact__icon link__icon">
+                                <Svg name={svg_name} color={$isResponsive ? "var(--accent-color)" : "#fff"} />
+                            </span>
+                            {name}
+                        </a>
+                    {:else} 
+                        <button class="link contact__link" class:contact__link--desactivated={ !value } style:--accent-color={ $isResponsive ? '#fff' : '' } on:click={() => appWindow(contactInfoApp[name])}>
+                            <span class="contact__icon link__icon">
+                                <Svg name={svg_name} color={$isResponsive ? "var(--accent-color)" : "#fff"} />
+                            </span>
+                            {name}
+                        </button>
+                    {/if}
+                {/each}
+            </div>
             <div class="contact__infos">
                 <div class="contact__line">
                     <p class="contact__label">téléphone</p>
@@ -133,7 +156,7 @@ const filterByFirstLetter = () => {
                 <div class="contact__line">
                     <p class="contact__label">domicile</p>
                     {#if mail}
-                        <a href="mailto:{mobile}" class="contact__text contact__text--accent-color">{mail}</a>
+                        <a href="mailto:{mail}" class="contact__text contact__text--accent-color">{mail}</a>
                     {/if}
                 </div>
                 <div class="contact__line" class:contact__line--single-line={ $isResponsive }>

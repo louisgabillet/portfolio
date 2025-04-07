@@ -142,7 +142,7 @@ const openAppWindow = () => {
         return;
     }
 
-    appWindow(app);
+    appWindow(app, { props: _toast.props });
 }
 const closeToast = () => {
     leave = true;
@@ -304,7 +304,7 @@ onDestroy(() => {
     column-gap: 8px;
     background-color: var(--bg-color);
     backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--bg-color);
+    border: 1px solid #4A4A4A63;
     outline: 1px solid #1a1a1a;
     padding: 8px;
     border-radius: 14px;

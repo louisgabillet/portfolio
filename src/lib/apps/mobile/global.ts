@@ -37,6 +37,13 @@ const mobileGlobal: (App & { top_bar: string[] })[] = [
         src: 'icons/music_s8ah6d.png',
         top_bar: ['Fichier', 'Édition', 'Morceau', 'Présentation', 'Commandes', 'Compte', 'Aide'], 
     },
+    {
+        name: 'Aperçu',
+        type: 'Preview',
+        src: 'icons/Files_molorj',
+        top_bar: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Outils', 'Fenêtre', 'Aide'], 
+        desactivated: true,
+    },
 ];
 
 export default mobileGlobal;

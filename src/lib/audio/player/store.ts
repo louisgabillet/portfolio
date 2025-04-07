@@ -135,9 +135,7 @@ export function start(player: Player, index: number) {
 
     track.currentTime = 0;
 
-    if (track.paused) {
-        track.play();
-    }
+    if (track.paused) track.play();
 }
 export function stop(player: Player) {
     const track = player.audio.track;
@@ -191,11 +189,13 @@ export function loop(player: Player) {
 
     track.loop = !track.loop;
     player.audio.loop.set(track.loop);
+
     localStorage.setItem(`${player.name.toLowerCase()}-player-loop`, track.loop.toString());
 }
 export function random(player: Player) {
     const isRandom = !get(player.audio.random);
     player.audio.random.set(isRandom);
+
     localStorage.setItem(`${player.name.toLowerCase()}-player-random`, isRandom.toString());
 }
 

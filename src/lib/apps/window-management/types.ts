@@ -2,16 +2,16 @@ import type { App } from "../types";
 
 export interface AppWindowProps {
     name: string,
-    appInfos: App,
+    appWindowData: App,
 }
 export interface AppWindow {
     created_at: number;
 	id: string;
     data: App,
-    state: 'moving' | 'fullscreen' | 'reduce', 
 }
 export interface AppWindowOptions {
     limit?: number;
+    props?: App['props'],
 }
 export type AppWindowHandler = (
     data: App,

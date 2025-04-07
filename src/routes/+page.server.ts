@@ -127,7 +127,7 @@ export const actions: Actions = {
             }
 
             try {
-                //await transporter.sendMail(mailOptions);
+                await transporter.sendMail(mailOptions);
                 
                 data.success = true;
                 data.content.title = 'Email envoyé';

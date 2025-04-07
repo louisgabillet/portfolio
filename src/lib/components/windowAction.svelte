@@ -11,55 +11,31 @@ import appWindow from "$lib/apps/window-management";
 import { isResponsive } from "$lib/store";
 import type { App } from "$lib/apps/types";
 
-type Conponent = {
-    name: any,
-    props: Record<string, unknown> | null,
-}
-
 export let mouseDownStartPos: { x: number, y: number };
 export let appWindowPositions: { x: number, y: number };
-export let appInfos: App & { dirName?: string, img_id?: string };
+export let desktop: HTMLElement | null;
+export let appWindowData: App;
 export let appWindowId: string;
 export let isMouseDown: boolean;
-export let calculateOffset: (e: MouseEvent) => { offsetX: number, offsetY: number };
+export let calculateOffset: (e: MouseEvent, rect: DOMRect | null) => { offsetX: number, offsetY: number };
 export let round: (val: number) => number;
 
 const MARGIN_FOR_MOVE: number = 32;
-const { type, path, dirName, img_id } = appInfos;
+const { type, props } = appWindowData;
 
-const components: Record<string, Conponent> = {
-    Finder: {
-        name: Finder,
-        props: { finderPath: path },
-    },
-    Mail: {
-        name: Mail,
-        props: null,
-    },
-    Safari: {
-        name: Safari,
-        props: { dirName },
-    },
-    Music: {
-        name: Music,
-        props: null,
-    },
-    Contacts: {
-        name: Contacts,
-        props: null,
-    },
-    Preview: {
-        name: Preview,
-        props: { dirName, img_id },
-    },
-    Notes: {
-        name: Notes,
-        props: null,
-    },
+const components: Record<string, any> = {
+    Finder,
+    Mail,
+    Safari,
+    Music,
+    Contacts,
+    Preview,
+    Notes,
 }
 const currComponent = components[type];
 
 let self: HTMLButtonElement;
+let desktopRect: DOMRect | null = null;
 let appWindowPrevPositions = { x: 0, y: 0 }
 
 const startMoveOnMouseDown = (e: MouseEvent) => {
@@ -86,12 +62,14 @@ const startMoveOnMouseDown = (e: MouseEvent) => {
             y: appWindowPositions.y,
         };
 
+        if (desktop) desktopRect = desktop.getBoundingClientRect();
+
         window.addEventListener('mousemove', moveOnMouseMove);
         window.addEventListener('mouseup', stopMoveOnMouseUp);
     })
 }
 const moveOnMouseMove = (e: MouseEvent) => {
-    const { offsetX, offsetY } = calculateOffset(e);
+    const { offsetX, offsetY } = calculateOffset(e, desktopRect);
 
     appWindowPositions = {
         x: round(appWindowPrevPositions.x + offsetX),
@@ -141,7 +119,7 @@ const onKeyDown = (e: KeyboardEvent) => {
     on:keydown={ onKeyDown }
 >
     {#if currComponent}
-        <svelte:component this={currComponent.name} {...currComponent.props} /> 
+        <svelte:component this={currComponent} {...props} /> 
     {/if}
 </button>
 

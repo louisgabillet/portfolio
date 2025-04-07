@@ -3,12 +3,22 @@ import { isResponsive } from "$lib/store";
 import notes, { type Note } from "$lib/notes";
 import Svg from "./svg.svelte";
 
-export let name: string = 'Qui Suis-Je ?';
+export let noteId: string = '0';
 
 const options: Record<string, string> = { weekly: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-let activeName = $isResponsive ? '' : name;
+const monthNames: string[] = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const indentation: string = '   ';
 
-$: activeNote = notes.find((note) => note.name === activeName) ?? null;
+let isNoteOpen: boolean = $isResponsive ? false : true;
+
+$: activeNote = notes.find((note) => note.id  === noteId) ?? null;
+
+$: if (!$isResponsive && !isNoteOpen && activeNote) isNoteOpen = true;
+
+const changeTab = (id: string) => {
+    noteId = id;
+    if (!isNoteOpen) isNoteOpen = true;
+}
 
 const dateText = (el: string) => new Date(el).toLocaleDateString('fr', options);
 const parseDate = (date: string): string => {
@@ -20,7 +30,6 @@ const sortByDate = () => {
     const today = new Date();
     const currYear = today.getFullYear();
     const currMonth = today.getMonth();
-    const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
     notes.forEach(note => {
         const date = new Date(note.updateDate);
@@ -53,7 +62,7 @@ const sortByDate = () => {
 </script>
 
 <div class="app__grid">
-    <nav class="sidebar app__sidebar {$isResponsive ? 'app__sidebar--full' : 'app__sidebar--bg-grey'}" style="{$isResponsive ? `z-index: ${activeName ? '-' : ''}1` : ''}">
+    <nav class="sidebar app__sidebar {$isResponsive ? 'app__sidebar--full' : 'app__sidebar--bg-grey'}" style="{$isResponsive ? `z-index: ${isNoteOpen ? '-' : ''}1` : ''}">
         {#each sortByDate() as res}
             <h5 class="sidebar__title sidebar__category sidebar__text--overflow">{res.title}</h5>
             {#each res.notes as note, i}
@@ -65,9 +74,9 @@ const sortByDate = () => {
                 <button 
                     class="sidebar__item sidebar__item--grid sidebar__item--borr{isBorrBottom ? '-bottom' : isBorrTop ? '-top' : !isBorr ? '-none' : ''}"
                     class:sidebar__item--border-bottom={ moreThan1 && i < length - 1 }
-                    class:sidebar__item--focused={ !$isResponsive && note?.name === activeName } 
+                    class:sidebar__item--focused={ !$isResponsive && note.id === noteId } 
                     class:sidebar__item--blurred-bg={ $isResponsive }
-                    on:click={() => activeName = note.name}
+                    on:click={() => changeTab(note.id)}
                 >
                     <span class="sidebar__title sidebar__text--overflow">{note.name}</span>
                     <span class="sidebar__text" class:sidebar__text--color-grey={ $isResponsive }>{parseDate(note.updateDate)}</span>
@@ -77,14 +86,14 @@ const sortByDate = () => {
         {/each}
     </nav>
     {#if $isResponsive}
-        <div class="controls app__controls controls-header app__controls-header" class:app__controls--bg-black={ activeName }>
-            <button class="controls__item controls-header__item controls-header__btn controls-header__btn--grid controls__btn--{activeName ? 'active' : 'desactivated'} " on:click={() => activeName = ""}>
+        <div class="controls app__controls controls-header app__controls-header" class:app__controls--bg-black={ isNoteOpen }>
+            <button class="controls__item controls-header__item controls-header__btn controls-header__btn--grid controls__btn--{isNoteOpen ? 'active' : 'desactivated'} " on:click={() => isNoteOpen = false}>
                 <Svg name="chevron_left" color="var(--accent-color)" />
-                <span class="controls__text--accent-color controls__text--overflow">{activeName ? "Notes" : "Dossiers"}</span>
+                <span class="controls__text--accent-color controls__text--overflow">{isNoteOpen ? "Notes" : "Dossiers"}</span>
             </button>
-            <h2 class="controls__h2 controls__text--overflow">{!activeName? "Notes" : ""}</h2>
+            <h2 class="controls__h2 controls__text--overflow">{!isNoteOpen ? "Notes" : ""}</h2>
             <div class="controls__items-wrapper">
-                {#if activeName}
+                {#if isNoteOpen}
                     <span class="controls__item controls-header__item">
                         <Svg name='square_and_arrow_up' color="var(--accent-color)" />
                     </span>
@@ -94,8 +103,8 @@ const sortByDate = () => {
                 </span>
             </div>
         </div>
-        <div class="controls app__controls controls-footer app__controls-footer" class:app__controls--bg-black={ activeName }>
-            {#if activeName}
+        <div class="controls app__controls controls-footer app__controls-footer" class:app__controls--bg-black={ isNoteOpen }>
+            {#if isNoteOpen}
                 <span class="controls__item controls-footer__item controls-footer__item--semi-transparent">
                     <Svg name="checklist" color="var(--accent-color)" />
                 </span>
@@ -160,10 +169,27 @@ const sortByDate = () => {
         </div>
     {/if}
     <div class="content app__content" class:app__content--full={ $isResponsive }>
-        {#if activeNote}
-            <p class="content__p">{dateText(activeNote?.updateDate)}</p>
+        {#if isNoteOpen && activeNote}
+            <p class="content__p">{dateText(activeNote.updateDate)}</p>
             <h2 class="content__h2">{activeNote.name}</h2>
-            <p class="content__p">{activeNote.content}</p>
+            {#each activeNote.content as content}
+                <p class="content__p">{content}</p>
+            {/each}
+            {#each activeNote.links as { name, definition, site }}
+                <p class="content__p">{name}:</p>
+                {#if definition}
+                    <div class="content__line">
+                        <p class="content__line-text">{indentation}- Pour plus d'infos:</p>
+                        <a href={definition} target="_blank" class="content__a">{definition}</a>
+                    </div>
+                {/if}
+                {#if site}
+                    <div class="content__line">
+                        <p class="content__line-text">{indentation}- Site officiel:</p>
+                        <a href={site} target="_blank" class="content__a">{site}</a>
+                    </div>
+                {/if}
+            {/each}
         {/if}
     </div>
 </div>
@@ -241,9 +267,29 @@ const sortByDate = () => {
 .content__h2 {
     margin-block: 1rem;
 }
+.content__p {
+    margin-top: 10px;
+    white-space: pre-wrap;
+}
+.content__line {
+    display: grid;
+    grid-template-columns: max-content auto;
+    gap: 3px;
+}
+.content__line-text {
+    font-size: var(--fz-m);
+    color: #fff;
+    white-space: pre-wrap;
+}
+.content__a {
+    font-size: var(--fz-m);
+    color: var(--accent-color);
+    overflow-wrap: anywhere;
+}
 .content__p:first-of-type {
     color: #7c7c7c;
     text-align: center;
+    margin-top: 0;
 }
 .controls-footer__item {
     --padding-block: calc((var(--controls-footer__item--height) - var(--controls__item--icon-height)) / 2);
@@ -257,6 +303,9 @@ const sortByDate = () => {
     text-align: center;
 }
 @media (max-width: 1280px) {
+    .sidebar__item {
+        --padding-left: 25px;
+    }
     .sidebar__item:focus,
     .sidebar__item:focus-within {
         background-color: #535353;
@@ -268,6 +317,10 @@ const sortByDate = () => {
     }
     .sidebar__category {
         color: #fff;
+    }
+    .content__line-text,
+    .content__a {
+        font-size: var(--fz-l);
     }
 }
 </style>

@@ -2,24 +2,24 @@ import { genId } from "./utils";
 import { open, close, limit, focus, fullscreen, reduce } from "./store";
 import type { App } from '../types';
 import type { AppWindow, AppWindowHandler, AppWindowOptions } from "./types";
-import { writable } from "svelte/store";
+
+const defaultLimit: Record<string, number> = {
+    Music: 1,
+}
 
 const createAppWindow = (data: App) => ({
     created_at: Date.now(),
     id: genId(),
     data,
-    fullscreen: writable(false),
-    reduce: writable({
-        active: false,
-        x: 0,
-        y: 0,
-        scale: 1,
-    }),
 });
     
 const createHandler: AppWindowHandler = (data: App, opts?: AppWindowOptions) => {
     const app: AppWindow = createAppWindow(data);
-    const windowLimit = opts?.limit || 2;
+
+    const windowLimit = opts?.limit || defaultLimit[data.type] || 10;
+    const windowProps = opts?.props;
+
+    if (windowProps) app.data.props = windowProps;
 
     limit(app.data.type, windowLimit);
     open(app);
