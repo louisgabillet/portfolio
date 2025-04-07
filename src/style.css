@@ -281,7 +281,7 @@ a {
     font-size: var(--fz-xl);
 }
 .controls-header__btn--grid {
-    width: fit-content;
+    width: 100%;
     display: grid;
     grid-template-columns: var(--controls__item--height) 1fr;
     align-items: center;

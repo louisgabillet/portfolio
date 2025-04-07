@@ -122,15 +122,15 @@ const onWindowResize = () => {
     {#if !isPageLoaded}
         <Loader /> 
     {/if}
-    <div class="commands main__commands">
-        <!--<button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
+    <!--<div class="commands main__commands">
+        <button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
             {#if isFullscreen}
                 <Svg name='fullscreen_off' color="#fff" />
             {:else} 
                 <Svg name='fullscreen_on' color="#fff" />
             {/if}
-        </button>-->
-    </div>
+        </button>
+    </div>-->
     <section class="main__sect main__sect-1 transition-320-ease" class:hidden={ !isPageLoaded }>
         <div class='device'>
             <picture>
@@ -275,13 +275,14 @@ const onWindowResize = () => {
 }
 .main__sect {
     position: relative;
-    display: grid;
-    place-content: center;
+    /*display: grid;
+    place-content: center;*/
 }
 .main__sect-1 {
     max-height: 100vh;
     user-select: none;
-    overflow: hidden;
+    -webkit-user-select: none;
+    /*overflow: hidden;*/
 }
 .device {
     position: relative;
@@ -289,6 +290,7 @@ const onWindowResize = () => {
 }
 .device__img {
     height: 100vh;
+    min-height: 900px;
     object-fit: cover;
     pointer-events: none;
     position: relative;
@@ -471,7 +473,7 @@ const onWindowResize = () => {
     background-color: #fff;
     border-radius: 10px;
 }
-.commands {
+/*.commands {
     display: flex;
     gap: 4px;
 }
@@ -481,7 +483,7 @@ const onWindowResize = () => {
     right: 1%;
     z-index: 1000;
 }
-/*.commands__btn {
+.commands__btn {
     height: 15px;
     aspect-ratio: 1/1;
 }

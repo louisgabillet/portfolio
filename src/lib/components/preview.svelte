@@ -89,7 +89,7 @@ const copyColor = (color: Color) => {
             </span>
         </div>
     {:else} 
-        <div class="controls app__controls app__controls--full">
+        <div class="controls app__controls app__controls--full" data-moving-target>
             <span class="controls__item controls__item--space-right">
                 <Svg name='sidebar_left' />
             </span>
@@ -277,6 +277,7 @@ const copyColor = (color: Color) => {
     color: black;
     overflow: hidden;
     user-select: text;
+    -webkit-user-select: text;
 }
 .content__page {
     margin: 0 auto 8px auto;

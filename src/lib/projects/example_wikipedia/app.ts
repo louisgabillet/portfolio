@@ -1,11 +1,8 @@
 import data from './data';
 import type { Gallery } from '../types';
 
+const dirName: string = 'example_wikipedia';
 const { details, links, images } = data;
-
-const url = new URL(import.meta.url);
-const urlParts = url.pathname.split('/');
-const dirName = urlParts[urlParts.length - 2];
 
 const gallery: (k: 'pc' | 'mobile') => Gallery[] = (k) => images.gallery.filter(img => img[k]).map(i => ({ ...i, props: { imgId: i.imgId, dirName } }));
 

@@ -210,6 +210,7 @@ const sortByDate = () => {
 }
 .app__content {
     user-select: text;
+    -webkit-user-select: text;
 }
 .sidebar__item {
     --padding-left: 12px;

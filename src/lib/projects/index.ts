@@ -37,9 +37,7 @@ export async function loadProjectData(n: string):Promise<Data | undefined> {
     try {
         const mod = await import(`../../lib/projects/${n}/index.ts`);
 
-        if (!mod?.data) {
-            throw Error("Module does dot export data");
-        }
+        if (!mod?.data) throw Error("Module does dot export data");
 
         return mod.data;
 
