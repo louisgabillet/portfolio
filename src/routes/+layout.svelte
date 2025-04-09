@@ -1,12 +1,13 @@
 <script lang="ts">
 import '../style.css';
 import { PUBLIC_NAME } from '$env/static/public';
+import { page } from '$app/state';
 
 const title = PUBLIC_NAME;
-const description = '';
-const url = '';
-const image = '';
-const alt = '';
+const description = 'Développeur Web front-end indépendant passionné par la création et les nouvelles technologies.';
+const url = page.url.href;
+const image = `${page.url.origin}/openGraph_image.jpg`;
+const alt = `Wallpaper of Macbook in ${page.url.host}`;
 
 let schema = {
     "@context": "https://schema.org",
@@ -21,9 +22,8 @@ const jsonldScript = `<script type="application/ld+json">${JSON.stringify(schema
 <svelte:head>
     <title>{ title }</title>
     <meta name="description" content={ description }>
-    <meta name="author" content="" />
+    <meta name="author" content={ PUBLIC_NAME } />
     <meta name="color-scheme" content="dark">
-    <meta name="theme-color" content="">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:title" content={ title }>

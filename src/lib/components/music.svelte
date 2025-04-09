@@ -545,41 +545,64 @@ const handlePlay = () => {
                 {/if}
                 {#each buffer as {id, metadata, favorite}, i}
                     {@const isPlaying = id === playingSong?.id && playingSongIndex === i}
-                    <button class="categories album-page__categories" class:categories--background={ !$isResponsive } class:categories--background-transparent={i % 2 !== 0 && !$isResponsive} on:dblclick={() => handleStart(i, true) }>
-                        <span class="categories__icon" class:categories__icon--hidden={ !favorite }>
-                            <Svg name={ favorite ? 'star_fill' : 'star' } color='var(--accent-color)' />
-                        </span>
-                        <div class="categories__wrapper">
-                            <button class="cover categories__cover" on:click={() => handleStart(i, !openedPlaylistIsPlaying)}>
-                                <div class="cover__action" class:cover__action--hidden={ !openedPlaylistIsPlaying || !isPlaying || $paused }>
-                                    <span class="cover__icon cover__icon--hide-hover" class:cover__icon--hidden={ !isPlaying || $paused }>
-                                        <SoundBars />
+                    {#if $isResponsive}
+                        <button class="categories album-page__categories" on:click={() => handleStart(i, true) }>
+                            <span class="categories__icon" class:categories__icon--hidden={ !favorite }>
+                                <Svg name={ favorite ? 'star_fill' : 'star' } color='var(--accent-color)' />
+                            </span>
+                            <div class="categories__wrapper">
+                                <button class="cover categories__cover" on:click={() => handleStart(i, !openedPlaylistIsPlaying)}>
+                                    <div class="cover__action" class:cover__action--hidden={ !openedPlaylistIsPlaying || !isPlaying || $paused }>
+                                        <span class="cover__icon cover__icon--hide-hover" class:cover__icon--hidden={ !isPlaying || $paused }>
+                                            <SoundBars />
+                                        </span>
+                                        <span class="cover__action-btn">
+                                            <Svg name={ openedPlaylistIsPlaying && isPlaying && !$paused  ? 'pause_fill' : 'play_fill' } color="#fff" />
+                                        </span>
+                                    </div>
+                                    <span class="cover__icon">
+                                        <Svg name={ defaultCoverSong.name } color={ defaultCoverSong.color } />
                                     </span>
-                                    <span class="cover__action-btn">
-                                        <Svg name={ openedPlaylistIsPlaying && isPlaying && !$paused  ? 'pause_fill' : 'play_fill' } color="#fff" />
-                                    </span>
-                                </div>
-                                <span class="cover__icon">
-                                    <Svg name={ defaultCoverSong.name } color={ defaultCoverSong.color } />
-                                </span>
-                            </button>
-                            <p class="categories__text--color-white categories__text--overflow" title={ metadata.name }>{metadata.name}</p> 
-                            {#if $isResponsive}
+                                </button>
+                                <p class="categories__text--color-white categories__text--overflow" title={ metadata.name }>{metadata.name}</p> 
                                 <p class="categories__text--overflow" title={ metadata.artist }>{metadata.artist}</p> 
-                            {/if}
-                        </div>
-                        {#if !$isResponsive}
+                            </div>
+                            <span class="categories__icon categories--desactivated">
+                                <Svg name='ellipsis' color='#fff' />
+                            </span>
+                        </button>
+                    {:else}
+                        <button class="categories album-page__categories categories--background" class:categories--background-transparent={ i % 2 !== 0 } on:dblclick={() => handleStart(i, true) }>
+                            <span class="categories__icon" class:categories__icon--hidden={ !favorite }>
+                                <Svg name={ favorite ? 'star_fill' : 'star' } color='var(--accent-color)' />
+                            </span>
+                            <div class="categories__wrapper">
+                                <button class="cover categories__cover" on:click={() => handleStart(i, !openedPlaylistIsPlaying)}>
+                                    <div class="cover__action" class:cover__action--hidden={ !openedPlaylistIsPlaying || !isPlaying || $paused }>
+                                        <span class="cover__icon cover__icon--hide-hover" class:cover__icon--hidden={ !isPlaying || $paused }>
+                                            <SoundBars />
+                                        </span>
+                                        <span class="cover__action-btn">
+                                            <Svg name={ openedPlaylistIsPlaying && isPlaying && !$paused  ? 'pause_fill' : 'play_fill' } color="#fff" />
+                                        </span>
+                                    </div>
+                                    <span class="cover__icon">
+                                        <Svg name={ defaultCoverSong.name } color={ defaultCoverSong.color } />
+                                    </span>
+                                </button>
+                                <p class="categories__text--color-white categories__text--overflow" title={ metadata.name }>{metadata.name}</p> 
+                            </div>
                             <p class="categories__text--overflow" title={ metadata.artist }>{metadata.artist}</p> 
                             <p class="categories__text--overflow" title={ metadata.album }>{metadata.album}</p> 
                             <span class="categories__icon categories--desactivated">
                                 <Svg name='arrow_down_circle_fill' color={$isResponsive ? '#fff' : '#7c7c7c'} />
                             </span>
                             <p class="categories__text--end categories__text--overflow" title={ metadata.duration }>{metadata.duration}</p> 
-                        {/if}
-                        <span class="categories__icon categories--desactivated">
-                            <Svg name='ellipsis' color={$isResponsive ? '#fff' : '#7c7c7c'} />
-                        </span>
-                    </button>
+                            <span class="categories__icon categories--desactivated">
+                                <Svg name='ellipsis' color='#7c7c7c' />
+                            </span>
+                        </button>
+                    {/if}
                 {/each}
                 <p class="album-page__playlist-duration">{buffer.length} morceaux, {getAproximateTime(buffer)}</p>
             </div> 
@@ -646,9 +669,6 @@ const handlePlay = () => {
     width: 20px;
     height: 100%;
     padding: 4px;
-}
-.app__controls {
-    background-color: #191919;
 }
 .controls__btn--play {
     padding-block: 2px;
@@ -1067,6 +1087,9 @@ const handlePlay = () => {
 }
 
 @media (min-width: 1281px) {
+    .app__controls {
+        background-color: #191919;
+    }
     .app__content {
         background-color: #1e1e1e;
         border-top: 1px solid #7c7c7c33;

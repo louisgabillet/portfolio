@@ -117,11 +117,11 @@ ${indentation}- assure que la valeur assignée à « age » est un nombre (avec 
         updateDate: '2024-01-01',
         pinned: true,
         content: [
-            `Développeur web front-end indépendant agé de ${calculateAge(PUBLIC_BIRTH_DATE)} ans. J'ai toujours eu un attrait pour la création. Faisant beaucoup de montages photo/vidéo étant plus jeune, j'ai toujours aimé voir mes idées prendre vie.`,
+            `Développeur web front-end indépendant agé de ${calculateAge(PUBLIC_BIRTH_DATE)} ans. J'ai toujours eu un attrait pour la création. Faisant beaucoup de montages photo/vidéo étant plus jeune, j'aimais déjà voir mes idées prendre vie.`,
 
             `La programmation a été une découverte passionnante puisqu'elle m'a permis de démultiplier mes possibilités créatives, tout en s'associant à un autre centre d'intérêt, les nouvelles technologies.`,
 
-            `Je vous propose de lire les notes que j'ai écrites, chronologiquement ou non, pour ce que ça intéresse d'en savoir un peu plus sur mon aventure dans cet univers fascinant et infini qu'est la programmation.`,
+            `Je vous propose de lire les notes que j'ai écrites, chronologiquement ou non, pour ceux que cela intéresse d'en savoir un peu plus sur mon aventure dans cet univers fascinant et infini qu'est la programmation.`,
         ],
         links: [],
     },

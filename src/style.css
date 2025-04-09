@@ -280,8 +280,11 @@ a {
 .controls-header__btn {
     font-size: var(--fz-xl);
 }
+.app__controls-header > .controls-header__btn {
+    width: fit-content;
+    aspect-ratio: auto;
+}
 .controls-header__btn--grid {
-    width: 100%;
     display: grid;
     grid-template-columns: var(--controls__item--height) 1fr;
     align-items: center;

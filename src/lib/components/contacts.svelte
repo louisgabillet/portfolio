@@ -195,6 +195,7 @@ const filterByFirstLetter = () => {
     outline: none;
 }
 .controls-header__btn--bg {
+    aspect-ratio: auto;
     background-color: #ffffff12;
     backdrop-filter: blur(var(--blur));
     min-width: min-content;
@@ -204,6 +205,7 @@ const filterByFirstLetter = () => {
     border-radius: var(--controls__item--height);
 }
 .controls-header__btn--round {
+    width: min-content;
     display: inline;
     border-radius: 50%;
     aspect-ratio: 1/1;
@@ -397,10 +399,9 @@ const filterByFirstLetter = () => {
         padding: 6rem var(--padding-inline) 0;
     }
     .contact__pp {
-        padding: 15px;
-    }
-    .pp__letter {
+        width: 70px;
         font-size: 3rem;
+        margin-right: 0;
     }
     .contact__name {
         font-size: 1.75rem;
