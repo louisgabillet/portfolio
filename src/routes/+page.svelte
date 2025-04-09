@@ -11,6 +11,7 @@ import Svg from '$lib/components/svg.svelte';
 import Loader from '$lib/components/loader.svelte';
 import Toaster from '$lib/components/toaster.svelte';
 import Window from '$lib/components/window.svelte';
+import { browser } from '$app/environment';
 
 const dateOptions: Record<string, Intl.DateTimeFormatOptions> = {
     lock_screen: {
@@ -49,9 +50,10 @@ let time: string;
 let desktopContent: App[] = [];
 let dockContent: App[] = [];
 
-//let isFullscreen: boolean = false;
 let isPowerOn: boolean = false;
 let isPageLoaded: boolean = false;
+let isDeviceLoaded: boolean = false;
+let isWallpaperLoaded: boolean = false;
 
 let language: string = 'Français';
 let screen: HTMLElement | undefined = undefined;
@@ -60,83 +62,65 @@ $: lastAppWindow = $appWindows[$appWindows.length - 1];
 $: topBarName = lastAppWindow ? lastAppWindow.data.type : 'Finder';
 $: topBarData = pcAppsMap.get(topBarName) ?? { name: '', top_bar: []};
 
+$: isEverythingLoaded = isPageLoaded && isDeviceLoaded && isWallpaperLoaded;
+
 apps.pc.global.forEach(app => pcAppsMap.set(app.type, app));
 updatedTime();
 
 onMount(() => {
-    screen = document.querySelector('.device__lock-screen') as HTMLElement;
-    if (screen) {
-        screen.addEventListener('click', () => {
-            isPowerOn = true;
-            date = formatDate(dateOptions.top_bar);
-        })
-    }
+    const device: HTMLImageElement | null = document.querySelector('.device__img');
+    const wallpaper: HTMLImageElement | null = document.querySelector('.background__img');
 
-    onWindowResize();
+    screen = document.querySelector('.device__lock-screen') as HTMLElement;
     timeInterval = setInterval(updatedTime, 1000);
 
-    window.addEventListener('resize', onWindowResize)
+    if (screen) screen.addEventListener('click', onPowerOn);
+
+    if (device && device.complete) isDeviceLoaded = true;
+    if (wallpaper && wallpaper.complete) isWallpaperLoaded = true;
+
+    onWindowResize();
+    if (browser) window.addEventListener('resize', onWindowResize)
 
     isPageLoaded = true;
 })
 onDestroy(() => {
     clearInterval(timeInterval);
+    if (browser) window.removeEventListener('resize', onWindowResize)
 })
 
+const onPowerOn = () => {
+    isPowerOn = true;
+    date = formatDate(dateOptions.top_bar);
+
+    if (screen) screen.removeEventListener('click', onPowerOn);
+}
 const homeButtonAction = () => {
     if ($appWindows.length <= 0) return;
 
     appWindows.set([]);
 }
 const onWindowResize = () => {
-    const windowWidth = window.innerWidth;
-
-    const isWindowSmaller = windowWidth <= maxWidthIphone;
+    const isWindowSmaller = window.innerWidth <= maxWidthIphone;
 
     const desktopContentUpdated = isWindowSmaller ? apps.mobile.desktop : apps.pc.desktop;
     const dockContentUpdated = isWindowSmaller ? apps.mobile.dock : apps.pc.dock;
 
-    isResponsive.set(isWindowSmaller);
-
-    if (desktopContentUpdated !== desktopContent) {
-        desktopContent = desktopContentUpdated;
-    }
-
-    if (dockContentUpdated !== dockContent) {
-        dockContent = dockContentUpdated;
-    }
+    if (desktopContentUpdated !== desktopContent) desktopContent = desktopContentUpdated;
+    if (dockContentUpdated !== dockContent) dockContent = dockContentUpdated;
 }
-//function openFullscreen() {
-//    const screen = document.querySelector('.device__screen');
-//
-//    if (!screen) {
-//        return;
-//    }
-//
-//    isFullscreen = !isFullscreen;
-//    screen.requestFullscreen();
-//}
 </script>
 
 <main class="main">
-    {#if !isPageLoaded}
+    {#if !isEverythingLoaded}
         <Loader /> 
     {/if}
-    <!--<div class="commands main__commands">
-        <button class="commands__btn" class:commands__btn--desactivated={ !isPowerOn } title={isFullscreen ? "Quittez le mode plein écran" : "Plein Écran"} on:click={ openFullscreen }>
-            {#if isFullscreen}
-                <Svg name='fullscreen_off' color="#fff" />
-            {:else} 
-                <Svg name='fullscreen_on' color="#fff" />
-            {/if}
-        </button>
-    </div>-->
-    <section class="main__sect main__sect-1 transition-320-ease" class:hidden={ !isPageLoaded }>
+    <section class="main__sect main__sect-1 transition-320-ease" class:hidden={ !isEverythingLoaded }>
         <div class='device'>
             <picture>
                 <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/devices/iphone/iPhone_16_Black_Portrait_qquj9o.png">
                 <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/devices/macbook/MacBook_Air_Dark_lqrnpi.png">
-                <img class="device__img" src="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/devices/macbook/MacBook_Air_Dark_lqrnpi.png" alt="Appareil"> 
+                <img class="device__img" src="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/devices/macbook/MacBook_Air_Dark_lqrnpi.png" alt={ $isResponsive ? "Iphone 16 noir portrait" : "Macbook Air noir" } on:load={() => isDeviceLoaded = true}> 
             </picture>
             <div class="device__placement">
                 <div class="lock-screen device__lock-screen transition-320-ease" class:hidden={isPowerOn}>
@@ -227,7 +211,7 @@ const onWindowResize = () => {
                     <picture class="background screen__background transition-320-ease">
                         <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/wallpapers/mobile/Dark_Orbs_cwpt8t.jpg">
                         <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/wallpapers/pc/Ink_Cloud_pumoik.jpg">
-                        <img class="background__img" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/wallpapers/pc/Ink_Cloud_pumoik.jpg' alt="Fond d'écran de l'appareil">
+                        <img class="background__img" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/wallpapers/pc/Ink_Cloud_pumoik.jpg' alt="Fond d'écran de l'appareil" on:load={() => isWallpaperLoaded = true}>
                     </picture>
                     <div class="desktop screen__desktop transition-320-ease">
                         <div class='icons-placement desktop__icons-placement transition-320-ease' class:hidden={!isPowerOn}>
@@ -384,7 +368,6 @@ const onWindowResize = () => {
 }
 .device__screen {
     grid-area: 1/1;
-    /*filter: saturate(1.5);*/
 }
 .device__screen:global([data-fullscreen]) .screen__background,
 .device__screen:global([data-fullscreen]) .desktop__icons-placement {
@@ -473,24 +456,6 @@ const onWindowResize = () => {
     background-color: #fff;
     border-radius: 10px;
 }
-/*.commands {
-    display: flex;
-    gap: 4px;
-}
-.main__commands {
-    position: absolute;
-    bottom: 1%;
-    right: 1%;
-    z-index: 1000;
-}
-.commands__btn {
-    height: 15px;
-    aspect-ratio: 1/1;
-}
-.commands__btn--desactivated {
-    opacity: .4;
-    pointer-events: none;
-}*/
 .top-bar {
     width: 100%;
     background-color: #0000002E;
