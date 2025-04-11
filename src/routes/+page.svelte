@@ -255,7 +255,6 @@ const onWindowResize = () => {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
 }
 .main__sect {
     position: relative;
@@ -263,7 +262,8 @@ const onWindowResize = () => {
     place-content: center;*/
 }
 .main__sect-1 {
-    max-height: 100vh;
+    /*max-height: 100vh;*/
+    margin: auto;
     user-select: none;
     -webkit-user-select: none;
     /*overflow: hidden;*/
@@ -273,8 +273,9 @@ const onWindowResize = () => {
     display: inherit;
 }
 .device__img {
-    height: 100vh;
-    min-height: 900px;
+    /*height: 100vh;
+    min-height: 900px;*/
+    height: 850px;
     object-fit: cover;
     pointer-events: none;
     position: relative;
@@ -383,7 +384,7 @@ const onWindowResize = () => {
 .screen__background {
     position: absolute;
     inset: 0;
-    animation: zoom-out 25s linear;
+    /*animation: zoom-out 25s linear;*/
 }
 .background__img {
     width: 100%;
@@ -472,7 +473,7 @@ const onWindowResize = () => {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     align-items: center;
-    gap: 8rem;
+    gap: 7rem;
 }
 .top-bar--flex {
     gap: 15px;
@@ -520,18 +521,21 @@ const onWindowResize = () => {
     text-transform: capitalize;
 }
 
-@keyframes zoom-out {
+/*@keyframes zoom-out {
 from {
     scale: 1.1;
 }
 to {
     scale: 1;
 }
-}
+}*/
 
 @media (max-width: 1280px) {
     .device__placement {
         padding: 6.5%; 
+    }
+    .device__img {
+        height: 800px;
     }
     .lock-screen__account {
         bottom: 4%;

@@ -121,7 +121,8 @@ a {
 .icons-placement {
     display: grid;
     grid-template-columns: repeat(var(--nbr-columns), var(--column-width));
-    gap: 15px 5px;
+    /*gap: 15px 5px;*/
+    row-gap: 15px;
 }
 .icon {
     --height: 10px;

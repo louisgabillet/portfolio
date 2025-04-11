@@ -6,7 +6,7 @@ import type { App } from "$lib/apps/types";
 import appWindows from "$lib/apps/window-management/store";
 import type { FileChildren } from "$lib/filesystem";
 
-export let app: App & { children?: FileChildren[] };
+export let app: App & { children?: FileChildren[], url?: string };
 export let action: () => void;
 export let dock: boolean = false;
 export let bold: boolean = false;
@@ -42,7 +42,7 @@ const actionHandler = () => {
             on:click={ actionHandler }
         > 
             <Img
-                width={$isResponsive ? "80" : "50"}
+                width={$isResponsive ? "75" : "50"}
                 src={app.src}
                 alt="Icône '{app.type}'"
             />
@@ -106,7 +106,7 @@ const actionHandler = () => {
     gap: 2px;
     overflow-wrap: break-word;
     overflow: hidden;
-    padding: 1px;
+    /*padding: 1px;*/
 }
 .shortcut--desactivated {
     pointer-events: none; 
