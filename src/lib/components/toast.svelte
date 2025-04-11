@@ -9,6 +9,7 @@ import appWindows from '$lib/apps/window-management/store';
 import type { Toast } from '$lib/toast/types';
 import Img from './img.svelte';
 import Svg from './svg.svelte';
+	import { browser } from '$app/environment';
 
 export let _toast: Toast;
 export let index: number;
@@ -46,7 +47,7 @@ $: app = allApps.find(app => app.type === appName);
 $: icon = _toast.icon ?? toastDefaultIcons[type];
 
 $: position = length - index > 4 ? 4 : length - index;
-$: imgWidth = $isResponsive ? '45' : '30';
+$: imgWidth = $isResponsive ? '40' : '30';
 
 const isSameDay = (d1: Date, d2: Date): boolean => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 const formatTime = (t: number): string => t.toString().padStart(2, '0');
@@ -74,9 +75,7 @@ const getRelativeTime = (date: string | number | Date) => {
     const now = new Date();
     const time = new Date(date);
 
-    if (isNaN(time.valueOf())) {
-        return 'Invalid date'; 
-    }
+    if (isNaN(time.valueOf())) return 'Date invalide'; 
 
     if (!isSameDay(now, time)) {
         const day = time.toLocaleDateString('fr-FR', { weekday: 'short' }); 
@@ -98,9 +97,7 @@ const getRelativeTime = (date: string | number | Date) => {
     const secondsAgo = Math.floor((now.valueOf() - time.valueOf()) / 1000);
     const { interval, unit } = calculateTimeDifference(secondsAgo);
 
-    if (interval === 0) {
-        return 'maintenant'; 
-    };
+    if (interval === 0) return 'maintenant'; 
 
     if (unit === 'h' && interval > 2) {
         const hours = formatTime(time.getHours());
@@ -123,17 +120,13 @@ const getRelativeTime = (date: string | number | Date) => {
 const calculateTimeDifference = (time: number) => {
     const result = units.find(({ seconds }) => Math.floor(time / seconds) >= 1);
 
-    if (result) {
-        return { interval: Math.floor(time / result.seconds), unit: result.label };
-    }
+    if (result) return { interval: Math.floor(time / result.seconds), unit: result.label };
 
     return { interval: 0, unit: '' }; 
 };
 
 const openAppWindow = () => {
-    if (!app) {
-        return;
-    }
+    if (!app) return;
 
     closeToast();
 
@@ -169,23 +162,24 @@ const changeParentHeight = (child: HTMLElement) => {
     }
 };
 
+
 const pointerdown = (e: PointerEvent) => {
-    if (!self || position !== 1) {
-        return;
-    }
+    if (!self || position !== 1) return;
+
+    e.preventDefault();
 
     startingPos = $isResponsive ? e.clientY : e.clientX;
     isPointerDown = true;
 
     self.addEventListener('pointermove', pointermove);
     window.addEventListener('pointerup', pointerup);
+    self.addEventListener('pointercancel', () => console.log('cancel'));
 }
-
 const pointermove = (e: PointerEvent) => {
-    const axis: number = $isResponsive ? e.clientY : e.clientX;
+    const pos: number = $isResponsive ? e.clientY : e.clientX;
     const direction: -1 | 1 = $isResponsive ? -1 : 1;
 
-    distance = Math.max(-30, +(axis - startingPos).toFixed(5) * direction);
+    distance = Math.max(-30, +(pos - startingPos).toFixed(5) * direction);
     self.style[$isResponsive ? 'bottom' : 'left'] = `${distance}px`;
 }
 
@@ -201,7 +195,6 @@ const pointerup = () => {
         closeToast();
         return;
     }
-
     if (isClicked) {
         openAppWindow();
         return;
@@ -230,23 +223,30 @@ onDestroy(() => {
     class:notif--hover={ !$isResponsive && position === 1 }
     style:--transition-property='transform, opacity, scale{ !$isResponsive || !isPointerDown ? ', bottom' : '' }{ !isPointerDown ? ', left' : '' }'
 >
-    <button
-        class="notif__btn notif__btn--close"
-        class:notif__btn--hidden={ !$isResponsive || index !== length - 1 }
-        title="Fermer la notification"
-        on:click={ closeToast }
-    >
-        <Svg name="xmark" color="#fff" />
-    </button>
+    {#if !$isResponsive}
+        <button
+            class="notif__btn notif__btn--close"
+            class:notif__btn--hidden={ !$isResponsive || index !== length - 1 }
+            title="Fermer la notification"
+            on:click={ closeToast }
+        >
+            <Svg name="xmark" color="#fff" />
+        </button>
+    {/if}
     <button 
         class="notif__content" 
+        class:notif__content--border={ !$isResponsive }
         on:pointerdown={ pointerdown }
     >
         <div class="notif__img" title="{ index + 1 } notifitations { app?.type ? `pour ${ app?.type }` : '' }">
-            <Img src={ app?.src ?? '' } alt="Icône '{ app?.type }'" width={ imgWidth } />
-            <!--{#if index > 0}
-                <span class="notif__nbr-open">{ index + 1 }</span>
-            {/if}-->
+            <Img 
+                src={ app?.src ?? '' }
+                alt="Icône '{ app?.type }'"
+                width={ imgWidth }
+            />
+            {#if index > 0}
+                <span class="notif__nbr-open notif__nbr-open--position">{ index + 1 }</span>
+            {/if}
         </div>
         <div class="notif__header">
             {#if icon}
@@ -304,10 +304,13 @@ onDestroy(() => {
     column-gap: 8px;
     background-color: var(--bg-color);
     backdrop-filter: blur(var(--blur));
-    border: 1px solid #4A4A4A63;
-    outline: 1px solid #1a1a1a;
     padding: 8px;
     border-radius: 14px;
+    touch-action: none;
+}
+.notif__content--border {
+    border: 1px solid #4A4A4A63;
+    outline: 1px solid #1a1a1a;
 }
 .notif-header {
     display: grid;
@@ -328,6 +331,7 @@ onDestroy(() => {
     position: relative;
     width: min-content;
     grid-row: 1/-1;
+    margin-block: auto;
 }
 .notif__text--overflow {
     --nbr-lines: 2;
@@ -358,20 +362,20 @@ onDestroy(() => {
     color: #fff;
 }
 .notif__nbr-open {
-    --fz: var(--fz-s);
-    --min-width: calc(var(--fz) + 2px);
-    min-width: var(--min-width);
-    border-radius: calc(var(--min-width) * 2);
-    padding: 1px;
-    font-size: var(--fz);
-    color: #a1a1a1;
+    min-width: 1em;
+    border-radius: 2em;
+    padding-inline: 3px;
+    font-size: var(--fz-xs);
+    color: #fff;
     background-color: var(--bg-color);
     backdrop-filter: blur(var(--blur));
+    z-index: 1;
+}
+.notif__nbr-open--position {
     position: absolute;
     top: 0;
     right: 0;
     transform: translate(15%, -15%);
-    z-index: 1;
 }
 .notif__btn {
     background-color: var(--bg-color);
@@ -423,7 +427,8 @@ to {
         font-size: var(--fz-m);
     }
     .notif__nbr-open {
-        --fz: var(--fz-m);
+        font-size: var(--fz-m);
+        padding-inline: 4px;
     }
     .notif__btn--close {
         top: 98%;

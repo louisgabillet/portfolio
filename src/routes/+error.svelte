@@ -118,11 +118,10 @@ onMount(() => {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
 }
 .main__sect {
     position: relative;
-    max-height: 100vh;
+    margin: auto;
     user-select: none;
     -webkit-user-select: none;
 }
@@ -144,19 +143,18 @@ onMount(() => {
     padding: 6.7% 10.1% 6.6%;
 }
 .device__img {
-    height: 100vh;
-    min-height: 900px;
+    height: 850px;
     object-fit: cover;
     pointer-events: none;
     position: relative;
     z-index: 2;
-    opacity: .4;
+    animation: fade 320ms ease forwards;
 }
 .background__img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: .4;
+    animation: fade 320ms ease forwards;
 }
 .error {
     --padding: 20px;
@@ -202,9 +200,18 @@ onMount(() => {
     opacity: .8;
 }
 
+@keyframes fade {
+to {
+    opacity: .4;
+}
+}
+
 @media (max-width: 1280px) {
     .device__placement {
         padding: 6.5%;
+    }
+    .device__img {
+        height: 800px;
     }
     .error {
         padding-bottom: 0;

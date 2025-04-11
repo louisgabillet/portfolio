@@ -108,7 +108,7 @@ const actionHandler = () => {
     gap: 2px;
     overflow-wrap: break-word;
     overflow: hidden;
-    /*padding: 1px;*/
+    padding-top: 1px;
 }
 .shortcut--desactivated {
     pointer-events: none; 
