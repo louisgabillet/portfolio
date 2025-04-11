@@ -10,6 +10,7 @@ import Notes from "./notes.svelte";
 import appWindow from "$lib/apps/window-management";
 import { isResponsive } from "$lib/store";
 import type { App } from "$lib/apps/types";
+import { storagePrefix } from "$lib";
 
 export let mouseDownStartPos: { x: number, y: number };
 export let appWindowPositions: { x: number, y: number };
@@ -82,7 +83,7 @@ const stopMoveOnMouseUp = () => {
     window.removeEventListener('mousemove', moveOnMouseMove);
     window.removeEventListener('mouseup', stopMoveOnMouseUp);
 
-    localStorage.setItem(`${type.toLowerCase()}-window-position`, JSON.stringify(appWindowPositions));
+    localStorage.setItem(`${storagePrefix}${type.toLowerCase()}-window-position`, JSON.stringify(appWindowPositions));
 }
 
 const onKeyDown = (e: KeyboardEvent) => {

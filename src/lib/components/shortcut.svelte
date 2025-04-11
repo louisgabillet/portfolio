@@ -12,9 +12,11 @@ export let dock: boolean = false;
 export let bold: boolean = false;
 
 const alwaysOpen: string[] = ['Finder', 'Music'];
+const documentSrc: string = 'icons/document';
 
 $: tag = isOutsideLink ? 'a' : 'div';
-$: link_attr = isOutsideLink && app?.url ? { href: app?.url, target: '_blank' } : {};
+
+$: linkAttr = isOutsideLink && app?.url ? { href: app?.url, target: '_blank' } : {};
 $: appNameAttr = dock ? { 'data-app-name': app.type } : {};
 
 $: isOutsideLink = app.type === 'Link';
@@ -30,7 +32,7 @@ const actionHandler = () => {
 
 <svelte:element 
     this={tag} 
-    {...link_attr}  
+    {...linkAttr}  
     class="shortcut"  
     class:shortcut--desactivated={ isDesactivated }
     class:dock__shortcut={ dock }
@@ -42,33 +44,33 @@ const actionHandler = () => {
             on:click={ actionHandler }
         > 
             <Img
-                width={$isResponsive ? "75" : "50"}
-                src={app.src}
-                alt="Icône '{app.type}'"
+                width={ $isResponsive ? '75' : '50' }
+                src={ $isResponsive && app.src.startsWith(documentSrc) ? 'icons/document_clean_ewsisk.png' : app.src }
+                alt="Icône '{ app.type }'"
             />
         </button>
         <button class="shortcut__btn" on:click={ actionHandler }> 
             {#if dock && !$isResponsive}
-                <span class="shortcut__dot" style="{isOpen ? '' : 'display: none'}"></span>
+                <span class="shortcut__dot" style="{ isOpen ? '' : 'display: none' }"></span>
             {:else if !dock}
                 <span class="shortcut__text-overflow">
-                    <span title="{app.name}" class="shortcut__name" class:shortcut__name--color-blue={ tag === 'a' }> 
-                        {app.name}
+                    <span title="{ app.name }" class="shortcut__name" class:shortcut__name--color-blue={ tag === 'a' }> 
+                        { app.name }
                     </span>
                 </span>
             {/if}
         </button>
         {#if app.type === 'Folder'}
-            <p class="shortcut__p">{app.children?.length ?? 0} élément{app.children? 's' : ''}</p>
+            <p class="shortcut__p">{ app.children?.length ?? 0 } élément{ app.children? 's' : '' }</p>
         {/if}
     {:else}
         <button class="shortcut__btn shortcut__btn--focus"
             on:dblclick={ actionHandler }
         > 
             <Img
-                width="50"
-                src={app.src}
-                alt="Icône '{app.type}'"
+                width='50'
+                src={ app.src }
+                alt="Icône '{ app.type }'"
             />
             {#if app?.shortcut}
                 <span class="shortcut__icon">
@@ -79,12 +81,12 @@ const actionHandler = () => {
         <button class="shortcut__btn" on:dblclick={ actionHandler }> 
             <span class="shortcut__text-overflow">
                 {#if bold}
-                    <b title="{app.name}" class="shortcut__name shortcut__name--focus shortcut__name--bold" class:shortcut__name--color-blue={ tag === 'a' }> 
-                        {app.name}
+                    <b title="{ app.name }" class="shortcut__name shortcut__name--focus shortcut__name--bold" class:shortcut__name--color-blue={ tag === 'a' }> 
+                        { app.name }
                     </b>
                 {:else} 
-                    <span title="{app.name}" class="shortcut__name shortcut__name--focus" class:shortcut__name--color-blue={ tag === 'a' }> 
-                        {app.name}
+                    <span title="{ app.name }" class="shortcut__name shortcut__name--focus" class:shortcut__name--color-blue={ tag === 'a' }> 
+                        { app.name }
                     </span>
                 {/if}
             </span>

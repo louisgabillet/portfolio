@@ -4,7 +4,7 @@ const mobileGlobal: (App & { top_bar: string[] })[] = [
     {
         name: 'Fichiers',
         type: 'Finders',
-        src: 'icons/Files_molorj',
+        src: 'icons/files_molorj',
         top_bar: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Fenêtre', 'Aide'], 
     },
     {
@@ -40,7 +40,7 @@ const mobileGlobal: (App & { top_bar: string[] })[] = [
     {
         name: 'Aperçu',
         type: 'Preview',
-        src: 'icons/Files_molorj',
+        src: 'icons/files_molorj',
         top_bar: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Outils', 'Fenêtre', 'Aide'], 
         desactivated: true,
     },

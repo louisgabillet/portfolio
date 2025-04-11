@@ -6,6 +6,7 @@ import { songs, type Song } from "$lib/audio/songs";
 import { player } from "$lib/audio/player";
 import { players } from '$lib/audio/player/store';
 import { onMount } from "svelte";
+import { storagePrefix } from "$lib";
 import SoundBars from "./soundBars.svelte";
 import type { PlayerData } from "$lib/audio/player/types";
 
@@ -128,8 +129,8 @@ songs.forEach(song => songMap.set(song.id, song));
 playlists.forEach(pl => playlistMap.set(pl.id, pl));
 
 onMount(() => {
-    const storedPlayistId = sessionStorage.getItem(`music-playlist-open`);
-    const storedTabName = sessionStorage.getItem(`music-tab-name`);
+    const storedPlayistId = sessionStorage.getItem(`${storagePrefix}music-playlist-open`);
+    const storedTabName = sessionStorage.getItem(`${storagePrefix}music-tab-name`);
     const track = audio.track
 
     if (storedTabName && !$isResponsive) {
@@ -200,7 +201,7 @@ const getAproximateTime = (songs: Song[]) => {
 
 const onTabClick = (name: string, playlistId: string | undefined) => {
     tabName = name
-    changeSessionStorage('music-tab-name', name);
+    changeSessionStorage(`${storagePrefix}music-tab-name`, name);
 
     if (!playlistId) {
         closePlaylist();
@@ -224,7 +225,7 @@ const changeSessionStorage = (name: string, newValue: string) => {
 const openPlaylist = (playlist: Playlist) => {
     isPlaylistOpen = true;
 
-    changeSessionStorage('music-playlist-open', playlist.id);
+    changeSessionStorage(`${storagePrefix}music-playlist-open`, playlist.id);
 
     if (playlist !== openedPlaylist) {
         openedPlaylist = playlist;
@@ -244,7 +245,7 @@ const closePlaylist = () => {
         tabName = defaultTabName;
     }
 
-    sessionStorage.removeItem(`music-playlist-open`);
+    sessionStorage.removeItem(`${storagePrefix}music-playlist-open`);
 }
 const getPlayingSong = (songIndex: number) => {
     const playing = buffer[songIndex];
@@ -343,7 +344,7 @@ const handlePlay = () => {
                 <Svg name="chevron_left" color="var(--accent-color)" />
                 <span class="controls__text--accent-color controls__text--overflow">{ !isPlaylistOpen ? "Bibliothèque" : '' }</span>
             </button>
-            <h2 class="controls__h2 controls__text--overflow">{ !isPlaylistOpen ? 'Playlists' : ''}</h2>
+            <h2 class="controls__h2 controls__text--overflow">{ !isPlaylistOpen ? 'Playlists' : openedPlaylistMetadata.name }</h2>
             <div class="controls__items-wrapper">
                 {#if !isPlaylistOpen}
                     <span class="controls__item controls-header__item controls-header__item--round">

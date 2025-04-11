@@ -1,6 +1,7 @@
 import { get, writable, type Writable } from "svelte/store";
 import type { Player, PlayerData, Players } from "./types";
 import { PlayerEvents, RandomPicker } from "./class";
+import { storagePrefix } from "$lib";
 
 export const players: Writable<Players> = writable({});
 
@@ -45,9 +46,9 @@ const loadAudio = (player: Player) => {
         return;
     }
 
-    const storedVolume = localStorage.getItem(`${player.name.toLowerCase()}-player-volume`);
-    const storedLoop = localStorage.getItem(`${player.name.toLowerCase()}-player-loop`);
-    const storedRandom = localStorage.getItem(`${player.name.toLowerCase()}-player-random`);
+    const storedVolume = localStorage.getItem(`${storagePrefix}${player.name.toLowerCase()}-player-volume`);
+    const storedLoop = localStorage.getItem(`${storagePrefix}${player.name.toLowerCase()}-player-loop`);
+    const storedRandom = localStorage.getItem(`${storagePrefix}${player.name.toLowerCase()}-player-random`);
 
     addEvents(player);
     track.autoplay = player.opts.autoplay;
@@ -190,13 +191,13 @@ export function loop(player: Player) {
     track.loop = !track.loop;
     player.audio.loop.set(track.loop);
 
-    localStorage.setItem(`${player.name.toLowerCase()}-player-loop`, track.loop.toString());
+    localStorage.setItem(`${storagePrefix}${player.name.toLowerCase()}-player-loop`, track.loop.toString());
 }
 export function random(player: Player) {
     const isRandom = !get(player.audio.random);
     player.audio.random.set(isRandom);
 
-    localStorage.setItem(`${player.name.toLowerCase()}-player-random`, isRandom.toString());
+    localStorage.setItem(`${storagePrefix}${player.name.toLowerCase()}-player-random`, isRandom.toString());
 }
 
 export function pass(player: Player, direction: -1 | 1) {

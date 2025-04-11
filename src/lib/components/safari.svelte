@@ -6,6 +6,7 @@ import appWindows from "$lib/apps/window-management/store";
 import appWindow from "$lib/apps/window-management";
 import Svg from "./svg.svelte";
 import type { Images } from "$lib/projects/types";
+	import Loader from "./loader.svelte";
 
 export let dirName: string | null = null;
 
@@ -62,9 +63,9 @@ onMount(async () => {
                 <span class="controls__item controls-footer__item" style="padding-block: 12px;">
                     <Svg name="square_and_arrow_up" />
                 </span>
-                <span class="controls__item controls-footer__item">
-                    <Svg name="safari" />
-                </span>
+                <a href={url} target="_blank" class="controls__item controls-footer__item">
+                    <Svg name="safari" color="var(--accent-color)" />
+                </a>
             {:else if url}
                 <a href="{url}" target="_blank" class="search-bar__link">{formattedUrl}</a> 
             {:else}
@@ -150,7 +151,10 @@ onMount(async () => {
     {/if}
     <div class="content app__content" class:app__content--no-bg={ !images }>
         {#if images}
-            <picture class:loading={ !isImgLoaded }>
+            {#if !isImgLoaded}
+               <Loader /> 
+            {/if}
+            <picture class:content__page--loading={ !isImgLoaded }>
                 <source media="(max-width: 1280px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{images.fullPage.mobile}">
                 <source media="(min-width: 1281px)" srcset="https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{images.fullPage.pc}">
                 <img class="content__page" src='https://res.cloudinary.com/dejb4brmy/image/upload/f_auto/q_auto/w_auto/portfolio/images/{images.fullPage.pc}' alt="Contenu de la page '{formattedUrl}" on:load={() => isImgLoaded = true }>
@@ -271,6 +275,9 @@ onMount(async () => {
 .content__page {
     width: 100%;
 }
+.content__page--loading {
+    visibility: hidden;
+}
 
 @media (max-width: 1280px) {
     .controls__search-bar {
@@ -284,6 +291,7 @@ onMount(async () => {
     }
     .search-bar__icon {
         width: auto;
+        aspect-ratio: 1/2;
         padding: 10px 0;
         z-index: 2;
         transition: opacity 320ms ease, visibility 320ms ease;

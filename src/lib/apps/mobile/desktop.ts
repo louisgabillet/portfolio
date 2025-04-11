@@ -13,7 +13,7 @@ const mobileDesktop: App[] = [
     {
         name: 'Fichiers',
         type: 'Finder',
-        src: 'icons/Files_molorj',
+        src: 'icons/files_molorj',
     },
     {
         name: 'Notes',

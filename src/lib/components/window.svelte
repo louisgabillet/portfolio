@@ -4,6 +4,7 @@ import { onDestroy, onMount } from 'svelte';
 import appWindow from '$lib/apps/window-management';
 import appWindows from '$lib/apps/window-management/store';
 import { apps } from '$lib/apps';
+import { storagePrefix } from "$lib";
 import type { App, AppSizeData } from '$lib/apps/types';
 import WindowAction from './windowAction.svelte';
 
@@ -61,8 +62,8 @@ const calculatePos = (size: number, isResize: boolean) => isResize ? +(50 - Math
 
 onMount(() => {
     const id = $appWindows.filter(app => app.data.type === type).length;
-    const appStorageSize = localStorage.getItem(`${type.toLowerCase()}-window-size`);
-    const appStoragePos = localStorage.getItem(`${type.toLowerCase()}-window-position`);
+    const appStorageSize = localStorage.getItem(`${storagePrefix}${type.toLowerCase()}-window-size`);
+    const appStoragePos = localStorage.getItem(`${storagePrefix}${type.toLowerCase()}-window-position`);
 
     const appData = apps.pc.global.find(app => app.type === type) ?? defaultAppSizeData;
     const resize = appData.resize;
@@ -97,8 +98,8 @@ onMount(() => {
 onDestroy(() => {
     const storageName: string = type.toLowerCase()
 
-    localStorage.setItem(`${storageName}-window-position`, JSON.stringify(appWindowPositions));
-    localStorage.setItem(`${storageName}-window-size`, JSON.stringify(appWindowSizes));
+    localStorage.setItem(`${storagePrefix}${storageName}-window-position`, JSON.stringify(appWindowPositions));
+    localStorage.setItem(`${storagePrefix}${storageName}-window-size`, JSON.stringify(appWindowSizes));
 })
 
 const calculateOffset = (e: MouseEvent, rect: DOMRect | null) => {
@@ -219,7 +220,7 @@ const stopResizeOnMouseUp = () => {
     window.removeEventListener('mousemove', resizeOnMouseMove);
     window.removeEventListener('mouseup', stopResizeOnMouseUp);
 
-    localStorage.setItem(`${type.toLowerCase()}-window-size`, JSON.stringify(appWindowSizes));
+    localStorage.setItem(`${storagePrefix}${type.toLowerCase()}-window-size`, JSON.stringify(appWindowSizes));
 }
 
 const handleClose = () => {
@@ -309,6 +310,7 @@ const handleClose = () => {
     width: 100%;
     height: 100%;
     inset: 0;
+    display: flex;
 }
 .app__resize {
     --size: 10px;

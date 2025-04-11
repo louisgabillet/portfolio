@@ -24,12 +24,10 @@ onMount(() => {
         changes.forEach(change => {
             const attrName = change.attributeName;
 
-            if (!attrName) return;
+            if (attrName !== 'src') return;
 
-            if (attrName === 'src') {
-                isImgLoaded = false;
-                img.addEventListener('load', handleLoad)
-            }
+            isImgLoaded = false;
+            img.addEventListener('load', handleLoad)
         });
     });
 

@@ -2,6 +2,7 @@ import { toast } from "$lib/toast";
 import { get } from "svelte/store";
 import { formatTime, stop, pass } from "./store";
 import type { Player, PlayerAudio } from "./types";
+import { storagePrefix } from "$lib";
 
 export class PlayerEvents {
     private player: Player;
@@ -58,19 +59,19 @@ export class PlayerEvents {
     volumechange = () => {
         const vol = Math.round(this.track.volume * 100);
 
-        localStorage.setItem(`${this.player.name.toLowerCase()}-player-volume`, vol.toString());
+        localStorage.setItem(`${storagePrefix}${this.player.name.toLowerCase()}-player-volume`, vol.toString());
         this.audio.volume.set(vol);
     }
 
     private handleSecretMusic = (url: string) => {
-        const hasSecretMusicPlayed = sessionStorage.getItem('music-secret-song-played');
+        const hasSecretMusicPlayed = sessionStorage.getItem(`${storagePrefix}music-secret-song-played`);
         const secretUrl = 'music/never_gonna_give_you_up_dugl1z.mp3'; 
 
         if (url !== secretUrl || hasSecretMusicPlayed === 'true') {
             return;
         }
 
-        sessionStorage.setItem('music-secret-song-played', 'true');
+        sessionStorage.setItem(`${storagePrefix}music-secret-song-played`, 'true');
         toast.success({
             appName: 'Music',
             title: 'NEVER GONNA GIVE YOU UP',
