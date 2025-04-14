@@ -88,10 +88,7 @@ export function remove(player: Player) {
     const removeEvents = eventManager[name];
 
     stop(player);
-
-    if (removeEvents) {
-        removeEvents();
-    }
+    if (removeEvents) removeEvents();
 
     players.update(($players) => {
         const { [name]: _, ...rest } = $players;
@@ -99,14 +96,10 @@ export function remove(player: Player) {
     })
 }
 export function buffer(player: Player, buffer: PlayerData['buffer']) {
-    player.buffer.set(buffer);
-
     const picker = pickerManager[player.name];
 
-    if (picker) {
-        picker.changeRange(0, buffer.length - 1);
-    }
-
+    player.buffer.set(buffer);
+    if (picker) picker.changeRange(0, buffer.length - 1);
 }
 
 export function start(player: Player, index: number) {

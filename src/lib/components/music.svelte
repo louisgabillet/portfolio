@@ -5,7 +5,7 @@ import { playlists, type Playlist } from "$lib/audio/playlists";
 import { songs, type Song } from "$lib/audio/songs";
 import { player } from "$lib/audio/player";
 import { players } from '$lib/audio/player/store';
-import { onMount } from "svelte";
+import { onDestroy, onMount } from "svelte";
 import { storagePrefix } from "$lib";
 import SoundBars from "./soundBars.svelte";
 import type { PlayerData } from "$lib/audio/player/types";
@@ -112,6 +112,8 @@ let playingSongIndex: number = 0;
 let playingSongName: string;
 let playingSongArtist: string;
 
+let observer: MutationObserver | null = null;
+
 $: defaultCoverPlaylist = {
     name: $isResponsive ? 'music_note_list' : 'music_double_note',
     color: $isResponsive ? '#7c7c7c' : '#a1a1a1',
@@ -129,7 +131,7 @@ songs.forEach(song => songMap.set(song.id, song));
 playlists.forEach(pl => playlistMap.set(pl.id, pl));
 
 onMount(() => {
-    const storedPlayistId = sessionStorage.getItem(`${storagePrefix}music-playlist-open`);
+    const storedOpenedPlayistId = sessionStorage.getItem(`${storagePrefix}music-playlist-open`);
     const storedTabName = sessionStorage.getItem(`${storagePrefix}music-tab-name`);
     const track = audio.track
 
@@ -137,8 +139,8 @@ onMount(() => {
         tabName = storedTabName;
     }
 
-    if (storedPlayistId) {
-        const playlist = playlistMap.get(storedPlayistId);
+    if (storedOpenedPlayistId) {
+        const playlist = playlistMap.get(storedOpenedPlayistId);
 
         if (!playlist) {
             return;
@@ -149,20 +151,20 @@ onMount(() => {
 
     if (track) {
         const audioIndex = track.dataset.audioIndex;
+        const playlistId = track.dataset.playlistId;
 
         if (audioIndex) {
             buffer = $audioBuffer as Song[];
-            playingPlaylist = openedPlaylist;
+            playingPlaylist = openedPlaylist || (playlistId && playlistMap.get(playlistId)) || playingPlaylist;
+
             getPlayingSong(+audioIndex);
-            return;
         };
 
-        const observer = new MutationObserver((changes) => {
+        observer = new MutationObserver((changes) => {
             changes.forEach(change => {
                 const attrName = change.attributeName;
                 const index = track.dataset.audioIndex;
 
-                console.log('ob', attrName, index);
                 if (attrName !== 'src' || !index) return;
 
                 getPlayingSong(+index);
@@ -171,9 +173,10 @@ onMount(() => {
 
         observer.observe(track, { attributes : true });
     }
-
 })
-
+onDestroy(() => {
+    if (observer) observer.disconnect();
+})
 
 const compareArrays = (a: PlayerData['buffer'], b: Song[]) => a.length === b.length && a.every((element, index) => element === b[index]);
 
@@ -216,9 +219,7 @@ const onTabClick = (name: string, playlistId: string | undefined) => {
 const changeSessionStorage = (name: string, newValue: string) => {
     const stored = sessionStorage.getItem(name);
 
-    if (newValue === stored) {
-        return;
-    }
+    if (newValue === stored) return;
 
     sessionStorage.setItem(name, newValue);
 }
@@ -251,7 +252,7 @@ const getPlayingSong = (songIndex: number) => {
     const playing = buffer[songIndex];
     playingSongIndex = songIndex;
 
-    if (playing === playingSong) return true;
+    if (playing === playingSong) return;
 
     const metadata = playing.metadata;
     const secret = metadata?.secret;
@@ -259,9 +260,8 @@ const getPlayingSong = (songIndex: number) => {
     playingSong = playing;
     playingSongName = secret?.name ?? metadata.name;
     playingSongArtist = secret?.artist ?? metadata.artist;
-
-    return false;
 }
+
 const updateBuffer = () => {
     const areEqual = compareArrays($audioBuffer, buffer);
 
@@ -272,6 +272,8 @@ const updateBuffer = () => {
     player.buffer(_player, buffer);
 }
 const handleStart = (songIndex: number, start: boolean = false, noRandom: boolean = false) => {
+    const track = audio.track;
+
     if (buffer.length === 0) {
         console.log('no buffered songs');
         return;
@@ -281,6 +283,7 @@ const handleStart = (songIndex: number, start: boolean = false, noRandom: boolea
 
     updateBuffer();
     playingPlaylist = openedPlaylist;
+    if (track) track.dataset.playlistId = openedPlaylist.id;
 
     const isSameIndex: boolean = playingSongIndex === songIndex;
     const isSameSong: boolean = buffer[songIndex] === playingSong;
@@ -305,14 +308,19 @@ const handleRandom = () => {
     handleStart(randomIndex, true);
 };
 const handlePlay = () => {
+    const track = audio.track;
+
+    if (!track) return;
+
     if (buffer.length === 0) {
         console.log('no buffered songs');
         return;
     }
-
-    if (!audio.track?.src) {
+    if (!track.src) {
         updateBuffer();
+
         playingPlaylist = openedPlaylist;
+        track.dataset.playlistId = openedPlaylist.id;
     }
 
     player.play(_player);

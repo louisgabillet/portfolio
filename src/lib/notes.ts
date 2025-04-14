@@ -134,7 +134,7 @@ ${indentation}- assure que la valeur assignée à « age » est un nombre (avec 
 
             `Puis, au détour de vidéos sur le sujet, j'ai commencé à y voir un potentiel intérêt, un passe-temps, ou simplement quelque chose de nouveau à découvrir. Peu importe la raison, le fait était que, voyant les possibilités infinies que cela te proposait, je me suis dit: « Ça peut être marrant ! », et j'ai plongé.`,
 
-            `Là, commença ma recherche pour savoir quelle était la première marche (où/quoi/comment commencer), pour éviter de démarrer trop compliquée, ruinant potentiellement mon expérience, et mon envie juste gagné d'apprendre.`, 
+            `Là, commença ma recherche pour savoir quelle était la première marche (où/quoi/comment commencer), pour éviter de démarrer trop compliqué, ruinant potentiellement mon expérience, et mon envie juste gagné d'apprendre.`, 
 
             `Après quelque temps, j'ai pris la connaissance de « Python », un langage réputé « simple », et donc par conséquent bien pour le petit débutant que j'étais.`
         ],
@@ -145,7 +145,7 @@ ${indentation}- assure que la valeur assignée à « age » est un nombre (avec 
         name: 'Python:',
         updateDate: '2022-12-25',
         content: [
-            `Le consensus général est d'accord pour dire que: « Python est simple, d'apprentissage et d'utilisation ». Cela me paraissait être une bonne idée pour me lancer dans ce vaste univers. J'ai donc découvert Python, et par la même occasion, la programmation, en cherchant à droite à gauche, lisant de la documentation, regardant des tutoriels, des guides, et toute sources d'information qui pourrait m'aider à en comprendre un peu plus sur tout ça.`,
+            `Le consensus général est d'accord pour dire que: « Python est simple, d'apprentissage et d'utilisation ». Cela me paraissait être une bonne idée pour me lancer dans ce vaste univers. J'ai donc découvert Python, et par la même occasion, la programmation, en cherchant à droite à gauche, lisant de la documentation, regardant des tutoriels, des guides, et toutes sources d'information qui pourraient m'aider à en comprendre un peu plus sur tout ça.`,
 
             `Après quelque temps, je me suis retrouvé avec un sentiment de: « Il me manque quelque chose ! ». J'ai donc cherché ce que cela pouvait bien être. Qu'elle pouvait être cette petite étincelle qui pourrait embraser ma passion pour la programmation. Malheureusement, la flamme étant manquante, j'avais du mal à trouver le plaisir escompté dans ce que je faisais. Je n'étais plus vraiment régulier, ce qui a eu pour effet de peu à peu, m'éloigner de la programmation.`,
 
@@ -170,7 +170,7 @@ ${indentation}- partie visuelle prenant une place importante`,
 
             `Je me lançais donc pour commencer les bases, « HTML » pour le corps du site, « CSS » pour son style. Je m'étais mis en tête d'apprendre au moins les notions principales à connaître pour me faire une idée globale (comme avec Python).`,
 
-            `Il ne m'a pas fallu longtemps pour comprendre que j'allais aimer. La facilité d'apprentissage (point n°1), la simplicité avec laquelle on peut réaliser des choses concrètes (point n°2), et le visuelle qui est une partie essentielle dans la création , et ça, dès le début (point n°3), m'ont grandement fait apprécier tout le long de mon utilisation.`,
+            `Il ne m'a pas fallu longtemps pour comprendre que j'allais aimer. La facilité d'apprentissage (point n°1), la simplicité avec laquelle on peut réaliser des choses concrètes (point n°2), et le visuel qui est une partie essentielle dans la création , et ça, dès le début (point n°3), m'ont grandement fait apprécier tout le long de mon utilisation.`,
         ],
         links: [],
     },
@@ -225,7 +225,7 @@ ${indentation}- TypeScript: « let age: number = 18; »`,
 
             `Ce qui est intéressant ici, c'est que « TypeScript » nous annonce avec certitude que la variable « age » est, et restera, un nombre (avec le « : number »), ce qui n'est pas le cas pour « JavaScript ». Un détail, mais une fois que l'on sait cela, on peut bien plus facilement planifier le reste du code, sans créer de potentiels bugs/erreurs en chemin.`,
 
-            `Ce sont des petits détails comme cela qui rende « TypeScript » attrayant, mais surtout rentable, malgré le temps de réflexion supplémentaire demandé.`,
+            `Ce sont des petits détails comme cela qui rendent « TypeScript » attrayant, mais surtout rentable, malgré le temps de réflexion supplémentaire demandé.`,
         ],
         links: [],
     },
