@@ -134,7 +134,7 @@ ${indentation}- assure que la valeur assignée à « age » est un nombre (avec 
 
             `Puis, au détour de vidéos sur le sujet, j'ai commencé à y voir un potentiel intérêt, un passe-temps, ou simplement quelque chose de nouveau à découvrir. Peu importe la raison, le fait était que, voyant les possibilités infinies que cela te proposait, je me suis dit: « Ça peut être marrant ! », et j'ai plongé.`,
 
-            `Là, commença ma recherche pour savoir quelle était la première marche (où/quoi/comment commencer), pour éviter de démarrer trop compliqué, ruinant potentiellement mon expérience, et mon envie juste gagné d'apprendre.`, 
+            `Là, commença ma recherche pour savoir quelle était la première marche (où/quoi/comment commencer), pour éviter de démarrer trop compliqué, ruinant potentiellement mon expérience, et mon envie juste gagnée d'apprendre.`, 
 
             `Après quelque temps, j'ai pris la connaissance de « Python », un langage réputé « simple », et donc par conséquent bien pour le petit débutant que j'étais.`
         ],

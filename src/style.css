@@ -89,6 +89,10 @@ body *::-webkit-scrollbar-thumb {
     background-color: #7C7C7C;
     border-radius: 10px;
 }
+body * {
+    scrollbar-color: #7c7c7c transparent;
+    scrollbar-width: thin;
+}
 /*body *:hover::-webkit-scrollbar-thumb {
     background: #7C7C7C;
 }*/

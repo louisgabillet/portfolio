@@ -528,7 +528,7 @@ const onWindowResize = () => {
     }
     .screen {
         grid-template-rows: 1fr;
-        border-radius: 1rem;
+        border-radius: 12px;
     }
     .screen__desktop {
         --max-width: 100%;

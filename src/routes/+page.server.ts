@@ -1,8 +1,8 @@
 import { fail, type Actions } from '@sveltejs/kit';
-import { SECRET_RECAPTCHA_KEY, SENDGRID_API_KEY } from '$env/static/private';
-import { PUBLIC_EMAIL } from '$env/static/public';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
+import { SECRET_RECAPTCHA_KEY, SENDGRID_API_KEY } from '$env/static/private';
+import { PUBLIC_EMAIL } from '$env/static/public';
 import type { ToastContent, ToastOptions } from '$lib/toast/types';
 
 type Data = {
@@ -11,13 +11,9 @@ type Data = {
     content: ToastContent,
     opts: ToastOptions,
 }
+type Mail = z.infer<typeof MailSchema>;
 
 const MailSchema = z.object({
-    //cc: z.union([
-    //    z.literal( '' ),
-    //    z.string()
-    //    .email("format de l'addresse email invalide"),
-    //]),
     subject: z
         .string({ required_error: `objet obligatoire` })
         .min(1, `object obliqatoire`)
@@ -36,7 +32,6 @@ const MailSchema = z.object({
         .string({ required_error: `reCAPTCHA token manquant` })
         .min(1, "reCAPTCHA token manquant"),
 })
-type Mail = z.infer<typeof MailSchema>;
 
 export const actions: Actions = {
     email: async ({ request }) => {
@@ -49,11 +44,11 @@ export const actions: Actions = {
             if (err instanceof z.ZodError) {
                 const { fieldErrors: errors } = err.flatten();
                 const { token, ...rest } = formData;
+
                 return fail(400, { sucess: false, data: rest, errors });
             }
         }
 
-        //const { cc, subject, email, content, token } = formData;
         const { subject, email, content, token } = formData;
 
         const data: Data = {
@@ -119,10 +114,9 @@ export const actions: Actions = {
             const mailOptions = {
                 from: 'Portfolio" <louisgab33@gmail.com>',
                 to: PUBLIC_EMAIL,
-                //cc: cc,
                 subject: subject,
                 text: content,
-                html: `<b>Email From : ${email} <br> Subject: ${subject}</b> <br> ${content}`,
+                html: `<h2 style="margin: 0; font-size: 20px;">De: ${email}</h2><h2 style="margin: 0; font-size: 20px;">Sujet: ${subject}</h2><p style="font-size: 14px">${content}</p>`,
                 replyTo: email,
             }
 
